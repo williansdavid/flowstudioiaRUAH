@@ -1,0 +1,12 @@
+/                        → Landing page pública (FlowStudio AI)
+/login                   → Login + Signup
+/unauthorized            → Acesso negado
+/admin                   → Dashboard admin (protegido)
+/admin/agenda            → Agenda
+/admin/clients           → Clientes
+/admin/finance           → Financeiro
+/admin/services          → Serviços
+/admin/settings          → Configurações
+/admin/staff             → Equipe
+/admin/whatsapp          → WhatsApp
+/api/public/whatsapp-webhook → Webhook público

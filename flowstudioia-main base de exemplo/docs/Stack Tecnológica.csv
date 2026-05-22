@@ -1,0 +1,9 @@
+Camada,Tecnologia
+Framework,TanStack React Start (SSR)
+Roteamento,TanStack Router (file-based)
+Backend/Auth/DB,Supabase
+Client HTTP,@supabase/supabase-js
+Estado assíncrono,TanStack React Query
+UI,Tailwind CSS + Lucide Icons
+Notificações,Sonner (toast)
+Build,Vite

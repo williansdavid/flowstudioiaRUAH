@@ -1,0 +1,7 @@
+ETAPA 1 → Trocar conexão Supabase (novo projeto)        ← AGORA
+ETAPA 2 → Verificar e corrigir autenticação
+ETAPA 3 → Criar usuário admin no novo Supabase
+ETAPA 4 → Validar todas as queries e RLS
+ETAPA 5 → Auditoria e limpeza do código Lovable
+ETAPA 6 → Estrutura de pastas profissional
+ETAPA 7 → Deploy próprio (fora da Lovable)

@@ -1,0 +1,87 @@
+flowstudio-ai/
+├── .env.example
+├── .env                        # gitignored — específico do studio
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── tailwind.config.ts
+├── postcss.config.js
+├── netlify.toml
+├── studio.config.ts            # white-label loader
+│
+├── supabase/
+│   ├── config.toml
+│   └── migrations/
+│       ├── 0001_initial_schema.sql
+│       └── 0002_rls_policies.sql
+│
+├── public/
+│   ├── logo.svg
+│   ├── og.jpg
+│   └── hero.jpg
+│
+└── src/
+    ├── router.tsx
+    ├── ssr.tsx
+    ├── client.tsx
+    │
+    ├── styles/
+    │   └── globals.css
+    │
+    ├── types/
+    │   └── database.ts         # gerado pelo supabase CLI
+    │
+    ├── lib/
+    │   ├── supabase/
+    │   │   ├── client.ts       # browser
+    │   │   ├── server.ts       # SSR
+    │   │   └── admin.ts        # service role (server-only)
+    │   ├── auth/
+    │   │   ├── session.ts
+    │   │   └── guards.ts
+    │   ├── query/
+    │   │   └── client.ts
+    │   ├── branding/
+    │   │   └── inject-theme.ts
+    │   ├── validators/         # zod schemas
+    │   └── utils/
+    │
+    ├── components/
+    │   ├── ui/                 # botões, inputs, dialogs, etc
+    │   ├── layout/             # AdminShell, PublicShell
+    │   └── domain/             # por domínio: clients/, services/, etc
+    │
+    ├── features/               # lógica por domínio
+    │   ├── auth/
+    │   ├── clients/
+    │   ├── services/
+    │   ├── staff/
+    │   ├── appointments/
+    │   ├── finance/
+    │   ├── leads/
+    │   ├── whatsapp/
+    │   └── ai-chat/
+    │
+    ├── server/                 # server functions
+    │   ├── auth.ts
+    │   ├── ai-chat.ts
+    │   ├── evolution-webhook.ts
+    │   └── rate-limit.ts
+    │
+    └── routes/                 # TanStack Router (file-based)
+        ├── __root.tsx
+        ├── index.tsx           # landing pública
+        ├── login.tsx
+        ├── _auth.tsx           # layout autenticado (guard)
+        └── _auth/
+            ├── admin.tsx       # layout admin
+            └── admin/
+                ├── index.tsx           # dashboard
+                ├── services.tsx
+                ├── clients.tsx
+                ├── staff.tsx
+                ├── appointments.tsx
+                ├── finance.tsx
+                ├── leads.tsx
+                ├── whatsapp.tsx
+                └── settings.tsx

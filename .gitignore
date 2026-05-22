@@ -1,0 +1,12 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Mantém o .example versionado
+!.env.example
+node_modules
+dist
+.vite
+.env
+.supabase

@@ -1,0 +1,12 @@
+Tabela,Descrição
+profiles,"Perfil do usuário (id, full_name, phone, avatar_url)"
+user_roles,"Papéis: admin, staff, client"
+clients,Clientes do salão
+staff,Profissionais/equipe
+services,Serviços oferecidos
+appointments,Agendamentos
+finance_transactions,Transações financeiras
+leads,Leads do formulário de contato
+whatsapp_messages,Mensagens WhatsApp
+whatsapp_settings,Configurações da integração WhatsApp
+ai_messages,Mensagens do chat IA

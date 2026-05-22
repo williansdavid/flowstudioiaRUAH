@@ -1,0 +1,29 @@
+src/
+├── lib/
+│   ├── env.ts                    ✅ (Bloco 1)
+│   ├── studio.config.ts          ✅ (Bloco 1)
+│   └── supabase/
+│       ├── browser.ts            ✅ (Bloco 1)
+│       ├── server.ts             ✅ (Bloco 1)
+│       ├── admin.ts              ✅ (Bloco 1)
+│       └── types.ts              🔄 (regenerado neste bloco)
+├── server/
+│   ├── auth.ts                   🆕 helpers de auth SSR
+│   └── queries/
+│       └── user.ts               🆕 server functions de usuário
+├── providers/
+│   └── QueryProvider.tsx         🆕 React Query + SSR
+└── routes/
+    └── __root.tsx                🔄 (atualizar com providers)
+
+supabase/
+└── migrations/
+    ├── 20260521_001_enums.sql           🆕
+    ├── 20260521_002_profiles.sql        🆕
+    ├── 20260521_003_clients.sql         🆕
+    ├── 20260521_004_staff.sql           🆕
+    ├── 20260521_005_services.sql        🆕
+    ├── 20260521_006_appointments.sql    🆕
+    ├── 20260521_007_finance.sql         🆕
+    ├── 20260521_008_leads.sql           🆕
+    └── 20260521_009_triggers.sql        🆕
