@@ -2,27 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --brand-primary: #D97757;
-  --brand-fg: #ffffff;
-  --surface: #ffffff;
-  --surface-muted: #f7f5f3;
-  --text: #1a1a1a;
-  --text-muted: #6b6b6b;
-  --border: #e7e5e4;
+/* ============================================
+   Base reset & defaults (mobile-first)
+   ============================================ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Compensa header fixo nos âncoras */
+    scroll-padding-top: 4rem;
+  }
+
+  body {
+    background-color: var(--surface, #ffffff);
+    color: var(--fg, #0a0a0a);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    /* Suporte a notch iOS */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  ::selection {
+    background-color: var(--brand-primary);
+    color: var(--brand-fg);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
-html, body, #root {
-  height: 100%;
+/* ============================================
+   Tema adaptativo — controlado por classe no <html>
+   ============================================ */
+.theme-dark {
+  color-scheme: dark;
 }
 
-body {
-  background: var(--surface);
-  color: var(--text);
-  font-family: theme('fontFamily.sans');
-  -webkit-font-smoothing: antialiased;
+.theme-light {
+  color-scheme: light;
 }
 
-/* Scrollbar sutil */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
+/* ============================================
+   Utilidades de superfície (white-label friendly)
+   ============================================ */
+@layer utilities {
+  .bg-surface { background-color: var(--surface); }
+  .bg-surface-muted { background-color: var(--surface-muted); }
+  .text-fg { color: var(--fg); }
+  .text-fg-muted { color: var(--fg-muted); }
+  .border-default { border-color: var(--border); }
+  .bg-brand { background-color: var(--brand-primary); }
+  .text-brand { color: var(--brand-primary); }
+  .text-brand-fg { color: var(--brand-fg); }
+  .border-brand { border-color: var(--brand-primary); }
+
+  /* Container responsivo padrão da landing */
+  .container-landing {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 80rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-landing { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
+}

@@ -703,3 +703,391 @@ Bootstrap inicial do projeto FlowStudio AI com a stack oficial: TanStack React S
 ### 📝 Notas finais
 
 Fundação técnica estabelecida. A partir daqui, todo desenvolvimento ocorre com a stack oficial congelada e a arquitetura **deploy isolado por studio** como princípio norteador.
+
+
+---
+
+# 📚 APÊNDICE TÉCNICO — Especificação Consolidada por Compromisso
+
+> Seção de referência rápida. Cada bloco abaixo consolida **escopo, responsabilidades técnicas e árvore de diretórios** entregues em cada checkpoint, para consulta sem precisar reler a narrativa cronológica.
+
+---
+
+## 🔹 Compromisso 01 — Fundação da Stack
+
+### Especificação técnica
+
+- Bootstrap Vite + TanStack React Start (SSR)
+- TypeScript estrito habilitado
+- Tailwind CSS configurado
+- Supabase project provisionado (1 projeto = 1 studio)
+- Variáveis de ambiente via `.env.local`
+- Target de deploy: Netlify
+- Estrutura inicial de pastas em `src/`
+
+### Responsabilidades técnicas
+
+| Responsabilidade | Detalhe |
+|---|---|
+| Stack congelada | Vite, React, TS, Tailwind, TanStack Start, Supabase |
+| Princípio arquitetural | 1 deploy + 1 banco por studio (sem multi-tenant) |
+| Ambiente local | `npm run dev` funcional na porta 3000 |
+| Configuração | `.env.local` com `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` |
+
+### Árvore de diretórios
+
+```plaintext
+FlowStudio AI/
+├── .env.local
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── vite.config.ts
+└── src/
+    ├── routes/
+    ├── components/
+    └── styles/
+```
+
+---
+
+## 🔹 Compromisso 02 — Schema Supabase Operacional
+
+### Especificação técnica
+
+- Reset destrutivo do schema `public` legado
+- 9 migrations idempotentes versionadas
+- 6 enums tipados (`user_role`, `appointment_status`, `transaction_type`, `transaction_category`, `lead_source`, `lead_status`)
+- RLS habilitado em todas as tabelas de domínio
+- Policies segmentadas por role (admin / staff / client)
+- Trigger `on_auth_user_created` cria profile automaticamente
+- Function `handle_new_user()` com `SECURITY DEFINER`
+- Function `current_user_role()` para policies sem recursão
+- Function `set_updated_at()` para timestamps automáticos
+
+### Responsabilidades técnicas
+
+| Responsabilidade | Detalhe |
+|---|---|
+| Fonte de verdade | Schema do banco define o domínio |
+| Segurança | RLS como primeira linha de defesa |
+| Integridade | Trigger garante 1:1 entre `auth.users` e `profiles` |
+| Tipagem forte | Enums protegem contra strings livres |
+| Portabilidade | Replicar studio = rodar 9 migrations |
+| Modelagem | `profiles` 1:1 com `auth.users`; `clients`/`staff` opcionais |
+
+### Árvore de diretórios
+
+```plaintext
+supabase/
+└── migrations/
+    ├── 001_enums.sql
+    ├── 002_profiles.sql
+    ├── 003_clients.sql
+    ├── 004_staff.sql
+    ├── 005_services.sql
+    ├── 006_appointments.sql
+    ├── 007_finance.sql
+    ├── 008_leads.sql
+    └── 009_triggers.sql
+```
+
+### Tabelas entregues
+
+```plaintext
+public/
+├── profiles              ← 1:1 com auth.users
+├── clients               ← perfil cliente
+├── staff                 ← perfil profissional
+├── services              ← catálogo de serviços
+├── appointments          ← agendamentos
+├── finance_transactions  ← receitas/despesas
+└── leads                 ← captação
+```
+
+---
+
+## 🔹 Compromisso 03 — Auth SSR Operacional
+
+### Especificação técnica
+
+- Supabase Clients isolados (browser singleton vs server por request)
+- Cookies HTTP-only gerenciados via `getWebRequest()` do TanStack Start
+- Variáveis de ambiente tipadas e validadas em runtime
+- Server functions de sessão (não loaders diretos)
+- Estrutura de guards pronta (`requireAuth`, `requireRole`, `requireAdmin`, `requireStaff`)
+- Router entry alinhado ao contrato `getRouter()` do TanStack Start ≥ 1.168
+- `QueryClient` instanciado por request (SSR-safe)
+
+### Responsabilidades técnicas
+
+| Responsabilidade | Detalhe |
+|---|---|
+| Isolamento de contexto | Browser e server clients nunca compartilham instância |
+| Sessão SSR | Lida no servidor antes do render, nunca no cliente |
+| Auth flow | Cookies HTTP-only, sem token em localStorage |
+| Reutilização | Server functions encapsulam regra de auth |
+| Tipagem env | Falha explícita se variável obrigatória ausente |
+
+### Árvore de diretórios
+
+```plaintext
+src/
+├── router.tsx                       ← getRouter() factory
+├── lib/
+│   ├── env.ts                       ← Env tipado e validado
+│   ├── supabase/
+│   │   ├── client.ts                ← Browser client (singleton)
+│   │   ├── server.ts                ← Server client (por request)
+│   │   └── types.ts                 ← Placeholder de tipos
+│   └── auth/
+│       ├── session.ts               ← getSessionUser / getSession
+│       └── guards.ts                ← requireAuth/Role/Admin/Staff
+```
+
+---
+
+## 🔹 Compromisso 04 — Saneamento de Tipos & Role Única
+
+### Especificação técnica
+
+- `SessionUser` reescrito alinhado 100% ao schema real da `profiles`
+- Modelo de **role única por usuário** consolidado (abandono do array de roles)
+- Bloqueio automático de usuário com `is_active = false` no `getSession()`
+- Enum `user_role` do Postgres = `AppRole` da aplicação
+- Helpers de role centralizados em `roles.ts` (label PT-BR)
+- Eliminação de código morto (`role-helpers.ts`)
+- Zero erros TypeScript (`npx tsc --noEmit`)
+
+### Responsabilidades técnicas
+
+| Responsabilidade | Detalhe |
+|---|---|
+| Fonte única de verdade | `profiles.role` (singular) |
+| Desativação imediata | Checada a cada SSR, sem esperar JWT expirar |
+| Helpers centralizados | UI consome label, lógica fica em `session.ts` |
+| Tipagem defensiva | Campos opcionais como `string \| null` |
+| Limpeza arquitetural | Código legado removido, sem dead code |
+
+### Modelo consolidado
+
+```plaintext
+profiles (DB)              SessionUser (App)
+├── id            ────►    ├── id          string
+├── email         ────►    ├── email       string | null
+├── full_name     ────►    ├── fullName    string | null
+├── phone         ────►    ├── phone       string | null
+├── avatar_url    ────►    ├── avatarUrl   string | null
+├── role          ────►    ├── role        AppRole | null
+└── is_active     ────►    └── isActive    boolean
+```
+
+### Árvore de diretórios
+
+```plaintext
+src/lib/auth/
+├── session.ts          ← getSession + requireSession + hasRole/isAdmin/isStaff/isClient
+├── roles.ts            ← getRoleLabel(AppRole | null)
+└── types.ts            ← SessionUser, AppRole
+```
+
+---
+
+## 🔹 Compromisso 05 — Admin Layout Operacional
+
+### Especificação técnica
+
+- Shell administrativo SSR com sidebar responsiva
+- Mobile-first: drawer com overlay em `<768px`, sidebar fixa em `≥768px`
+- Navegação filtrada por permissão granular (não por role direta)
+- Catálogo de permissões type-safe via string literals (`feature.action`)
+- Active state correto com flag `exact` para rota raiz `/admin`
+- Avatar com iniciais defensivas (resistente a `null`)
+- Identidade visual do studio via `studio.config.ts`
+- Logout: server function + `toast.success` + `router.invalidate()` + redirect
+- `<Toaster />` (Sonner) global em `__root.tsx`
+- ESC fecha drawer; drawer fecha automaticamente ao navegar
+
+### Responsabilidades técnicas
+
+| Responsabilidade | Detalhe |
+|---|---|
+| Layout reutilizável | Mora em `components/layout`, não em `routes/` |
+| Permissões | UI nunca checa role direto, sempre via `userHasPermission` |
+| Catálogo | Permissões como string literal type-safe |
+| Logout SSR | `router.invalidate()` garante invalidação da sessão server-side |
+| Feedback visual | Toaster global, sem prop drilling |
+| Acessibilidade | ESC, focus, fechamento automático do drawer |
+| Defensividade | Fallbacks para `fullName`/`email`/`avatarUrl` nulos |
+
+### Árvore de diretórios
+
+```plaintext
+src/
+├── components/
+│   └── layout/
+│       └── AdminLayout.tsx          ← Shell visual (sidebar + drawer + outlet)
+├── lib/
+│   └── auth/
+│       ├── session.ts               ← getSession / requireSession
+│       ├── permissions.ts           ← userHasPermission + catálogo
+│       ├── roles.ts                 ← getRoleLabel
+│       └── types.ts                 ← SessionUser
+└── routes/
+    ├── __root.tsx                   ← <Toaster /> global
+    └── admin/
+        ├── route.tsx                ← beforeLoad (guard) + <AdminLayout>
+        └── index.tsx                ← Dashboard placeholder
+```
+
+### Catálogo de permissões em vigor
+
+```plaintext
+dashboard.view
+appointments.view
+appointments.manage
+clients.view
+clients.manage
+services.view
+services.manage
+staff.view
+staff.manage
+finance.view
+finance.manage
+whatsapp.view
+whatsapp.manage
+leads.view
+leads.manage
+settings.view
+settings.manage
+```
+
+---
+
+## 🗺️ Árvore Consolidada do Projeto (estado em 22/05/2026)
+
+```plaintext
+FlowStudio AI/
+├── .env.local
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── vite.config.ts
+├── CHECKPOINTS.md
+├── supabase/
+│   └── migrations/
+│       ├── 001_enums.sql
+│       ├── 002_profiles.sql
+│       ├── 003_clients.sql
+│       ├── 004_staff.sql
+│       ├── 005_services.sql
+│       ├── 006_appointments.sql
+│       ├── 007_finance.sql
+│       ├── 008_leads.sql
+│       └── 009_triggers.sql
+└── src/
+    ├── router.tsx
+    ├── routeTree.gen.ts
+    ├── components/
+    │   └── layout/
+    │       └── AdminLayout.tsx
+    ├── lib/
+    │   ├── env.ts
+    │   ├── supabase/
+    │   │   ├── client.ts
+    │   │   ├── server.ts
+    │   │   └── types.ts
+    │   └── auth/
+    │       ├── session.ts
+    │       ├── permissions.ts
+    │       ├── roles.ts
+    │       ├── guards.ts
+    │       └── types.ts
+    ├── config/
+    │   └── studio.config.ts
+    └── routes/
+        ├── __root.tsx
+        ├── index.tsx
+        └── admin/
+            ├── route.tsx
+            └── index.tsx
+```
+
+---
+
+## 📌 Matriz de Compromissos × Camadas
+
+| Compromisso | Banco | SSR/Auth | UI/Layout | Tipagem | Permissões |
+|---|:---:|:---:|:---:|:---:|:---:|
+| 01 — Fundação | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| 02 — Schema Supabase | ✅ | ⚪ | ⚪ | ⚪ | ⚪ (RLS) |
+| 03 — Auth SSR | ⚪ | ✅ | ⚪ | 🟡 | 🟡 |
+| 04 — Saneamento de Tipos | ⚪ | ✅ | ⚪ | ✅ | 🟡 |
+| 05 — Admin Layout | ⚪ | ✅ | ✅ | ✅ | ✅ |
+
+Legenda: ✅ entregue · 🟡 parcial · ⚪ não escopo
+
+---
+
+## 🧭 Princípios Arquiteturais Vigentes
+
+1. **1 deploy = 1 studio = 1 Supabase** — sem multi-tenant
+2. **Schema é fonte de verdade** — RLS no banco, app só consome
+3. **SSR-first** — sessão lida no servidor, nunca no cliente
+4. **Role única por usuário** — alinhado ao enum `user_role`
+5. **Permissões granulares** — UI checa permissão, não role
+6. **Componentes reutilizáveis fora de `routes/`** — desacoplados do roteador
+7. **Sem AuthContext React** — sessão flui via context do router
+8. **Tipagem defensiva** — `null` é cidadão de primeira classe
+
+---
+
+> **Última atualização**: 22/05/2026 — após Checkpoint 05  
+> **Próximo bloco**: BLOCO 6 — Guards por rota sensível
+📍 CHECKPOINT — FlowStudio AI
+Data: 22/maio/2026 Fase atual: Fase 2 — Landing plugável (parcialmente concluída)
+
+✅ O que está PRONTO
+🏗 Arquitetura base
+Stack oficial validada: TanStack React Start SSR + Supabase + Netlify
+Modelo deploy isolado por studio (1 Netlify + 1 Supabase por cliente)
+Estrutura de pastas padronizada (src/config, src/types, src/components/landing)
+🎨 Sistema de seções plugáveis
+src/types/sections.ts — contratos TypeScript completos para todas as seções
+src/config/studio.config.ts — camada de CONTEÚDO do studio
+src/config/studio.sections.ts — camada de LAYOUT (ordem + variantes)
+src/components/landing/SectionsRenderer.tsx — resolver variante → componente
+Hero migrado para o novo sistema com variante fullscreen (HeroFullscreen)
+📚 Documentação
+docs/SECTIONS_GUIDE.md — guia completo de seções, variantes, props e receitas
+🟡 EM ANDAMENTO / PENDENTE
+
+
+
+Item	Status	Prioridade
+Migrar services (inline → SectionsRenderer)	🟡 Pendente	ALTA
+Migrar about (inline → SectionsRenderer)	🟡 Pendente	ALTA
+Implementar seção team	⚪ Não iniciado	MÉDIA
+Implementar seção gallery	⚪ Não iniciado	MÉDIA
+Implementar seção testimonials	⚪ Não iniciado	MÉDIA
+Implementar seção contact (com form lead)	⚪ Não iniciado	ALTA
+Variantes adicionais do Hero (split, minimal)	⚪ Não iniciado	BAIXA
+🎯 PRÓXIMO PASSO RECOMENDADO
+Migrar a seção services para o SectionsRenderer, seguindo o padrão já estabelecido pelo Hero:
+
+Criar src/components/landing/services/ com a variante ServicesGrid.tsx
+Criar barrel index.ts
+Registrar no variantsMap do SectionsRenderer
+Ativar em studio.sections.ts com variant: 'grid'
+Remover JSX inline da rota /
+Motivo: services é a seção de maior valor de negócio (conversão) e já tem dados estruturados no Supabase — boa para validar o fluxo source: 'supabase'.
+
+🛡 Regras ativas (memória persistente)
+❌ Sem multi-tenant
+❌ Sem overengineering / microserviços / filas
+✅ Mobile first
+✅ SSR sempre considerado
+✅ Isolamento total por studio
+✅ Investigar antes de planejar (validar API real)
+✅ Ordem de execução antes dos comandos
+✅ Comandos PowerShell prontos para Windows

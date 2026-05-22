@@ -1,8 +1,9 @@
-import { createServerFn } from '@tanstack/react-start';
+﻿import { createServerFn } from '@tanstack/react-start';
+import { redirect } from '@tanstack/react-router';
 import type { AppRole, SessionUser } from './types';
+import { userHasPermission, type Permission } from './permissions';
 
 // Re-export dos tipos para manter compatibilidade com imports existentes
-// (ex.: `import { type SessionUser } from '@/lib/auth/session'`)
 export type { AppRole, SessionUser };
 
 // ============================================================
@@ -18,7 +19,6 @@ export type { AppRole, SessionUser };
  */
 export const getSession = createServerFn({ method: 'GET' }).handler(
   async (): Promise<SessionUser | null> => {
-    // Import dinâmico garante isolamento server-only no bundle.
     const { loadSessionFromRequest } = await import('./session.server');
     return loadSessionFromRequest();
   },
@@ -40,17 +40,11 @@ export async function requireSession(): Promise<SessionUser> {
 // Role helpers — puros, isomorphic (rodam client e server)
 // ============================================================
 
-/**
- * Verifica se o usuário possui exatamente a role informada.
- */
 export function hasRole(user: SessionUser | null, role: AppRole): boolean {
   if (!user || !user.role) return false;
   return user.role === role;
 }
 
-/**
- * Verifica se o usuário possui pelo menos uma das roles.
- */
 export function hasAnyRole(
   user: SessionUser | null,
   roles: AppRole[],
@@ -59,36 +53,26 @@ export function hasAnyRole(
   return roles.includes(user.role);
 }
 
-/**
- * Atalho: é admin?
- */
 export function isAdmin(user: SessionUser | null): boolean {
   return hasRole(user, 'admin');
 }
 
-/**
- * Atalho: é staff (ou admin, que herda permissões)?
- */
 export function isStaff(user: SessionUser | null): boolean {
   return hasAnyRole(user, ['admin', 'staff']);
 }
 
-/**
- * Atalho: é client?
- */
 export function isClient(user: SessionUser | null): boolean {
   return hasRole(user, 'client');
 }
 
-import { redirect } from '@tanstack/react-router';
-// ... resto dos imports
+// ============================================================
+// Route guards — bloqueiam acesso no beforeLoad
+// ============================================================
 
 /**
  * Guard de rota: exige que o usuário tenha uma das roles permitidas.
- * - Sem sessão → redireciona para /login
- * - Com sessão mas sem role → redireciona para /
- *
- * Uso em `beforeLoad` de rotas protegidas.
+ * - Sem sessão → /login
+ * - Com sessão mas sem role permitida → /403
  */
 export function requireRole(
   user: SessionUser | null,
@@ -98,6 +82,28 @@ export function requireRole(
     throw redirect({ to: '/login' });
   }
   if (!user.role || !roles.includes(user.role)) {
-    throw redirect({ to: '/' });
+    throw redirect({ to: '/403' });
+  }
+}
+
+/**
+ * Guard de rota: exige que o usuário tenha a permissão informada.
+ * - Sem sessão → /login
+ * - Com sessão mas sem permissão → /403
+ *
+ * @example
+ * beforeLoad: ({ context }) => {
+ *   requirePermission(context.user, 'finance.view');
+ * }
+ */
+export function requirePermission(
+  user: SessionUser | null,
+  permission: Permission,
+): asserts user is SessionUser {
+  if (!user) {
+    throw redirect({ to: '/login' });
+  }
+  if (!userHasPermission(user, permission)) {
+    throw redirect({ to: '/403' });
   }
 }

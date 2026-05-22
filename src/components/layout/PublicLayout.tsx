@@ -1,14 +1,42 @@
-import { Link, Outlet } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
+import { Link } from '@tanstack/react-router';
+import { Instagram, Facebook, MapPin } from 'lucide-react';
 import { studioConfig } from '@/config/studio.config';
+import { buildThemeTokens } from '@/lib/theme/applyTheme';
+import {
+  getFacebookUrl,
+  getInstagramUrl,
+  getMapsUrl,
+} from '@/config/studio.helpers';
 
-export function PublicLayout() {
+interface PublicLayoutProps {
+  children: ReactNode;
+}
+
+/**
+ * Layout público — wrapper de todas as páginas públicas (landing, /login, etc).
+ * - Aplica tema adaptativo (dark/light) via CSS vars
+ * - Header sticky com logo + CTAs
+ * - Footer com redes + endereço
+ * - Mobile-first
+ */
+export function PublicLayout({ children }: PublicLayoutProps) {
+  const theme = buildThemeTokens(studioConfig.branding);
+  const instagram = getInstagramUrl();
+  const facebook = getFacebookUrl();
+  const maps = getMapsUrl();
+
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div
+      className={`${theme.className} flex min-h-screen flex-col bg-surface text-fg`}
+      style={theme.cssVars as React.CSSProperties}
+    >
+      {/* HEADER */}
       <header
-        className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur"
+        className="sticky top-0 z-50 border-b border-default bg-surface/90 backdrop-blur-md"
         aria-label="Cabeçalho principal"
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+        <div className="container-landing flex h-16 items-center justify-between">
           <Link
             to="/"
             className="flex items-center gap-2"
@@ -17,21 +45,38 @@ export function PublicLayout() {
             <img
               src={studioConfig.branding.logoUrl}
               alt={studioConfig.name}
-              className="h-8"
+              className="h-8 w-auto"
             />
-            <span className="font-semibold">{studioConfig.name}</span>
+            <span className="text-base font-semibold sm:text-lg">
+              {studioConfig.name}
+            </span>
           </Link>
 
           <nav
-            className="hidden items-center gap-6 md:flex"
+            className="flex items-center gap-2 sm:gap-4"
             aria-label="Navegação principal"
           >
-            <Link to="/" className="text-sm hover:opacity-70">
-              Início
-            </Link>
+            <a
+              href="#servicos"
+              className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline"
+            >
+              Serviços
+            </a>
+            <a
+              href="#sobre"
+              className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline"
+            >
+              Sobre
+            </a>
+            <a
+              href="#contato"
+              className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline"
+            >
+              Contato
+            </a>
             <Link
               to="/login"
-              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition hover:opacity-90"
             >
               Entrar
             </Link>
@@ -39,23 +84,89 @@ export function PublicLayout() {
         </div>
       </header>
 
-      <main className="flex-1">
-        <Outlet />
-      </main>
+      {/* MAIN */}
+      <main className="flex-1">{children}</main>
 
-      <footer className="border-t bg-neutral-50 py-8">
-        <div className="mx-auto max-w-7xl px-4 text-center text-sm text-neutral-600">
-          <p>{studioConfig.footer.copyrightText}</p>
-          {studioConfig.contact.instagramUrl && (
-            <a
-              href={studioConfig.contact.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block hover:opacity-70"
-            >
-              {studioConfig.contact.instagram}
-            </a>
-          )}
+      {/* FOOTER */}
+      <footer
+        id="contato"
+        className="border-t border-default bg-surface-muted"
+      >
+        <div className="container-landing py-10">
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Coluna 1 — Marca */}
+            <div>
+              <div className="flex items-center gap-2">
+                <img
+                  src={studioConfig.branding.logoUrl}
+                  alt={studioConfig.name}
+                  className="h-8 w-auto"
+                />
+                <span className="text-lg font-semibold">
+                  {studioConfig.name}
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-fg-muted">
+                {studioConfig.slogan}
+              </p>
+            </div>
+
+            {/* Coluna 2 — Endereço */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-fg-muted">
+                Endereço
+              </h3>
+              <a
+                href={maps}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-start gap-2 text-sm text-fg hover:text-brand"
+              >
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  {studioConfig.address.street}, {studioConfig.address.number}
+                  <br />
+                  {studioConfig.address.neighborhood} —{' '}
+                  {studioConfig.address.city}/{studioConfig.address.state}
+                </span>
+              </a>
+            </div>
+
+            {/* Coluna 3 — Redes */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-fg-muted">
+                Redes sociais
+              </h3>
+              <div className="mt-3 flex items-center gap-3">
+                {instagram && (
+                  <a
+                    href={instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    className="rounded-full border border-default p-2 text-fg-muted transition hover:border-brand hover:text-brand"
+                  >
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                )}
+                {facebook && (
+                  <a
+                    href={facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                    className="rounded-full border border-default p-2 text-fg-muted transition hover:border-brand hover:text-brand"
+                  >
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-default pt-6 text-center text-xs text-fg-muted">
+            {studioConfig.footer.copyrightText}
+          </div>
         </div>
       </footer>
     </div>

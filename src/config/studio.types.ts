@@ -1,56 +1,83 @@
-export type StudioCategory = 'salon' | 'barbershop' | 'beauty_studio' | 'spa';
+/**
+ * Tipos do StudioConfig — fonte única da identidade do studio.
+ * Cada studio (deploy) terá seu próprio studio.config.ts versionado.
+ */
+
+export type StudioCategory =
+  | 'barbershop'
+  | 'salon'
+  | 'nails'
+  | 'aesthetics'
+  | 'spa'
+  | 'other';
+
+export type StudioTheme = 'dark' | 'light';
 
 export interface StudioContact {
   phone: string;
   whatsapp: string;
-  email: string;
+  email?: string;
   instagram?: string;
   instagramUrl?: string;
-  facebook?: string;
-  tiktok?: string;
+  facebookUrl?: string;
 }
 
 export interface StudioAddress {
   street: string;
   number: string;
-  complement?: string;
   neighborhood: string;
   city: string;
   state: string;
   zipCode: string;
-  country?: string; // padrão "Brasil"
-  mapUrl?: string;
+  country: string;
+  mapUrl: string;
 }
 
 export interface StudioBranding {
+  theme: StudioTheme;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
   logoUrl: string;
+  logoUrlDark?: string;
   faviconUrl: string;
-  fontFamily?: string;
-  ogImage?: string;
-  heroImage?: string;
 }
 
 export interface StudioHero {
   title: string;
   subtitle: string;
   ctaText: string;
+  ctaSecondaryText?: string;
   backgroundImage: string;
 }
 
-export type BusinessHoursDay = { open: string; close: string } | null;
-
-export interface StudioBusinessHours {
-  monday?: BusinessHoursDay;
-  tuesday?: BusinessHoursDay;
-  wednesday?: BusinessHoursDay;
-  thursday?: BusinessHoursDay;
-  friday?: BusinessHoursDay;
-  saturday?: BusinessHoursDay;
-  sunday?: BusinessHoursDay;
+export interface StudioAbout {
+  title: string;
+  paragraphs: string[];
+  image: string;
+  imageAlt: string;
 }
+
+export interface StudioGalleryItem {
+  src: string;
+  alt: string;
+}
+
+export type WeekDay =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export interface DayHours {
+  open: string;
+  close: string;
+}
+
+export type StudioBusinessHours = Record<WeekDay, DayHours | null>;
 
 export interface StudioSEO {
   title: string;
@@ -68,7 +95,6 @@ export interface StudioFeatures {
 
 export interface StudioFooter {
   copyrightText: string;
-  additionalLinks?: { label: string; href: string }[];
 }
 
 export interface StudioConfig {
@@ -82,6 +108,8 @@ export interface StudioConfig {
   address: StudioAddress;
   branding: StudioBranding;
   hero: StudioHero;
+  about: StudioAbout;
+  gallery?: StudioGalleryItem[];
   businessHours: StudioBusinessHours;
   seo: StudioSEO;
   features: StudioFeatures;

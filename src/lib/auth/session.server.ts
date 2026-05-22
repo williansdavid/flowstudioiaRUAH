@@ -4,8 +4,9 @@ import type { AppRole, SessionUser } from './types';
 /**
  * 🔒 SERVER-ONLY
  * Lógica real que toca Supabase + cookies SSR.
- * Nunca importe este arquivo em código client (componentes, rotas, __root).
- * Acesso é feito exclusivamente via `getSession()` (createServerFn) em `./session`.
+ * Nunca importe este arquivo em código client.
+ *
+ * Fonte de verdade da role: profiles.role (enum user_role)
  */
 export async function loadSessionFromRequest(): Promise<SessionUser | null> {
   const supabase = createSupabaseServer();
@@ -17,6 +18,7 @@ export async function loadSessionFromRequest(): Promise<SessionUser | null> {
 
   if (userError || !user) return null;
 
+  // Profile + role em uma única query
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('email, full_name, phone, avatar_url, role, is_active')
@@ -28,18 +30,22 @@ export async function loadSessionFromRequest(): Promise<SessionUser | null> {
     return null;
   }
 
+  if (!profile) {
+    return null;
+  }
+
   // Bloqueia usuário desativado
-  if (profile && profile.is_active === false) {
+  if (profile.is_active === false) {
     return null;
   }
 
   return {
     id: user.id,
-    email: profile?.email ?? user.email ?? null,
-    fullName: profile?.full_name ?? null,
-    phone: profile?.phone ?? null,
-    avatarUrl: profile?.avatar_url ?? null,
-    role: (profile?.role as AppRole | null) ?? null,
-    isActive: profile?.is_active ?? false,
+    email: profile.email ?? user.email ?? null,
+    fullName: profile.full_name ?? null,
+    phone: profile.phone ?? null,
+    avatarUrl: profile.avatar_url ?? null,
+    role: (profile.role as AppRole | null) ?? null,
+    isActive: profile.is_active ?? false,
   };
 }

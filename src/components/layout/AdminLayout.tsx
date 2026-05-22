@@ -7,6 +7,8 @@ import {
   DollarSign,
   MessageSquare,
   LayoutDashboard,
+  UserCog,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -34,9 +36,12 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/admin/appointments', label: 'Agendamentos', icon: Calendar, permission: 'appointments.view' },
   { to: '/admin/clients', label: 'Clientes', icon: Users, permission: 'clients.view' },
   { to: '/admin/services', label: 'Serviços', icon: Scissors, permission: 'services.view' },
+  { to: '/admin/staff', label: 'Equipe', icon: UserCog, permission: 'team.manage' },
   { to: '/admin/finance', label: 'Financeiro', icon: DollarSign, permission: 'finance.view' },
   { to: '/admin/whatsapp', label: 'WhatsApp', icon: MessageSquare, permission: 'whatsapp.view' },
+  { to: '/admin/settings', label: 'Configurações', icon: Settings, permission: 'settings.manage' },
 ];
+
 
 /**
  * Extrai iniciais de um nome ou email.

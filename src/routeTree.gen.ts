@@ -10,17 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as R403RouteImport } from './routes/403'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminWhatsappRouteImport } from './routes/admin/whatsapp'
+import { Route as AdminStaffRouteImport } from './routes/admin/staff'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminServicesRouteImport } from './routes/admin/services'
+import { Route as AdminFinanceRouteImport } from './routes/admin/finance'
 import { Route as AdminClientsRouteImport } from './routes/admin/clients'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin/appointments'
-import { Route as PublicServicesRouteImport } from './routes/_public/services'
-import { Route as PublicAboutRouteImport } from './routes/_public/about'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R403Route = R403RouteImport.update({
+  id: '/403',
+  path: '/403',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRouteRoute = AdminRouteRouteImport.update({
@@ -38,6 +47,31 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminWhatsappRoute = AdminWhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminStaffRoute = AdminStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminServicesRoute = AdminServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminFinanceRoute = AdminFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminClientsRoute = AdminClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
@@ -48,45 +82,47 @@ const AdminAppointmentsRoute = AdminAppointmentsRouteImport.update({
   path: '/appointments',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const PublicServicesRoute = PublicServicesRouteImport.update({
-  id: '/_public/services',
-  path: '/services',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PublicAboutRoute = PublicAboutRouteImport.update({
-  id: '/_public/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/403': typeof R403Route
   '/login': typeof LoginRoute
-  '/about': typeof PublicAboutRoute
-  '/services': typeof PublicServicesRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
+  '/admin/finance': typeof AdminFinanceRoute
+  '/admin/services': typeof AdminServicesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/staff': typeof AdminStaffRoute
+  '/admin/whatsapp': typeof AdminWhatsappRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/403': typeof R403Route
   '/login': typeof LoginRoute
-  '/about': typeof PublicAboutRoute
-  '/services': typeof PublicServicesRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
+  '/admin/finance': typeof AdminFinanceRoute
+  '/admin/services': typeof AdminServicesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/staff': typeof AdminStaffRoute
+  '/admin/whatsapp': typeof AdminWhatsappRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/403': typeof R403Route
   '/login': typeof LoginRoute
-  '/_public/about': typeof PublicAboutRoute
-  '/_public/services': typeof PublicServicesRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
+  '/admin/finance': typeof AdminFinanceRoute
+  '/admin/services': typeof AdminServicesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/staff': typeof AdminStaffRoute
+  '/admin/whatsapp': typeof AdminWhatsappRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -94,39 +130,50 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/403'
     | '/login'
-    | '/about'
-    | '/services'
     | '/admin/appointments'
     | '/admin/clients'
+    | '/admin/finance'
+    | '/admin/services'
+    | '/admin/settings'
+    | '/admin/staff'
+    | '/admin/whatsapp'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/403'
     | '/login'
-    | '/about'
-    | '/services'
     | '/admin/appointments'
     | '/admin/clients'
+    | '/admin/finance'
+    | '/admin/services'
+    | '/admin/settings'
+    | '/admin/staff'
+    | '/admin/whatsapp'
     | '/admin'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/403'
     | '/login'
-    | '/_public/about'
-    | '/_public/services'
     | '/admin/appointments'
     | '/admin/clients'
+    | '/admin/finance'
+    | '/admin/services'
+    | '/admin/settings'
+    | '/admin/staff'
+    | '/admin/whatsapp'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  R403Route: typeof R403Route
   LoginRoute: typeof LoginRoute
-  PublicAboutRoute: typeof PublicAboutRoute
-  PublicServicesRoute: typeof PublicServicesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -136,6 +183,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/403': {
+      id: '/403'
+      path: '/403'
+      fullPath: '/403'
+      preLoaderRoute: typeof R403RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -159,6 +213,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/whatsapp': {
+      id: '/admin/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/admin/whatsapp'
+      preLoaderRoute: typeof AdminWhatsappRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/staff': {
+      id: '/admin/staff'
+      path: '/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/services': {
+      id: '/admin/services'
+      path: '/services'
+      fullPath: '/admin/services'
+      preLoaderRoute: typeof AdminServicesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/finance': {
+      id: '/admin/finance'
+      path: '/finance'
+      fullPath: '/admin/finance'
+      preLoaderRoute: typeof AdminFinanceRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/clients': {
       id: '/admin/clients'
       path: '/clients'
@@ -173,32 +262,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppointmentsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/_public/services': {
-      id: '/_public/services'
-      path: '/services'
-      fullPath: '/services'
-      preLoaderRoute: typeof PublicServicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_public/about': {
-      id: '/_public/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof PublicAboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 interface AdminRouteRouteChildren {
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminClientsRoute: typeof AdminClientsRoute
+  AdminFinanceRoute: typeof AdminFinanceRoute
+  AdminServicesRoute: typeof AdminServicesRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminStaffRoute: typeof AdminStaffRoute
+  AdminWhatsappRoute: typeof AdminWhatsappRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminClientsRoute: AdminClientsRoute,
+  AdminFinanceRoute: AdminFinanceRoute,
+  AdminServicesRoute: AdminServicesRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminStaffRoute: AdminStaffRoute,
+  AdminWhatsappRoute: AdminWhatsappRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -209,9 +294,8 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
+  R403Route: R403Route,
   LoginRoute: LoginRoute,
-  PublicAboutRoute: PublicAboutRoute,
-  PublicServicesRoute: PublicServicesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

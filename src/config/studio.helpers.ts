@@ -1,5 +1,5 @@
 import { studioConfig } from './studio.config';
-import type { StudioBusinessHours } from './studio.types';
+import type { StudioBusinessHours, WeekDay } from './studio.types';
 
 /**
  * Helpers derivados do studioConfig.
@@ -28,7 +28,7 @@ export function getFormattedPhone(): string {
   return studioConfig.contact.phone;
 }
 
-/** Instagram URL — usa instagramUrl se existir, senão deriva do handle. Retorna null se não houver Instagram. */
+/** Instagram URL — usa instagramUrl se existir, senão deriva do handle. */
 export function getInstagramUrl(): string | null {
   if (studioConfig.contact.instagramUrl) {
     return studioConfig.contact.instagramUrl;
@@ -40,10 +40,20 @@ export function getInstagramUrl(): string | null {
   return `https://www.instagram.com/${handle}`;
 }
 
+/** Facebook URL — só usa o campo explícito do config. */
+export function getFacebookUrl(): string | null {
+  return studioConfig.contact.facebookUrl ?? null;
+}
+
+/** Google Maps URL — usa o mapUrl do config. */
+export function getMapsUrl(): string {
+  return studioConfig.address.mapUrl;
+}
+
 /** Verifica se o studio está aberto agora */
 export function isOpenNow(): boolean {
   const now = new Date();
-  const days: (keyof StudioBusinessHours)[] = [
+  const days: WeekDay[] = [
     'sunday',
     'monday',
     'tuesday',
@@ -53,7 +63,6 @@ export function isOpenNow(): boolean {
     'saturday',
   ];
   const today = days[now.getDay()];
-
   if (!today) return false;
 
   const hours = studioConfig.businessHours[today];
@@ -65,3 +74,26 @@ export function isOpenNow(): boolean {
 
   return current >= openH * 60 + openM && current <= closeH * 60 + closeM;
 }
+
+/** Mapa de nomes de dias em PT-BR — útil pra exibir horários */
+export const weekDayLabels: Record<WeekDay, string> = {
+  monday: 'Segunda',
+  tuesday: 'Terça',
+  wednesday: 'Quarta',
+  thursday: 'Quinta',
+  friday: 'Sexta',
+  saturday: 'Sábado',
+  sunday: 'Domingo',
+};
+
+/** Hash a re-exportação preferida (helpers) — barrel-friendly */
+export const studioHelpers = {
+  whatsappUrl: getWhatsAppUrl(),
+  instagramUrl: getInstagramUrl(),
+  facebookUrl: getFacebookUrl(),
+  fullAddress: getFullAddress(),
+  phoneFormatted: getFormattedPhone(),
+  mapsUrl: getMapsUrl(),
+} as const;
+
+export type { StudioBusinessHours };
