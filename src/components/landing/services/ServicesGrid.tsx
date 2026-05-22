@@ -1,5 +1,5 @@
 import type { ServicesSection } from '@/types/sections';
-import type { PublicServiceItem } from '@/lib/sections/fetchServices.server';
+import type { PublicServiceItem } from '@/lib/sections/types';
 import { ServiceCard } from './_shared/ServiceCard';
 
 type ServicesGridProps = ServicesSection['props'] & {

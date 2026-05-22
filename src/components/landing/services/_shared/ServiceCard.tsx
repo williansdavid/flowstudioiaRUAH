@@ -1,4 +1,4 @@
-﻿import type { PublicServiceItem } from '@/lib/sections/fetchServices.server';
+﻿import type { PublicServiceItem } from '@/lib/sections/types';
 import { formatCurrency, formatDuration } from '@/lib/utils/format';
 
 interface ServiceCardProps {

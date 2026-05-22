@@ -1,12 +1,38 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+.output
+.netlify
+.tanstack
+.vite
+
 # Environment
 .env
 .env.local
 .env.*.local
-
-# Mantém o .example versionado
+.env.production
 !.env.example
-node_modules
-dist
-.vite
-.env
+
+# Supabase local
 .supabase
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.log
+*.tmp

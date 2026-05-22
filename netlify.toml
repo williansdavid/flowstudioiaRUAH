@@ -1,16 +1,6 @@
 [build]
   command = "npm run build"
-  publish = ".output/public"
-
-[functions]
-  node_bundler = "esbuild"
-  directory = ".output/server"
-
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/server"
-  status = 200
-  force = false
+  publish = "dist/client"
 
 [build.environment]
   NODE_VERSION = "20"

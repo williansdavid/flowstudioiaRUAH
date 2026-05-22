@@ -1,0 +1,115 @@
+CHECKPOINT DE DESENVOLVIMENTO
+
+Faça um breakpoint completo do projeto atual.
+
+1. Estado atual do sistema
+
+Liste:
+
+funcionalidades prontas
+funcionalidades em andamento
+funcionalidades pendentes
+erros conhecidos
+decisões técnicas tomadas
+dependências instaladas
+estrutura atual de pastas
+integrações configuradas
+variáveis de ambiente utilizadas
+2. Roadmap técnico
+
+Crie:
+
+roadmap imediato
+roadmap curto prazo
+roadmap médio prazo
+prioridades
+riscos técnicos
+próximos passos recomendados
+3. Contexto para retomada
+
+Explique:
+
+onde paramos
+qual arquivo estava sendo alterado
+qual era o objetivo da alteração
+o que falta finalizar
+cuidados para não quebrar o sistema
+4. Estado da arquitetura
+
+Documente:
+
+frontend
+backend
+banco de dados
+autenticação
+APIs
+deploy
+serviços externos
+5. Tarefas do próximo dia
+
+Crie uma lista objetiva:
+
+ tarefa 1
+ tarefa 2
+ tarefa 3
+6. Prompt de retomada
+
+Gere um prompt pronto para eu colar amanhã contendo:
+
+resumo do projeto
+stack
+objetivo atual
+última tarefa
+próximo passo
+restrições técnicas
+7. Memória persistente sugerida
+
+Liste informações importantes que DEVEM ser salvas na memória persistente da IA para futuras conversas.
+
+Formato:
+
+Projeto:
+Stack:
+Banco:
+APIs:
+Padrões:
+Decisões técnicas:
+Convenções:
+Objetivo principal:
+
+Para memória persistente, você pode pedir diretamente:
+
+“Salve isso na memória persistente”
+
+Exemplo:
+
+Salve na memória persistente:
+
+uso Delphi 11 com FireDAC
+utilizo Supabase nos novos projetos
+prefiro arquitetura SaaS multiempresa
+uso MySQL nos sistemas legados
+trabalho com automação comercial e hospitalar
+
+A IA então consegue lembrar isso nas próximas conversas.
+
+Uma versão mais profissional que equipes usam:
+
+DAILY DEV SNAPSHOT
+
+Gere um snapshot técnico completo do projeto para continuidade futura.
+
+Inclua:
+
+progresso atual
+arquitetura
+arquivos modificados
+decisões técnicas
+bugs pendentes
+roadmap
+tarefas seguintes
+instruções de retomada
+riscos
+dependências
+contexto para outra IA continuar o projeto sem perda de informação.
+gere um README_PROGRESS.md atualizado

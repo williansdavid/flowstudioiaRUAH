@@ -3,7 +3,7 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { SectionsRenderer } from '@/components/landing/SectionsRenderer';
 import { WhatsAppFloatingButton } from '@/components/landing/WhatsAppFloatingButton';
 import { studioConfig } from '@/config/studio.config';
-import { fetchPublicServices } from '@/lib/sections/fetchServices.server';
+import { fetchPublicServices } from '@/lib/sections/fetchServices';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,

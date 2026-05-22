@@ -1,7 +1,7 @@
 import { studioSections } from '@/config/studio.sections';
 import { studioConfig } from '@/config/studio.config';
 import type { Section, StudioSectionsConfig, SectionId } from '@/types/sections';
-import type { PublicServiceItem } from './fetchServices.server';
+import type { PublicServiceItem } from './types';
 
 /**
  * Dados externos (vindos do SSR loader da rota) que precisam
