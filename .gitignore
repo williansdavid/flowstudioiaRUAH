@@ -36,3 +36,18 @@ Thumbs.db
 # Temp
 *.log
 *.tmp
+
+# === Backups e checkpoints locais (FlowStudio AI) ===
+backup-encoding-*/
+backups/
+checkpoints/
+*.bak
+*.bak-*
+*.ascii-bak
+*.backup
+*.old
+*.orig
+
+# === Logs e temporarios ===
+*.log
+*.tmp
