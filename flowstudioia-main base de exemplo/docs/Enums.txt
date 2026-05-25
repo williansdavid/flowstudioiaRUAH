@@ -1,4 +1,0 @@
-Enums:
-app_role: admin | staff | client
-appointment_status: pending | confirmed | completed | cancelled | no_show
-tx_type: income | expense

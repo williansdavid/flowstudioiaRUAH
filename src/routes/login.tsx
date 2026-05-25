@@ -2,10 +2,16 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { login } from '@/lib/auth/login';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { AuthCard } from '@/components/auth/AuthCard';
+import { AuthHeader } from '@/components/auth/AuthHeader';
+import { PasswordInput } from '@/components/auth/PasswordInput';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 
 export const Route = createFileRoute('/login')({
   beforeLoad: ({ context }) => {
-    // Já logado? Vai direto pro admin
     if (context.user) {
       throw redirect({ to: '/admin' });
     }
@@ -19,8 +25,9 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    e.stopPropagation();
     if (loading) return;
 
     setLoading(true);
@@ -43,56 +50,74 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow-sm"
-        noValidate
-      >
-        <h1 className="text-xl font-semibold">Entrar</h1>
+    <AuthLayout>
+      <AuthCard>
+        <AuthHeader
+          title="Entrar"
+          description="Acesse o painel administrativo do seu studio."
+        />
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium">
-            E-mail
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={loading}
-            className="mt-1 w-full rounded border px-3 py-2 outline-none focus:border-neutral-900 disabled:opacity-50"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium">
-            Senha
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={loading}
-            className="mt-1 w-full rounded border px-3 py-2 outline-none focus:border-neutral-900 disabled:opacity-50"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-neutral-900 px-4 py-2 text-white hover:bg-neutral-800 disabled:opacity-50"
+        <form
+          onSubmit={handleSubmit}
+          method="POST"
+          action="?"
+          autoComplete="on"
+          className="space-y-5"
+          noValidate
         >
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
-    </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email" required>
+              E-mail
+            </Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              placeholder="voce@exemplo.com"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" required>
+                Senha
+              </Label>
+                                {/* TODO: Habilitar quando rota /forgot-password for criada (Fase Auth Recovery) */}
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="text-xs text-neutral-400/50 cursor-not-allowed transition-colors"
+                                  title="Em breve"
+                                >
+                                  Esqueci minha senha
+                                </button>
+            </div>
+            <PasswordInput
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              placeholder="••••••••"
+            />
+          </div>
+
+		<Button type="submit" variant="brand" size="lg" loading={loading} className="w-full">
+		  Entrar
+		</Button>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-neutral-500 lg:text-left">
+          Ao continuar, você concorda com os termos de uso do studio.
+        </p>
+      </AuthCard>
+    </AuthLayout>
   );
 }

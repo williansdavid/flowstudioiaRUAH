@@ -11,22 +11,44 @@ import type { AppRole, SessionUser } from './types';
  *  - Filtro de navegação (sidebar)
  *  - Renderização condicional de UI
  *
- * Regra: `admin` herda todas as permissões de `staff`.
+ * Regras importantes:
+ * - `admin` herda permissões de `staff` (matriz explícita, sem herança implícita).
+ * - Permissões com sufixo `.own` indicam ESCOPO DE DADOS, não acesso à tela.
+ *   O filtro "próprios" é aplicado na camada de query (Supabase), não aqui.
  */
 
 export type Permission =
+  // Dashboard
   | 'dashboard.view'
+
+  // Agendamentos
   | 'appointments.view'
   | 'appointments.manage'
+
+  // Clientes
   | 'clients.view'
   | 'clients.manage'
+
+  // Serviços
   | 'services.view'
   | 'services.manage'
-  | 'finance.view'
+
+  // Financeiro
+  | 'finance.view'         // ADM: vê tudo
+  | 'finance.view_own'     // STAFF: vê só comissões próprias
   | 'finance.manage'
+
+  // WhatsApp / IA
   | 'whatsapp.view'
   | 'whatsapp.manage'
+
+  // Equipe (gerenciar membros)
   | 'team.manage'
+
+  // Perfil próprio (STAFF edita o próprio cadastro)
+  | 'profile.edit_own'
+
+  // Configurações do studio
   | 'settings.manage';
 
 /**
@@ -43,19 +65,23 @@ const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     'services.view',
     'services.manage',
     'finance.view',
+    'finance.view_own',
     'finance.manage',
     'whatsapp.view',
     'whatsapp.manage',
     'team.manage',
+    'profile.edit_own',
     'settings.manage',
   ],
   staff: [
     'dashboard.view',
     'appointments.view',
-    'appointments.manage',
+    'appointments.manage', // filtro "próprios" aplicado na query
     'clients.view',
     'clients.manage',
-    'services.view', // staff vê serviços, mas não gerencia
+    'services.view',       // só leitura — UI esconde botões de manage
+    'finance.view_own',    // só comissões próprias
+    'profile.edit_own',    // edita o próprio cadastro de staff
   ],
   client: [
     // Cliente final não acessa /admin (reservado pra área do cliente futura)

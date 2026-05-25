@@ -7,6 +7,11 @@ import {
 import type { QueryClient } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { getSession, type SessionUser } from '@/lib/auth/session';
+import { studioConfig } from '@/config/studio.config';
+import {
+  buildBrandingTokens,
+  brandingTokensToCss,
+} from '@/lib/branding/applyBranding';
 import appCss from '@/styles/globals.css?url';
 
 export interface RouterContext {
@@ -14,15 +19,23 @@ export interface RouterContext {
   user: SessionUser | null;
 }
 
+// Pré-calcula o branding 1x no boot do server (não muda em runtime)
+const brandingCss = brandingTokensToCss(
+  buildBrandingTokens(studioConfig.branding),
+);
+const themeClass = `theme-${studioConfig.branding.theme}`;
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'FlowStudio' },
+      { title: studioConfig.seo.title },
+      { name: 'description', content: studioConfig.seo.description },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', href: studioConfig.branding.faviconUrl },
     ],
   }),
   beforeLoad: async () => {
@@ -41,7 +54,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
       <head>
         <HeadContent />
       </head>
@@ -61,10 +74,10 @@ function RootComponent() {
 
 function RootErrorBoundary({ error }: { error: Error }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
       <head>
         <HeadContent />
-        <title>Erro — FlowStudio</title>
+        <title>{`Erro — ${studioConfig.name}`}</title>
       </head>
       <body>
         <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
@@ -90,10 +103,10 @@ function RootErrorBoundary({ error }: { error: Error }) {
 
 function RootNotFound() {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
       <head>
         <HeadContent />
-        <title>Página não encontrada — FlowStudio</title>
+        <title>{`Página não encontrada — ${studioConfig.name}`}</title>
       </head>
       <body>
         <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
