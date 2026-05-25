@@ -1,8 +1,8 @@
-import type { StudioSectionsConfig } from '@/types/sections';
+﻿import type { StudioSectionsConfig } from '@/types/sections';
 
 /**
  * ============================================
- * Studio Sections - Layout do studio atual
+ * Studio Sections — Layout do studio atual
  * ============================================
  * Define ORDEM, VARIANTE e PREFERÊNCIAS de UI.
  *
@@ -15,7 +15,7 @@ import type { StudioSectionsConfig } from '@/types/sections';
  *   `services`, `about`, `contact` continuam inline na rota /
  *   até serem migrados para o sistema de variantes.
  *   Ao migrar cada seção:
- *     1. Criar componente em src/components/landing/<secao>/
+ *     1. Criar componente em src/components/landing/<seção>/
  *     2. Registrar no variantsMap do SectionsRenderer
  *     3. Marcar enabled: true aqui
  *     4. Remover bloco inline da rota
@@ -50,23 +50,23 @@ export const studioSections: StudioSectionsConfig = {
       },
     },
 
-    services: {
-      id: 'services',
-      enabled: true,
-      variant: 'grid',
-      props: {
-        title: 'Nossos Serviços',
-        description: 'Tradição, técnica e estilo em cada atendimento.',
-        source: 'supabase',
-        columns: 3,
-        showPrice: true,
-        showDuration: true,
-      },
-    },
+services: {
+  id: 'services',
+  enabled: true, // ✅ ativado — ServicesGrid registrado no variantsMap
+  variant: 'grid',
+  props: {
+    title: 'Nossos Serviços',
+    description: 'Tradição, técnica e estilo em cada atendimento.',
+    source: 'supabase',
+    columns: 3,
+    showPrice: true,
+    showDuration: true,
+  },
+},
 
     about: {
       id: 'about',
-      enabled: false,
+      enabled: false, // TODO: ativar após criar AboutTextImage
       variant: 'text-image',
       props: {
         title: '',
@@ -77,7 +77,7 @@ export const studioSections: StudioSectionsConfig = {
 
     contact: {
       id: 'contact',
-      enabled: false,
+      enabled: false, // TODO: ativar após criar ContactFormMap
       variant: 'form-map',
       props: {
         title: 'Fale com a gente',

@@ -19,7 +19,7 @@ export interface RouterContext {
   user: SessionUser | null;
 }
 
-// Pre-calcula o branding 1x no boot do server (nao muda em runtime)
+// Pré-calcula o branding 1x no boot do server (não muda em runtime)
 const brandingCss = brandingTokensToCss(
   buildBrandingTokens(studioConfig.branding),
 );
@@ -77,7 +77,7 @@ function RootErrorBoundary({ error }: { error: Error }) {
     <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
       <head>
         <HeadContent />
-        <title>{`Erro - ${studioConfig.name}`}</title>
+        <title>{`Erro — ${studioConfig.name}`}</title>
       </head>
       <body>
         <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
@@ -86,7 +86,7 @@ function RootErrorBoundary({ error }: { error: Error }) {
               Algo deu errado
             </h1>
             <p className="mt-2 text-sm text-neutral-600">
-              Tente recarregar a pagina. Se o problema persistir, contate o suporte.
+              Tente recarregar a página. Se o problema persistir, contate o suporte.
             </p>
             {import.meta.env.DEV && (
               <pre className="mt-4 overflow-auto rounded bg-neutral-100 p-3 text-xs text-neutral-800">
@@ -106,20 +106,20 @@ function RootNotFound() {
     <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
       <head>
         <HeadContent />
-        <title>{`Pagina nao encontrada - ${studioConfig.name}`}</title>
+        <title>{`Página não encontrada — ${studioConfig.name}`}</title>
       </head>
       <body>
         <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
           <div className="max-w-md text-center">
             <h1 className="text-2xl font-semibold text-neutral-900">404</h1>
             <p className="mt-2 text-sm text-neutral-600">
-              Pagina nao encontrada.
+              Página não encontrada.
             </p>
             <a
               href="/"
               className="mt-4 inline-block rounded bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800"
             >
-              Voltar para o inicio
+              Voltar para o início
             </a>
           </div>
         </div>

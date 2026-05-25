@@ -7,15 +7,16 @@ import type { StudioConfig } from './studio.types';
  * Versionado por studio (deploy isolado).
  * Secrets NAO entram aqui. Use .env + src/lib/env.ts
  *
- * Arquivo em UTF-8 sem BOM.
- * Textos visiveis ao usuario final ficam aqui ate
- * serem migrados para o Supabase (tabela studio_settings).
+ * NOTA: acentos em textos visiveis viraram pelo
+ * Supabase ou por componentes JSX. Mantemos este
+ * arquivo em ASCII puro para evitar problemas de
+ * encoding em qualquer maquina/CI.
  */
 export const studioConfig: StudioConfig = {
   id: 'barbearia-ruah-001',
   slug: 'barbearia-ruah',
   name: 'Barbearia Ruah',
-  slogan: 'Estilo, cuidado e excelência em cada detalhe.',
+  slogan: 'Estilo, cuidado e excelencia em cada detalhe.',
   description:
     'Barbearia premium em Botucatu com agendamento online e atendimento via WhatsApp.',
   category: 'barbershop',
@@ -32,7 +33,7 @@ export const studioConfig: StudioConfig = {
   address: {
     street: 'Rua Campos Salles',
     number: '1227',
-    neighborhood: 'Vila Sônia',
+    neighborhood: 'Vila Sonia',
     city: 'Botucatu',
     state: 'SP',
     zipCode: '18607-750',
@@ -51,7 +52,7 @@ export const studioConfig: StudioConfig = {
   },
 
   hero: {
-    title: 'Viva a experiência Ruah',
+    title: 'Viva a experiencia Ruah',
     subtitle:
       'Muito mais que um corte de cabelo - um momento de cuidado e estilo em ambiente moderno e acolhedor.',
     ctaText: 'Agendar agora',
@@ -62,8 +63,8 @@ export const studioConfig: StudioConfig = {
   about: {
     title: 'Sobre a Ruah',
     paragraphs: [
-      'Localizada no coração de Botucatu, a Barbearia Ruah nasceu com o propósito de elevar o padrão da barbearia tradicional.',
-      'Combinamos técnicas clássicas com as tendências mais modernas do mercado, em um espaço planejado para oferecer conforto, com Wi-Fi, ambiente climatizado e profissionais altamente qualificados.',
+      'Localizada no coracao de Botucatu, a Barbearia Ruah nasceu com o proposito de elevar o padrao da barbearia tradicional.',
+      'Combinamos tecnicas classicas com as tendencias mais modernas do mercado, em um espaco planejado para oferecer conforto, com Wi-Fi, ambiente climatizado e profissionais altamente qualificados.',
     ],
     image:
       'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=900&q=80',
@@ -105,3 +106,4 @@ export const studioConfig: StudioConfig = {
     copyrightText: '(c) 2026 Barbearia Ruah. Todos os direitos reservados.',
   },
 };
+

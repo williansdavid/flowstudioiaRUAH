@@ -1,6 +1,6 @@
 /**
- * Tipos do StudioConfig - fonte unica da identidade do studio.
- * Cada studio (deploy) tera seu proprio studio.config.ts versionado.
+ * Tipos do StudioConfig — fonte única da identidade do studio.
+ * Cada studio (deploy) terá seu próprio studio.config.ts versionado.
  */
 
 export type StudioCategory =
@@ -115,4 +115,3 @@ export interface StudioConfig {
   features: StudioFeatures;
   footer: StudioFooter;
 }
-

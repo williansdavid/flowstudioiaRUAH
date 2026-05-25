@@ -3,14 +3,14 @@ import type { StudioBusinessHours, WeekDay } from './studio.types';
 
 /**
  * Helpers derivados do studioConfig.
- * Centralizam formatacao e transformacoes comuns.
+ * Centralizam formatação/transformações comuns.
  */
 
-/** Endereco formatado em uma linha - pronto pra exibir */
+/** Endereço formatado em uma linha — pronto pra exibir */
 export function getFullAddress(): string {
   const { street, number, neighborhood, city, state, zipCode } =
     studioConfig.address;
-  return `${street}, ${number} - ${neighborhood}, ${city}/${state} - ${zipCode}`;
+  return `${street}, ${number} — ${neighborhood}, ${city}/${state} — ${zipCode}`;
 }
 
 /** URL do WhatsApp pronta para CTA */
@@ -19,7 +19,7 @@ export function getWhatsAppUrl(message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
-/** Telefone formatado para exibicao: +55 (14) 98189-3908 */
+/** Telefone formatado para exibição: +55 (14) 98189-3908 */
 export function getFormattedPhone(): string {
   const phone = studioConfig.contact.phone.replace(/\D/g, '');
   if (phone.length === 13) {
@@ -28,7 +28,7 @@ export function getFormattedPhone(): string {
   return studioConfig.contact.phone;
 }
 
-/** Instagram URL - usa instagramUrl se existir, senao deriva do handle. */
+/** Instagram URL — usa instagramUrl se existir, senão deriva do handle. */
 export function getInstagramUrl(): string | null {
   if (studioConfig.contact.instagramUrl) {
     return studioConfig.contact.instagramUrl;
@@ -40,17 +40,17 @@ export function getInstagramUrl(): string | null {
   return `https://www.instagram.com/${handle}`;
 }
 
-/** Facebook URL - so usa o campo explicito do config. */
+/** Facebook URL — só usa o campo explícito do config. */
 export function getFacebookUrl(): string | null {
   return studioConfig.contact.facebookUrl ?? null;
 }
 
-/** Google Maps URL - usa o mapUrl do config. */
+/** Google Maps URL — usa o mapUrl do config. */
 export function getMapsUrl(): string {
   return studioConfig.address.mapUrl;
 }
 
-/** Verifica se o studio esta aberto agora */
+/** Verifica se o studio está aberto agora */
 export function isOpenNow(): boolean {
   const now = new Date();
   const days: WeekDay[] = [
@@ -75,18 +75,18 @@ export function isOpenNow(): boolean {
   return current >= openH * 60 + openM && current <= closeH * 60 + closeM;
 }
 
-/** Mapa de nomes de dias em PT-BR - util pra exibir horarios */
+/** Mapa de nomes de dias em PT-BR — útil pra exibir horários */
 export const weekDayLabels: Record<WeekDay, string> = {
   monday: 'Segunda',
-  tuesday: 'Terca',
+  tuesday: 'Terça',
   wednesday: 'Quarta',
   thursday: 'Quinta',
   friday: 'Sexta',
-  saturday: 'Sabado',
+  saturday: 'Sábado',
   sunday: 'Domingo',
 };
 
-/** Re-exportacao preferida (helpers) - barrel-friendly */
+/** Hash a re-exportação preferida (helpers) — barrel-friendly */
 export const studioHelpers = {
   whatsappUrl: getWhatsAppUrl(),
   instagramUrl: getInstagramUrl(),
