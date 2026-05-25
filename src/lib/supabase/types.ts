@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -72,6 +72,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -98,9 +105,12 @@ export type Database = {
         Row: {
           birth_date: string | null
           created_at: string
+          email: string | null
+          full_name: string | null
           id: string
           last_visit_at: string | null
           notes: string | null
+          phone: string | null
           preferences: Json | null
           profile_id: string | null
           total_appointments: number
@@ -110,9 +120,12 @@ export type Database = {
         Insert: {
           birth_date?: string | null
           created_at?: string
+          email?: string | null
+          full_name?: string | null
           id?: string
           last_visit_at?: string | null
           notes?: string | null
+          phone?: string | null
           preferences?: Json | null
           profile_id?: string | null
           total_appointments?: number
@@ -122,9 +135,12 @@ export type Database = {
         Update: {
           birth_date?: string | null
           created_at?: string
+          email?: string | null
+          full_name?: string | null
           id?: string
           last_visit_at?: string | null
           notes?: string | null
+          phone?: string | null
           preferences?: Json | null
           profile_id?: string | null
           total_appointments?: number
@@ -254,6 +270,13 @@ export type Database = {
             columns: ["converted_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_view"
             referencedColumns: ["id"]
           },
           {
@@ -392,7 +415,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      clients_view: {
+        Row: {
+          birth_date: string | null
+          created_at: string | null
+          display_email: string | null
+          display_name: string | null
+          display_phone: string | null
+          id: string | null
+          last_visit_at: string | null
+          notes: string | null
+          origin: string | null
+          preferences: Json | null
+          profile_email: string | null
+          profile_full_name: string | null
+          profile_id: string | null
+          profile_phone: string | null
+          raw_email: string | null
+          raw_full_name: string | null
+          raw_phone: string | null
+          total_appointments: number | null
+          total_spent: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       current_user_role: {

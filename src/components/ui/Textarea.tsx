@@ -15,7 +15,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         aria-invalid={error || undefined}
         className={cn(
           'flex w-full rounded-lg border bg-white px-3 py-2 text-sm',
-          'placeholder:text-neutral-400 resize-y min-h-[80px]',
+          'placeholder:text-neutral-500 resize-y min-h-[80px]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
           'disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500',
           error

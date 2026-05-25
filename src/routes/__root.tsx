@@ -12,6 +12,8 @@ import {
   buildBrandingTokens,
   brandingTokensToCss,
 } from '@/lib/branding/applyBranding';
+import { RouteProgressBar } from '@/components/feedback/RouteProgressBar';
+import { NavigationOverlay } from '@/components/feedback/NavigationOverlay';
 import appCss from '@/styles/globals.css?url';
 
 export interface RouterContext {
@@ -54,12 +56,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   return (
-    <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
+    <html
+      lang="pt-BR"
+      className={themeClass}
+      style={{ cssText: brandingCss } as React.CSSProperties}
+    >
       <head>
         <HeadContent />
       </head>
       <body>
-        <Outlet />
+        <RouteProgressBar />
+        <NavigationOverlay>
+          <Outlet />
+        </NavigationOverlay>
         <Toaster
           position="top-right"
           richColors
@@ -74,7 +83,11 @@ function RootComponent() {
 
 function RootErrorBoundary({ error }: { error: Error }) {
   return (
-    <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
+    <html
+      lang="pt-BR"
+      className={themeClass}
+      style={{ cssText: brandingCss } as React.CSSProperties}
+    >
       <head>
         <HeadContent />
         <title>{`Erro - ${studioConfig.name}`}</title>
@@ -103,7 +116,11 @@ function RootErrorBoundary({ error }: { error: Error }) {
 
 function RootNotFound() {
   return (
-    <html lang="pt-BR" className={themeClass} style={{ cssText: brandingCss } as React.CSSProperties}>
+    <html
+      lang="pt-BR"
+      className={themeClass}
+      style={{ cssText: brandingCss } as React.CSSProperties}
+    >
       <head>
         <HeadContent />
         <title>{`Pagina nao encontrada - ${studioConfig.name}`}</title>

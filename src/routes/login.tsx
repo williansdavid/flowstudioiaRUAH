@@ -53,7 +53,7 @@ function LoginPage() {
     <AuthLayout>
       <AuthCard>
         <AuthHeader
-          title="Entrar"
+          title="Em breve"
           description="Acesse o painel administrativo do seu studio."
         />
 
@@ -78,7 +78,7 @@ function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
-              placeholder="voce@exemplo.com"
+              placeholder="••••••••"
             />
           </div>
 

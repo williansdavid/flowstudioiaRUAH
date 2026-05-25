@@ -42,7 +42,6 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/admin/settings', label: 'Configurações', icon: Settings, permission: 'settings.manage' },
 ];
 
-
 /**
  * Extrai iniciais de um nome ou email.
  * Defensivo: lida com null, strings vazias e tsconfig estrito.
@@ -297,7 +296,7 @@ function SidebarContent({
           className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <LogOut className="h-4 w-4" />
-          {loggingOut ? 'Saindo…' : 'Sair'}
+          {loggingOut ? 'Saindo...' : 'Sair'}
         </button>
       </div>
     </>

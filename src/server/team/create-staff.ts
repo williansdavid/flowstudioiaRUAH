@@ -1,11 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import {
-  requireServerPermission,
-  generateTempPassword,
-  mapAuthAdminError,
-} from './_shared';
+import { requireServerPermission } from '@/lib/auth/server-guards';
+import { generateTempPassword, mapAuthAdminError } from './_shared';
+
 
 // --------------------------------------------
 // Schema de entrada

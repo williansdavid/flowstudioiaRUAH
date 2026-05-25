@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import { requireServerPermission } from './_shared';
+import { requireServerPermission } from '@/lib/auth/server-guards';
 
 export type TeamMember = {
   // Profile

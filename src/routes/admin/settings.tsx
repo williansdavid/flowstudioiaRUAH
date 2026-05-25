@@ -10,9 +10,9 @@ export const Route = createFileRoute('/admin/settings')({
 
 function SettingsRouteComponent() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-zinc-900">Configurações</h1>
-      <p className="text-zinc-600 mt-2">
+    <div>
+      <h1 className="text-2xl font-bold text-neutral-900">Configurações</h1>
+      <p className="mt-2 text-sm text-neutral-600">
         Personalize as informações e a identidade do studio.
       </p>
     </div>

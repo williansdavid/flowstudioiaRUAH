@@ -1,23 +1,9 @@
-import { requireSession } from '@/lib/auth/session';
-import { userHasPermission, type Permission } from '@/lib/auth/permissions';
-import type { SessionUser } from '@/lib/auth/types';
-
 /**
- * Garante que a sessão é válida E que o usuário tem a permissão informada.
- * Lança erro 'FORBIDDEN' se faltar permissão, 'UNAUTHORIZED' se sem sessão.
+ * Helpers específicos da feature "team".
  *
- * Uso típico:
- *   const user = await requireServerPermission('team.manage');
+ * Para guards genéricos (requireServerPermission), use:
+ *   import { requireServerPermission } from '@/lib/auth/server-guards';
  */
-export async function requireServerPermission(
-  permission: Permission,
-): Promise<SessionUser> {
-  const user = await requireSession(); // já lança UNAUTHORIZED se null
-  if (!userHasPermission(user, permission)) {
-    throw new Error('FORBIDDEN');
-  }
-  return user;
-}
 
 /**
  * Gera senha temporária forte (12 chars).
@@ -40,7 +26,10 @@ export function mapAuthAdminError(message: string | undefined): string {
   if (!message) return 'Erro desconhecido na criação do usuário';
   const lower = message.toLowerCase();
 
-  if (lower.includes('already registered') || lower.includes('already been registered')) {
+  if (
+    lower.includes('already registered') ||
+    lower.includes('already been registered')
+  ) {
     return 'Este email já está cadastrado';
   }
   if (lower.includes('invalid email')) {

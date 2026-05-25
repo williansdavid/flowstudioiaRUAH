@@ -70,3 +70,29 @@ Use o template:
 - **Quando resolver**: Prazo / sprint
 - **Bloqueia produção?**: Sim / Não
 ```
+### 🟡 [MEDIUM] DEBT-003 — Padronizar nomenclatura feature staff
+- Sintoma: feature chamada `team` mas types/server/banco usam `staff`
+- Solucao: renomear `features/team` → `features/staff` + types/permissao
+- Esforco: 30-45 min
+- Quando: antes de adicionar 2+ devs ou em sprint de polimento
+
+### 🟢 [LOW] DEBT-004 — Limpeza de arquivos legacy
+- `features/staff` vazia (deletar)
+- `routes/admin/route.tsx.backup` (deletar)
+- Esforco: 5 min
+- Quando: qualquer momento
+### 🟡 [MEDIUM] DEBT-003 — Padronizar nomenclatura feature `team` vs `staff`
+- **Sintoma:** feature em `src/features/team/` mas types/server/banco usam `staff`.
+- **Causa:** divergencia historica entre UI ("Equipe") e camada tecnica.
+- **Solucao:** renomear `features/team` -> `features/staff`, types `TeamMember` -> `StaffMember`, permissao `team.manage` -> `staff.manage`. UI continua "Equipe" (label PT-BR).
+- **Esforco:** 30-45 min (refactor mecanico).
+- **Quando:** antes de adicionar 2+ devs OU em sprint de polimento. Nao bloqueia features.
+- **Risco se postergar:** baixo (cosmetico).
+
+### 🟢 [LOW] DEBT-005 — Bundle client acima de 500kB
+- **Sintoma:** `index-*.js` ~566kB (175kB gzip) no build de producao.
+- **Causa:** sem code-splitting agressivo, lazy loading de rotas pesadas pendente.
+- **Solucao:** configurar `build.rollupOptions.output.manualChunks` no Vite + lazy de views futuras (calendario, charts).
+- **Esforco:** 1h.
+- **Quando:** apos calendario de agendamentos ou primeiro modulo financeiro.
+- **Risco se postergar:** baixo no MVP, medio em producao com 3G.

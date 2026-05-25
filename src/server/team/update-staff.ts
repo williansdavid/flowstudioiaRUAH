@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import { requireServerPermission } from './_shared';
+import { requireServerPermission } from '@/lib/auth/server-guards';
 
 const updateStaffSchema = z.object({
   profileId: z.string().uuid(),

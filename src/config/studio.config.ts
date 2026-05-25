@@ -2,13 +2,13 @@ import type { StudioConfig } from './studio.types';
 
 /**
  * ============================================
- * Studio Config - Fonte unica da identidade
+ * Studio Config — Fonte única da identidade
  * ============================================
  * Versionado por studio (deploy isolado).
- * Secrets NAO entram aqui. Use .env + src/lib/env.ts
+ * Secrets NÃO entram aqui. Use .env + src/lib/env.ts
  *
  * Arquivo em UTF-8 sem BOM.
- * Textos visiveis ao usuario final ficam aqui ate
+ * Textos visíveis ao usuário final ficam aqui até
  * serem migrados para o Supabase (tabela studio_settings).
  */
 export const studioConfig: StudioConfig = {
@@ -53,7 +53,7 @@ export const studioConfig: StudioConfig = {
   hero: {
     title: 'Viva a experiência Ruah',
     subtitle:
-      'Muito mais que um corte de cabelo - um momento de cuidado e estilo em ambiente moderno e acolhedor.',
+      'Muito mais que um corte de cabelo — um momento de cuidado e estilo em ambiente moderno e acolhedor.',
     ctaText: 'Agendar agora',
     ctaSecondaryText: 'Falar no WhatsApp',
     backgroundImage: '/hero-bg.jpg',
@@ -102,6 +102,6 @@ export const studioConfig: StudioConfig = {
   },
 
   footer: {
-    copyrightText: '(c) 2026 Barbearia Ruah. Todos os direitos reservados.',
+    copyrightText: '© 2026 Barbearia Ruah. Todos os direitos reservados.',
   },
 };
