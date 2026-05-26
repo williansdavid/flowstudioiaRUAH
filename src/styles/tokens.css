@@ -1,0 +1,17 @@
+﻿/* ============================================
+   FlowStudio AI - ACTIVE THEME SELECTOR
+   ============================================
+   Cada studio escolhe seu tema descomentando
+   APENAS UMA das linhas abaixo antes do build.
+
+   Regra: somente UM @import ativo por vez.
+
+   Para trocar o tema deste deploy:
+   1. Comente a linha atual
+   2. Descomente o tema desejado
+   3. Faca o redeploy no Netlify
+   ============================================ */
+
+ @import './themes/classic.css';
+/* @import './themes/soft.css'; */
+/* @import './themes/premium.css'; */
