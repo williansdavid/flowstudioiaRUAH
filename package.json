@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "node .output/server/index.mjs",
+    "start": "netlify dev",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx",
     "db:types": "supabase gen types typescript --project-id ewexyctlrkvcpnutxygt > src/lib/supabase/types.ts",

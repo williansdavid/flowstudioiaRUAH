@@ -51,3 +51,23 @@ checkpoints/
 # === Logs e temporarios ===
 *.log
 *.tmp
+
+# TanStack Start build cache
+.vinxi
+.output
+
+
+# === Backups locais (nunca versionar) ===
+.backups/
+_backups/
+**/_backup-*/
+
+
+# === Arquivos sensiveis / notas pessoais (NUNCA versionar) ===
+docs/user e senha staf.txt
+
+
+# === Notas pessoais / sensiveis (NUNCA versionar) ===
+docs/link chat.txt
+docs/Novo(a) Documento de Texto.txt
+

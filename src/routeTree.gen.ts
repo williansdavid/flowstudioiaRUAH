@@ -20,6 +20,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminServicesRouteImport } from './routes/admin/services'
 import { Route as AdminFinanceRouteImport } from './routes/admin/finance'
 import { Route as AdminClientsRouteImport } from './routes/admin/clients'
+import { Route as AdminCalendarRouteImport } from './routes/admin/calendar'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin/appointments'
 
 const LoginRoute = LoginRouteImport.update({
@@ -77,6 +78,11 @@ const AdminClientsRoute = AdminClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminCalendarRoute = AdminCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminAppointmentsRoute = AdminAppointmentsRouteImport.update({
   id: '/appointments',
   path: '/appointments',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/403': typeof R403Route
   '/login': typeof LoginRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
+  '/admin/calendar': typeof AdminCalendarRoute
   '/admin/clients': typeof AdminClientsRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/services': typeof AdminServicesRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/403': typeof R403Route
   '/login': typeof LoginRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
+  '/admin/calendar': typeof AdminCalendarRoute
   '/admin/clients': typeof AdminClientsRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/services': typeof AdminServicesRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/403': typeof R403Route
   '/login': typeof LoginRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
+  '/admin/calendar': typeof AdminCalendarRoute
   '/admin/clients': typeof AdminClientsRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/services': typeof AdminServicesRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/403'
     | '/login'
     | '/admin/appointments'
+    | '/admin/calendar'
     | '/admin/clients'
     | '/admin/finance'
     | '/admin/services'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/403'
     | '/login'
     | '/admin/appointments'
+    | '/admin/calendar'
     | '/admin/clients'
     | '/admin/finance'
     | '/admin/services'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/403'
     | '/login'
     | '/admin/appointments'
+    | '/admin/calendar'
     | '/admin/clients'
     | '/admin/finance'
     | '/admin/services'
@@ -255,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClientsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/calendar': {
+      id: '/admin/calendar'
+      path: '/calendar'
+      fullPath: '/admin/calendar'
+      preLoaderRoute: typeof AdminCalendarRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/appointments': {
       id: '/admin/appointments'
       path: '/appointments'
@@ -267,6 +286,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteRouteChildren {
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
+  AdminCalendarRoute: typeof AdminCalendarRoute
   AdminClientsRoute: typeof AdminClientsRoute
   AdminFinanceRoute: typeof AdminFinanceRoute
   AdminServicesRoute: typeof AdminServicesRoute
@@ -278,6 +298,7 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAppointmentsRoute: AdminAppointmentsRoute,
+  AdminCalendarRoute: AdminCalendarRoute,
   AdminClientsRoute: AdminClientsRoute,
   AdminFinanceRoute: AdminFinanceRoute,
   AdminServicesRoute: AdminServicesRoute,
