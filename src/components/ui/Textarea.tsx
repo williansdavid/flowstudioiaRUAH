@@ -1,8 +1,7 @@
-﻿import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, type TextareaHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils/cn';
 
-export interface TextareaProps
-  extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: boolean;
 }
 
@@ -14,13 +13,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         rows={rows}
         aria-invalid={error || undefined}
         className={cn(
-          'flex w-full rounded-lg border bg-white px-3 py-2 text-sm',
-          'placeholder:text-neutral-500 resize-y min-h-[80px]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
-          'disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500',
+          'w-full rounded-md border bg-white px-3 py-2 text-sm text-neutral-900 transition-colors',
+          'placeholder:text-neutral-400',
+          'focus:outline-none focus:ring-2 focus:ring-brand-500/20',
+          'disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400',
+          'resize-y',
           error
-            ? 'border-red-500 focus-visible:ring-red-500'
-            : 'border-neutral-300 focus-visible:ring-neutral-900',
+            ? 'border-feedback-error focus:border-feedback-error focus:ring-feedback-error/20'
+            : 'border-neutral-300 focus:border-brand-500',
           className,
         )}
         {...props}

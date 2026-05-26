@@ -1,5 +1,5 @@
-﻿import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { requirePermission } from "@/lib/auth/session";
 import { Button } from "@/components/ui";
@@ -8,6 +8,7 @@ import { useAppointments } from "@/features/appointments/hooks";
 import { appointmentsListQuery } from "@/features/appointments/queries";
 import { DEFAULT_APPOINTMENT_FILTERS } from "@/features/appointments/types";
 import type { AppointmentFilters } from "@/features/appointments/types";
+import { getDefaultListRange } from "@/lib/date";
 
 import { AppointmentFiltersBar } from "@/features/appointments/components/AppointmentFiltersBar";
 import { AppointmentList } from "@/features/appointments/components/AppointmentList";
@@ -18,14 +19,21 @@ export const Route = createFileRoute("/admin/appointments")({
     requirePermission(context.user, "appointments.view");
   },
   loader: ({ context }) => {
-    // SSR prefetch — popula o cache antes do componente renderizar
-    return context.queryClient.ensureQueryData(appointmentsListQuery());
+    // SSR prefetch — popula o cache com o range default (proximos 30 dias).
+    // O componente reusa o MESMO range pra hidratar sem refetch.
+    return context.queryClient.ensureQueryData(
+      appointmentsListQuery(getDefaultListRange()),
+    );
   },
   component: AppointmentsRouteComponent,
 });
 
 function AppointmentsRouteComponent() {
-  const { data, isLoading, error } = useAppointments();
+  // Range estavel pra bater com o cache do loader (proximos 30 dias).
+  // Calculado UMA UNICA VEZ por mount — evita refetch desnecessario.
+  const range = useMemo(() => getDefaultListRange(), []);
+
+  const { data, isLoading, error } = useAppointments(range);
 
   const [filters, setFilters] = useState<AppointmentFilters>(
     DEFAULT_APPOINTMENT_FILTERS,

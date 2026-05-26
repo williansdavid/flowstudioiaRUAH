@@ -1,0 +1,83 @@
+/* ============================================
+   THEME: CLASSIC (Luxe Gold)
+   Paleta dourada premium, atemporal
+   Sombra: marrom-quente
+   ============================================ */
+
+:root {
+  color-scheme: light;
+
+  /* === SHADOW TINT (RGB sem rgb()) === */
+  --shadow-color: 60 45 20;
+
+  /* === BRAND === */
+  --brand-50:  #fdf8ed;
+  --brand-100: #faedc8;
+  --brand-200: #f5dc93;
+  --brand-300: #efc55e;
+  --brand-400: #e9b139;
+  --brand-500: #c9962b;
+  --brand-600: #a87a22;
+  --brand-700: #835d1c;
+  --brand-800: #5e4214;
+  --brand-900: #3a280c;
+  --brand-fg:  #1a1a1a;
+
+  /* === BACKGROUND HIERARCHY === */
+  --bg-page:     #e8e0cf;
+  --bg-card:     #fdfbf6;
+  --bg-elevated: #ffffff;
+  --bg-subtle:   #f3ecd9;
+  --bg-input:    #fbf7ec;
+  --bg-hover:    #ede4cf;
+
+  /* === GRADIENTE RADIAL DA PÁGINA (suave, premium) === */
+  --bg-gradient:
+    radial-gradient(ellipse 80% 50% at 50% 0%,
+      rgba(201, 150, 43, 0.10) 0%,
+      rgba(201, 150, 43, 0) 60%);
+
+  /* === FOREGROUND HIERARCHY === */
+  --fg-strong:   #1a1a1a;
+  --fg-default:  #2d2d2d;
+  --fg-subtle:   #6b6b6b;
+  --fg-disabled: #a3a3a3;
+
+  /* === BORDERS HIERARCHY === */
+  --border-subtle:  #e5dcc4;
+  --border-default: #d4c9ad;
+  --border-strong:  #b8a87f;
+  --border-focus:   var(--brand-500);
+
+  /* === RING (focus) === */
+  --ring:        rgba(201, 150, 43, 0.25);
+  --ring-strong: rgba(201, 150, 43, 0.45);
+
+  /* === ADMIN SIDEBAR (preto luxo) === */
+  --sidebar-bg:        #1a1a1a;
+  --sidebar-fg:        #faedc8;
+  --sidebar-fg-muted:  #9c8a5a;
+  --sidebar-border:    #2a2a2a;
+  --sidebar-hover:     #2a2a2a;
+  --sidebar-active-bg: rgba(201, 150, 43, 0.15);
+  --sidebar-active-fg: #efc55e;
+
+  /* === STATUS === */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger:  #dc2626;
+  --info:    #2563eb;
+
+  /* === BRAND GLOW (assinatura do tema) === */
+  --shadow-brand: 0 8px 28px -8px rgba(201, 150, 43, 0.55);
+
+  /* === LEGADO (retrocompat) === */
+  --surface:       var(--bg-card);
+  --surface-muted: var(--bg-subtle);
+  --surface-subtle:var(--bg-subtle);
+  --surface-dark:  #1a1a1a;
+  --fg:            var(--fg-default);
+  --fg-muted:      var(--fg-subtle);
+  --border:        var(--border-default);
+  --shadow-gold:   var(--shadow-brand);
+}

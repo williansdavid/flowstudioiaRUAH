@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Pencil, Power, Scissors, SearchX } from 'lucide-react';
 import {
+  Avatar,
   Badge,
   Button,
   ConfirmDialog,
-  EmptyState,
-  Spinner,
+  DataTable,
+  type DataTableColumn,
 } from '@/components/ui';
 import { useToggleServiceActive } from '../hooks';
 import type { AdminServiceItem, ServiceFilters } from '../types';
@@ -25,27 +26,10 @@ export function ServiceList({
   filters,
   onEdit,
 }: ServiceListProps) {
-  const [toggleTarget, setToggleTarget] = useState<AdminServiceItem | null>(
-    null,
-  );
+  const [toggleTarget, setToggleTarget] = useState<AdminServiceItem | null>(null);
   const toggleMutation = useToggleServiceActive();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Spinner size="lg" label="Carregando serviços..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-        Erro ao carregar serviços: {error.message}
-      </div>
-    );
-  }
-
+  // ── Filtragem ──
   const filtered = (services ?? []).filter((s) => {
     if (filters.status === 'active' && !s.isActive) return false;
     if (filters.status === 'inactive' && s.isActive) return false;
@@ -61,25 +45,12 @@ export function ServiceList({
     return true;
   });
 
-  if (filtered.length === 0) {
-    const hasFilters =
-      filters.search.trim() !== '' ||
-      filters.status !== 'all' ||
-      filters.category !== '';
+  const hasFilters =
+    filters.search.trim() !== '' ||
+    filters.status !== 'all' ||
+    filters.category !== '';
 
-    return (
-      <EmptyState
-        icon={hasFilters ? SearchX : Scissors}
-        title={hasFilters ? 'Nenhum resultado' : 'Nenhum serviço cadastrado'}
-        description={
-          hasFilters
-            ? 'Ajuste os filtros para encontrar serviços.'
-            : 'Adicione o primeiro serviço do studio para começar.'
-        }
-      />
-    );
-  }
-
+  // ── Toggle confirm ──
   const handleToggleConfirm = async () => {
     if (!toggleTarget) return;
     await toggleMutation.mutateAsync({
@@ -89,145 +60,106 @@ export function ServiceList({
     setToggleTarget(null);
   };
 
+  // ── Colunas da tabela ──
+  const columns: DataTableColumn<AdminServiceItem>[] = [
+    {
+      key: 'service',
+      header: 'Serviço',
+      cell: (s) => (
+        <div className="flex items-center gap-3">
+          <Avatar
+            src={s.imageUrl}
+            fallbackIcon={Scissors}
+            shape="square"
+            size="md"
+          />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-text-strong">{s.name}</p>
+            {s.description && (
+              <p className="truncate text-xs text-text-subtle">{s.description}</p>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Categoria',
+      cell: (s) => <span className="text-text">{s.category ?? '—'}</span>,
+    },
+    {
+      key: 'duration',
+      header: 'Duração',
+      cell: (s) => <span className="text-text">{formatDuration(s.durationMinutes)}</span>,
+    },
+    {
+      key: 'price',
+      header: 'Preço',
+      cell: (s) => (
+        <span className="font-medium text-text-strong">{formatPrice(s.price)}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (s) => <StatusBadge active={s.isActive} />,
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      cell: (s) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Editar serviço"
+            onClick={() => onEdit(s)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={s.isActive ? 'Desativar serviço' : 'Reativar serviço'}
+            onClick={() => setToggleTarget(s)}
+          >
+            <Power
+              className={`h-4 w-4 ${
+                s.isActive ? 'text-text-subtle' : 'text-feedback-success'
+              }`}
+            />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <>
-      {/* ── Desktop: tabela ── */}
-      <div className="hidden md:block">
-        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50">
-              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                <th className="px-4 py-3">Serviço</th>
-                <th className="px-4 py-3">Categoria</th>
-                <th className="px-4 py-3">Duração</th>
-                <th className="px-4 py-3">Preço</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {filtered.map((s) => (
-                <tr
-                  key={s.id}
-                  className="hover:bg-neutral-50"
-                  data-inactive={!s.isActive}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <ServiceThumb service={s} />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-neutral-900">
-                          {s.name}
-                        </p>
-                        {s.description && (
-                          <p className="truncate text-xs text-neutral-500">
-                            {s.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-700">
-                    {s.category ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-700">
-                    {formatDuration(s.durationMinutes)}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-900 font-medium">
-                    {formatPrice(s.price)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge active={s.isActive} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Editar serviço"
-                        onClick={() => onEdit(s)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={
-                          s.isActive ? 'Desativar serviço' : 'Reativar serviço'
-                        }
-                        onClick={() => setToggleTarget(s)}
-                      >
-                        <Power
-                          className={`h-4 w-4 ${
-                            s.isActive ? 'text-neutral-600' : 'text-green-600'
-                          }`}
-                        />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ── Mobile: cards ── */}
-      <div className="grid gap-3 md:hidden">
-        {filtered.map((s) => (
-          <div
-            key={s.id}
-            className="rounded-lg border border-neutral-200 bg-white p-4"
-          >
-            <div className="flex items-start gap-3">
-              <ServiceThumb service={s} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-neutral-900">
-                  {s.name}
-                </p>
-                {s.description && (
-                  <p className="line-clamp-2 text-xs text-neutral-500">
-                    {s.description}
-                  </p>
-                )}
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {s.category && (
-                    <Badge variant="muted">{s.category}</Badge>
-                  )}
-                  <StatusBadge active={s.isActive} />
-                </div>
-                <div className="mt-2 flex items-center gap-3 text-xs text-neutral-600">
-                  <span>{formatDuration(s.durationMinutes)}</span>
-                  <span className="font-medium text-neutral-900">
-                    {formatPrice(s.price)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 flex justify-end gap-2 border-t border-neutral-100 pt-3">
-              <Button variant="ghost" size="sm" onClick={() => onEdit(s)}>
-                <Pencil className="h-4 w-4" />
-                Editar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setToggleTarget(s)}
-              >
-                <Power className="h-4 w-4" />
-                {s.isActive ? 'Desativar' : 'Reativar'}
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <DataTable
+        data={filtered}
+        columns={columns}
+        isLoading={isLoading}
+        error={error}
+        rowKey={(s) => s.id}
+        isRowInactive={(s) => !s.isActive}
+        loadingLabel="Carregando serviços..."
+        errorLabel="Erro ao carregar serviços"
+        emptyState={{
+          icon: hasFilters ? SearchX : Scissors,
+          title: hasFilters ? 'Nenhum resultado' : 'Nenhum serviço cadastrado',
+          description: hasFilters
+            ? 'Ajuste os filtros para encontrar serviços.'
+            : 'Adicione o primeiro serviço do studio para começar.',
+        }}
+        mobileCard={(s) => <ServiceMobileCard service={s} onEdit={onEdit} onToggle={setToggleTarget} />}
+      />
 
       <ConfirmDialog
         open={toggleTarget !== null}
         onOpenChange={(open) => !open && setToggleTarget(null)}
-        title={
-          toggleTarget?.isActive ? 'Desativar serviço?' : 'Reativar serviço?'
-        }
+        title={toggleTarget?.isActive ? 'Desativar serviço?' : 'Reativar serviço?'}
         description={
           toggleTarget?.isActive
             ? `"${toggleTarget?.name}" não aparecerá mais na landing nem em novos agendamentos. Os dados são preservados.`
@@ -243,25 +175,57 @@ export function ServiceList({
 }
 
 // ─────────────────────────────────────────────
-// Sub-componentes locais
+// Card mobile (sub-componente)
 // ─────────────────────────────────────────────
 
-function ServiceThumb({ service }: { service: AdminServiceItem }) {
-  if (service.imageUrl) {
-    return (
-      <img
-        src={service.imageUrl}
-        alt=""
-        className="h-10 w-10 flex-shrink-0 rounded-md object-cover"
-      />
-    );
-  }
+interface ServiceMobileCardProps {
+  service: AdminServiceItem;
+  onEdit: (s: AdminServiceItem) => void;
+  onToggle: (s: AdminServiceItem) => void;
+}
+
+function ServiceMobileCard({ service: s, onEdit, onToggle }: ServiceMobileCardProps) {
   return (
-    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-500">
-      <Scissors className="h-4 w-4" />
+    <div
+      data-inactive={!s.isActive || undefined}
+      className={`rounded-lg border border-border-subtle bg-bg-card p-4 shadow-raised ${
+        !s.isActive ? 'opacity-60' : ''
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <Avatar src={s.imageUrl} fallbackIcon={Scissors} shape="square" size="md" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-text-strong">{s.name}</p>
+          {s.description && (
+            <p className="line-clamp-2 text-xs text-text-subtle">{s.description}</p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {s.category && <Badge variant="muted">{s.category}</Badge>}
+            <StatusBadge active={s.isActive} />
+          </div>
+          <div className="mt-2 flex items-center gap-3 text-xs text-text-subtle">
+            <span>{formatDuration(s.durationMinutes)}</span>
+            <span className="font-medium text-text-strong">{formatPrice(s.price)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 flex justify-end gap-2 border-t border-border-subtle pt-3">
+        <Button variant="ghost" size="sm" onClick={() => onEdit(s)}>
+          <Pencil className="h-4 w-4" />
+          Editar
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => onToggle(s)}>
+          <Power className="h-4 w-4" />
+          {s.isActive ? 'Desativar' : 'Reativar'}
+        </Button>
+      </div>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────
+// Sub-componentes locais
+// ─────────────────────────────────────────────
 
 function StatusBadge({ active }: { active: boolean }) {
   return active ? (
@@ -272,7 +236,7 @@ function StatusBadge({ active }: { active: boolean }) {
 }
 
 // ─────────────────────────────────────────────
-// Helpers de formatação (locais)
+// Helpers de formatação
 // ─────────────────────────────────────────────
 
 function formatPrice(value: number): string {

@@ -1,0 +1,83 @@
+/* ============================================
+   THEME: SOFT (Rose Nude)
+   Paleta quente, acolhedora, feminina
+   Sombra: rosê amadeirado
+   ============================================ */
+
+:root {
+  color-scheme: light;
+
+  /* === SHADOW TINT === */
+  --shadow-color: 80 35 25;
+
+  /* === BRAND === */
+  --brand-50:  #fdf5f3;
+  --brand-100: #fbe7e2;
+  --brand-200: #f6cabf;
+  --brand-300: #efa896;
+  --brand-400: #e5806a;
+  --brand-500: #d35f47;
+  --brand-600: #b54a35;
+  --brand-700: #903a2a;
+  --brand-800: #6a2b1f;
+  --brand-900: #441c14;
+  --brand-fg:  #ffffff;
+
+  /* === BACKGROUND HIERARCHY === */
+  --bg-page:     #f5e6e0;
+  --bg-card:     #fdfaf9;
+  --bg-elevated: #ffffff;
+  --bg-subtle:   #fbf0ec;
+  --bg-input:    #fdf7f5;
+  --bg-hover:    #f5e0d9;
+
+  /* === GRADIENTE RADIAL === */
+  --bg-gradient:
+    radial-gradient(ellipse 80% 50% at 50% 0%,
+      rgba(211, 95, 71, 0.10) 0%,
+      rgba(211, 95, 71, 0) 60%);
+
+  /* === FOREGROUND HIERARCHY === */
+  --fg-strong:   #2a1f1d;
+  --fg-default:  #3a2a27;
+  --fg-subtle:   #7a6b68;
+  --fg-disabled: #b8a8a4;
+
+  /* === BORDERS HIERARCHY === */
+  --border-subtle:  #f0e2dc;
+  --border-default: #e0cdc5;
+  --border-strong:  #c9b0a6;
+  --border-focus:   var(--brand-500);
+
+  /* === RING === */
+  --ring:        rgba(211, 95, 71, 0.22);
+  --ring-strong: rgba(211, 95, 71, 0.42);
+
+  /* === ADMIN SIDEBAR === */
+  --sidebar-bg:        #3a2520;
+  --sidebar-fg:        #f6cabf;
+  --sidebar-fg-muted:  #b89a92;
+  --sidebar-border:    #4a312a;
+  --sidebar-hover:     #4a312a;
+  --sidebar-active-bg: rgba(211, 95, 71, 0.18);
+  --sidebar-active-fg: #efa896;
+
+  /* === STATUS === */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger:  #dc2626;
+  --info:    #2563eb;
+
+  /* === BRAND GLOW === */
+  --shadow-brand: 0 8px 28px -8px rgba(211, 95, 71, 0.50);
+
+  /* === LEGADO === */
+  --surface:        var(--bg-card);
+  --surface-muted:  var(--bg-subtle);
+  --surface-subtle: var(--bg-subtle);
+  --surface-dark:   #2a1f1d;
+  --fg:             var(--fg-default);
+  --fg-muted:       var(--fg-subtle);
+  --border:         var(--border-default);
+  --shadow-gold:    var(--shadow-brand);
+}

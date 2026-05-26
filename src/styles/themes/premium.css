@@ -1,0 +1,83 @@
+/* ============================================
+   THEME: PREMIUM (Dark Platinum)
+   Paleta dark luxo, sofisticada
+   Sombra: preto profundo com leve azul
+   ============================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* === SHADOW TINT === */
+  --shadow-color: 5 8 15;
+
+  /* === BRAND === */
+  --brand-50:  #f4f6f8;
+  --brand-100: #e3e8ed;
+  --brand-200: #c5cfd9;
+  --brand-300: #9eadbd;
+  --brand-400: #7587a0;
+  --brand-500: #556a85;
+  --brand-600: #42536a;
+  --brand-700: #344155;
+  --brand-800: #232c3b;
+  --brand-900: #141a24;
+  --brand-fg:  #ffffff;
+
+  /* === BACKGROUND HIERARCHY === */
+  --bg-page:     #0d1016;
+  --bg-card:     #181b22;
+  --bg-elevated: #20242d;
+  --bg-subtle:   #14171e;
+  --bg-input:    #1c2028;
+  --bg-hover:    #232733;
+
+  /* === GRADIENTE RADIAL (glow azulado discreto no topo) === */
+  --bg-gradient:
+    radial-gradient(ellipse 80% 50% at 50% 0%,
+      rgba(158, 173, 189, 0.08) 0%,
+      rgba(158, 173, 189, 0) 60%);
+
+  /* === FOREGROUND HIERARCHY === */
+  --fg-strong:   #f5f6f7;
+  --fg-default:  #d8dde5;
+  --fg-subtle:   #9aa3b2;
+  --fg-disabled: #5a6273;
+
+  /* === BORDERS HIERARCHY === */
+  --border-subtle:  #232733;
+  --border-default: #2a2f3a;
+  --border-strong:  #3a4150;
+  --border-focus:   var(--brand-300);
+
+  /* === RING === */
+  --ring:        rgba(158, 173, 189, 0.25);
+  --ring-strong: rgba(158, 173, 189, 0.45);
+
+  /* === ADMIN SIDEBAR === */
+  --sidebar-bg:        #0a0d12;
+  --sidebar-fg:        #c5cfd9;
+  --sidebar-fg-muted:  #6b7689;
+  --sidebar-border:    #1c2028;
+  --sidebar-hover:     #1c2028;
+  --sidebar-active-bg: rgba(158, 173, 189, 0.12);
+  --sidebar-active-fg: #c5cfd9;
+
+  /* === STATUS === */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+  --info:    #3b82f6;
+
+  /* === BRAND GLOW === */
+  --shadow-brand: 0 8px 32px -8px rgba(158, 173, 189, 0.40);
+
+  /* === LEGADO === */
+  --surface:        var(--bg-card);
+  --surface-muted:  var(--bg-elevated);
+  --surface-subtle: var(--bg-subtle);
+  --surface-dark:   #0a0d12;
+  --fg:             var(--fg-default);
+  --fg-muted:       var(--fg-subtle);
+  --border:         var(--border-default);
+  --shadow-gold:    var(--shadow-brand);
+}

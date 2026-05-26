@@ -1,0 +1,135 @@
+/* ============================================
+   FlowStudio AI — TEMA LUXURY (RUAH)
+   ============================================
+   Inspiração: concreto grafite + dourado escovado.
+   Paleta OKLCH para garantir percepção uniforme.
+   ============================================ */
+
+:root {
+  /* ============================================
+     BRAND — DOURADO RUAH
+     ============================================ */
+  --brand-50:  oklch(0.96 0.03 85);
+  --brand-100: oklch(0.92 0.05 84);
+  --brand-200: oklch(0.86 0.08 83);
+  --brand-300: oklch(0.80 0.10 82);
+  --brand-400: oklch(0.76 0.12 81);
+  --brand-500: oklch(0.72 0.12 80);   /* dourado principal */
+  --brand-600: oklch(0.62 0.11 75);   /* dourado envelhecido */
+  --brand-700: oklch(0.52 0.09 72);
+  --brand-800: oklch(0.42 0.07 70);
+  --brand-900: oklch(0.32 0.05 68);
+  --brand-fg:  oklch(0.15 0.005 60);  /* texto sobre dourado */
+
+  /* ============================================
+     PÁGINA — cinza cimento uniforme
+     Fonte única de verdade. Landing e Admin
+     compartilham a mesma base visual.
+     ============================================ */
+  --bg-page: oklch(0.40 0.012 200);
+
+  --bg-gradient:
+    linear-gradient(
+      to bottom,
+      oklch(0.44 0.013 200) 0%,    /* topo: cimento iluminado (sutil) */
+      oklch(0.40 0.012 200) 50%,   /* corpo: cinza cimento base */
+      oklch(0.38 0.011 200) 100%   /* base: leve profundidade (sem afundar) */
+    );
+
+  /* ============================================
+     BACKGROUNDS HIERÁRQUICOS
+     Cards em marrom envelhecido (quente),
+     destacando-se do fundo grafite frio.
+     ============================================ */
+  --bg-card:     oklch(0.26 0.018 55);          /* marrom envelhecido suave */
+  --bg-elevated: oklch(0.30 0.022 55);          /* modal/dropdown — marrom + luz */
+  --bg-subtle:   oklch(0.23 0.014 55);          /* header de tabela */
+  --bg-input:    oklch(0.20 0.010 55);          /* input afundado */
+  --bg-hover:    oklch(0.72 0.12 80 / 0.06);    /* hover dourado translúcido */
+
+  /* ============================================
+     TEXTO HIERÁRQUICO
+     ============================================ */
+  --fg-strong:   oklch(0.96 0.01 80);   /* títulos */
+  --fg-default:  oklch(0.88 0.01 75);   /* corpo */
+  --fg-subtle:   oklch(0.65 0.015 70);  /* descrição */
+  --fg-disabled: oklch(0.45 0.01 65);
+
+  /* ============================================
+     BORDAS HIERÁRQUICAS
+     ============================================ */
+  --border-subtle:  oklch(0.30 0.008 60 / 0.5);  /* divisor de linha tabela */
+  --border-default: oklch(0.30 0.008 60);        /* bordas padrão */
+  --border-strong:  oklch(0.38 0.010 60);        /* bordas destacadas */
+  --border-focus:   oklch(0.72 0.12 80 / 0.45);  /* foco dourado */
+
+  /* ============================================
+     LEGADO (retrocompat)
+     ============================================ */
+  --surface:        var(--bg-card);
+  --surface-muted:  var(--bg-subtle);
+  --surface-subtle: var(--bg-subtle);
+  --surface-dark:   var(--bg-page);
+  --fg:             var(--fg-default);
+  --fg-muted:       var(--fg-subtle);
+  --border:         var(--border-default);
+
+  /* ============================================
+     SIDEBAR (admin)
+     ============================================ */
+  --sidebar-bg:        oklch(0.18 0.005 60);
+  --sidebar-fg:        oklch(0.88 0.01 75);
+  --sidebar-fg-muted:  oklch(0.60 0.012 65);
+  --sidebar-border:    oklch(0.28 0.008 60 / 0.4);
+  --sidebar-hover:     oklch(0.72 0.12 80 / 0.06);
+  --sidebar-active-bg: oklch(0.72 0.12 80 / 0.10);
+  --sidebar-active-fg: oklch(0.85 0.10 82);
+
+  /* ============================================
+     FEEDBACK (translúcidos pro tema dark)
+     ============================================ */
+  --success: oklch(0.72 0.13 145);
+  --danger:  oklch(0.65 0.18 25);
+  --warning: oklch(0.78 0.14 80);
+  --info:    oklch(0.70 0.10 230);
+
+  /* ============================================
+     RING / FOCUS
+     ============================================ */
+  --ring:        oklch(0.72 0.12 80 / 0.45);
+  --ring-strong: oklch(0.72 0.12 80 / 0.70);
+
+  /* ============================================
+     SHADOWS ESPECIAIS
+     ============================================ */
+  /* tinge a sombra com o dourado (override do default em tokens.css) */
+  --shadow-color: 200 160 80;
+
+  /* sombra dourada para CTAs primários */
+  --shadow-gold:
+    0 8px 24px -8px oklch(0.72 0.12 80 / 0.50),
+    0 2px 6px  -2px oklch(0.72 0.12 80 / 0.30);
+
+  --shadow-brand: var(--shadow-gold);
+
+  /* ============================================
+     SUPERFÍCIE METAL ESCOVADO
+     (inset highlight no topo dos cards)
+     ============================================ */
+  --metal-highlight: inset 0 1px 0 oklch(1 0 0 / 0.04);
+  --metal-deep:      inset 0 -1px 0 oklch(0 0 0 / 0.25);
+
+  /* ============================================
+     STATUS (override pro tema dark)
+     ============================================ */
+  --status-pending-bg:   oklch(0.78 0.14 80 / 0.15);
+  --status-pending-fg:   oklch(0.85 0.12 82);
+  --status-confirmed-bg: oklch(0.70 0.10 230 / 0.15);
+  --status-confirmed-fg: oklch(0.82 0.08 230);
+  --status-completed-bg: oklch(0.72 0.13 145 / 0.15);
+  --status-completed-fg: oklch(0.82 0.11 145);
+  --status-cancelled-bg: oklch(0.65 0.18 25 / 0.15);
+  --status-cancelled-fg: oklch(0.78 0.14 25);
+  --status-no-show-bg:   oklch(0.45 0.01 65 / 0.20);
+  --status-no-show-fg:   oklch(0.70 0.01 65);
+}

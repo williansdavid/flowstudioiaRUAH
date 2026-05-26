@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router';
 import {
   Calendar,
+  CalendarDays,
   Users,
   Scissors,
   DollarSign,
@@ -13,6 +14,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { studioConfig } from '@/config/studio.config';
 import type { SessionUser } from '@/lib/auth/types';
@@ -34,6 +36,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { to: '/admin/appointments', label: 'Agendamentos', icon: Calendar, permission: 'appointments.view' },
+  { to: '/admin/calendar', label: 'Calendário', icon: CalendarDays, permission: 'appointments.view' },
   { to: '/admin/clients', label: 'Clientes', icon: Users, permission: 'clients.view' },
   { to: '/admin/services', label: 'Serviços', icon: Scissors, permission: 'services.view' },
   { to: '/admin/staff', label: 'Equipe', icon: UserCog, permission: 'team.manage' },
@@ -42,34 +45,20 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/admin/settings', label: 'Configurações', icon: Settings, permission: 'settings.manage' },
 ];
 
-/**
- * Extrai iniciais de um nome ou email.
- * Defensivo: lida com null, strings vazias e tsconfig estrito.
- */
 function getInitials(fullName: string | null, email: string | null): string {
   const source = (fullName?.trim() || email?.trim() || '').trim();
   if (!source) return '?';
-
   const parts = source.split(/[\s@.]+/).filter(Boolean);
   if (parts.length === 0) return '?';
-
   const first = parts[0];
   if (!first) return '?';
-
-  if (parts.length === 1) {
-    return first.slice(0, 2).toUpperCase() || '?';
-  }
-
+  if (parts.length === 1) return first.slice(0, 2).toUpperCase() || '?';
   const last = parts[parts.length - 1];
   const firstChar = first[0] ?? '';
   const lastChar = last?.[0] ?? '';
-  const initials = (firstChar + lastChar).toUpperCase();
-  return initials || '?';
+  return (firstChar + lastChar).toUpperCase() || '?';
 }
 
-/**
- * Label legível do usuário (nome > email > fallback).
- */
 function getUserLabel(user: SessionUser): string {
   return user.fullName?.trim() || user.email?.trim() || 'Usuário';
 }
@@ -84,7 +73,6 @@ export function AdminLayout({ user }: AdminLayoutProps) {
     userHasPermission(user, item.permission),
   );
 
-  // Fecha drawer ao pressionar ESC
   useEffect(() => {
     if (!drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -94,7 +82,6 @@ export function AdminLayout({ user }: AdminLayoutProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [drawerOpen]);
 
-  // Bloqueia scroll do body quando drawer está aberto
   useEffect(() => {
     if (drawerOpen) {
       document.body.style.overflow = 'hidden';
@@ -125,9 +112,9 @@ export function AdminLayout({ user }: AdminLayoutProps) {
   const userLabel = getUserLabel(user);
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
+    <div className="flex min-h-screen bg-bg-page text-text-default">
       {/* === SIDEBAR DESKTOP === */}
-      <aside className="hidden w-64 flex-col border-r bg-white md:flex">
+      <aside className="hidden w-60 flex-col border-r border-border-subtle bg-sidebar md:flex">
         <SidebarContent
           user={user}
           userLabel={userLabel}
@@ -143,12 +130,12 @@ export function AdminLayout({ user }: AdminLayoutProps) {
       {drawerOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
             onClick={() => setDrawerOpen(false)}
             aria-hidden="true"
           />
           <aside
-            className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-white md:hidden"
+            className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-border-subtle bg-sidebar md:hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Menu de navegação"
@@ -170,12 +157,12 @@ export function AdminLayout({ user }: AdminLayoutProps) {
 
       {/* === ÁREA PRINCIPAL === */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header mobile com hamburger */}
-        <header className="flex items-center justify-between border-b bg-white px-4 py-3 md:hidden">
+        {/* Header mobile */}
+        <header className="flex items-center justify-between border-b border-border-subtle bg-bg-card px-4 py-3 md:hidden">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="rounded-lg p-2 hover:bg-neutral-100"
+            className="rounded-md p-2 text-text-subtle transition-colors hover:bg-brand-500/[0.08] hover:text-brand-400"
             aria-label="Abrir menu"
           >
             <Menu className="h-5 w-5" />
@@ -186,7 +173,7 @@ export function AdminLayout({ user }: AdminLayoutProps) {
             className="h-7"
           />
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-xs font-medium text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/[0.12] text-xs font-semibold text-brand-400 ring-1 ring-brand-500/30"
             aria-label={userLabel}
           >
             {initials}
@@ -204,8 +191,7 @@ export function AdminLayout({ user }: AdminLayoutProps) {
 }
 
 // ============================================
-// Subcomponente: conteúdo da sidebar
-// (reutilizado em desktop e mobile)
+// Sidebar content (desktop + mobile drawer)
 // ============================================
 interface SidebarContentProps {
   user: SessionUser;
@@ -232,17 +218,18 @@ function SidebarContent({
 }: SidebarContentProps) {
   return (
     <>
-      <div className="flex items-center justify-between border-b px-6 py-4">
+      {/* Logo header */}
+      <div className="flex items-center justify-between border-b border-sidebar-border px-6 py-5">
         <img
           src={studioConfig.branding.logoUrl}
           alt={studioConfig.name}
-          className="h-8"
+          className="h-8 w-auto"
         />
         {showClose && (
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 hover:bg-neutral-100"
+            className="rounded-md p-1 text-sidebar-fg-muted transition-colors hover:bg-brand-500/[0.08] hover:text-brand-400"
             aria-label="Fechar menu"
           >
             <X className="h-5 w-5" />
@@ -250,8 +237,9 @@ function SidebarContent({
         )}
       </div>
 
+      {/* Navigation */}
       <nav
-        className="flex-1 space-y-1 overflow-y-auto p-4"
+        className="flex-1 space-y-1 overflow-y-auto px-3 py-4"
         aria-label="Navegação administrativa"
       >
         {visibleNavItems.map(({ to, label, icon: Icon }) => (
@@ -259,9 +247,22 @@ function SidebarContent({
             key={to}
             to={to}
             onClick={onNavigate}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100"
+            className={[
+              'group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium',
+              'text-sidebar-fg-muted',
+              'transition-all duration-150',
+              'hover:bg-brand-500/[0.05] hover:text-sidebar-fg',
+            ].join(' ')}
             activeProps={{
-              className: 'bg-neutral-900 text-white hover:bg-neutral-900',
+              className: [
+                '!bg-brand-500/[0.08]',
+                '!text-brand-400',
+                'before:absolute before:left-0 before:top-1/2',
+                'before:h-6 before:w-[3px]',
+                'before:-translate-y-1/2 before:rounded-r-sm',
+                'before:bg-brand-500',
+                'before:shadow-[0_0_8px_oklch(0.72_0.12_80/.5)]',
+              ].join(' '),
             }}
             activeOptions={{ exact: to === '/admin' }}
           >
@@ -271,19 +272,20 @@ function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t p-4">
+      {/* User footer */}
+      <div className="border-t border-sidebar-border px-4 py-4">
         <div className="mb-3 flex items-center gap-3">
           <div
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-medium text-white"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-brand-500/[0.12] text-xs font-semibold text-brand-400 ring-1 ring-brand-500/30"
             aria-hidden="true"
           >
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium text-neutral-900">
+            <div className="truncate text-sm font-medium text-sidebar-fg">
               {userLabel}
             </div>
-            <div className="truncate text-xs uppercase text-neutral-500">
+            <div className="truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-400/80">
               {getRoleLabel(user.role)}
             </div>
           </div>
@@ -293,7 +295,14 @@ function SidebarContent({
           type="button"
           onClick={onLogout}
           disabled={loggingOut}
-          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className={[
+            'flex w-full items-center justify-center gap-2 rounded-md',
+            'border border-sidebar-border bg-transparent',
+            'px-3 py-2 text-sm font-medium text-sidebar-fg-muted',
+            'transition-all duration-150',
+            'hover:border-brand-500/40 hover:bg-brand-500/[0.05] hover:text-brand-400',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+          ].join(' ')}
         >
           <LogOut className="h-4 w-4" />
           {loggingOut ? 'Saindo...' : 'Sair'}

@@ -1,7 +1,15 @@
-﻿import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils/cn';
 
-type ButtonVariant = 'primary' | 'brand' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type ButtonVariant =
+  | 'primary'     // dourado (brand) — CTA principal com gradiente
+  | 'secondary'   // grafite quente
+  | 'outline'     // borda + fundo card
+  | 'ghost'       // sem fundo, hover dourado translúcido
+  | 'destructive' // vermelho (ação destrutiva)
+  | 'danger'      // @alias de 'destructive' (compat)
+  | 'brand';      // @deprecated alias para 'primary'
+
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,19 +18,57 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+/**
+ * Gradiente dourado RURH — usado em primary/brand.
+ * Top mais claro, bottom mais envelhecido → efeito metal escovado.
+ */
+const GOLD_GRADIENT =
+  'bg-[linear-gradient(180deg,oklch(0.78_0.13_82)_0%,oklch(0.62_0.11_75)_100%)]';
+
+const GOLD_GRADIENT_HOVER =
+  'hover:bg-[linear-gradient(180deg,oklch(0.82_0.13_82)_0%,oklch(0.66_0.11_75)_100%)]';
+
+const GOLD_GRADIENT_ACTIVE =
+  'active:bg-[linear-gradient(180deg,oklch(0.70_0.12_80)_0%,oklch(0.56_0.10_72)_100%)]';
+
 const variantStyles: Record<ButtonVariant, string> = {
-  primary:
-    'bg-neutral-900 text-white hover:bg-neutral-800 active:bg-neutral-950 disabled:bg-neutral-300',
-  brand:
-    'bg-[var(--brand-primary)] text-[var(--brand-fg)] hover:opacity-90 active:opacity-80 disabled:opacity-50',
+  primary: cn(
+    GOLD_GRADIENT,
+    GOLD_GRADIENT_HOVER,
+    GOLD_GRADIENT_ACTIVE,
+    'text-brand-fg',
+    'shadow-[0_8px_24px_-8px_oklch(0.72_0.12_80/.5),inset_0_1px_0_oklch(1_0_0/.18)]',
+    'hover:shadow-[0_10px_28px_-8px_oklch(0.72_0.12_80/.6),inset_0_1px_0_oklch(1_0_0/.22)]',
+    'disabled:opacity-50 disabled:shadow-none',
+  ),
+  brand: cn(
+    GOLD_GRADIENT,
+    GOLD_GRADIENT_HOVER,
+    GOLD_GRADIENT_ACTIVE,
+    'text-brand-fg',
+    'shadow-[0_8px_24px_-8px_oklch(0.72_0.12_80/.5),inset_0_1px_0_oklch(1_0_0/.18)]',
+    'hover:shadow-[0_10px_28px_-8px_oklch(0.72_0.12_80/.6),inset_0_1px_0_oklch(1_0_0/.22)]',
+    'disabled:opacity-50 disabled:shadow-none',
+  ),
   secondary:
-    'bg-neutral-100 text-neutral-900 hover:bg-neutral-200 active:bg-neutral-300 disabled:bg-neutral-50 disabled:text-neutral-400',
+    'bg-bg-elevated text-text-strong border border-border-default ' +
+    'hover:bg-bg-subtle hover:border-border-strong ' +
+    'active:bg-bg-card ' +
+    'disabled:opacity-50',
   outline:
-    'border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-50 active:bg-neutral-100 disabled:bg-neutral-50 disabled:text-neutral-400',
+    'border border-border-default bg-bg-card text-text-default ' +
+    'hover:bg-bg-subtle hover:border-brand-500/40 hover:text-text-strong ' +
+    'active:bg-bg-elevated ' +
+    'disabled:opacity-50',
   ghost:
-    'bg-transparent text-neutral-900 hover:bg-neutral-100 active:bg-neutral-200 disabled:text-neutral-400',
+    'bg-transparent text-text-default ' +
+    'hover:bg-brand-500/[0.08] hover:text-brand-400 ' +
+    'active:bg-brand-500/[0.12] ' +
+    'disabled:opacity-50',
+  destructive:
+    'bg-feedback-error text-white hover:opacity-90 active:opacity-80 disabled:opacity-50',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-300',
+    'bg-feedback-error text-white hover:opacity-90 active:opacity-80 disabled:opacity-50',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -53,8 +99,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg font-medium transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2',
+          'inline-flex items-center justify-center rounded-md font-medium',
+          'transition-all duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page',
           'disabled:cursor-not-allowed',
           variantStyles[variant],
           sizeStyles[size],

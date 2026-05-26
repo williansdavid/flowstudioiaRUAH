@@ -1,21 +1,15 @@
-import type { StudioConfig } from './studio.types';
+﻿import type { StudioConfig } from './studio.types';
 
 /**
- * ============================================
- * Studio Config — Fonte única da identidade
- * ============================================
+ * Studio Config â€” Fonte unica da identidade.
  * Versionado por studio (deploy isolado).
- * Secrets NÃO entram aqui. Use .env + src/lib/env.ts
- *
  * Arquivo em UTF-8 sem BOM.
- * Textos visíveis ao usuário final ficam aqui até
- * serem migrados para o Supabase (tabela studio_settings).
  */
 export const studioConfig: StudioConfig = {
   id: 'barbearia-ruah-001',
   slug: 'barbearia-ruah',
   name: 'Barbearia Ruah',
-  slogan: 'Estilo, cuidado e excelência em cada detalhe.',
+  slogan: 'Estilo, cuidado e excelencia em cada detalhe.',
   description:
     'Barbearia premium em Botucatu com agendamento online e atendimento via WhatsApp.',
   category: 'barbershop',
@@ -32,7 +26,7 @@ export const studioConfig: StudioConfig = {
   address: {
     street: 'Rua Campos Salles',
     number: '1227',
-    neighborhood: 'Vila Sônia',
+    neighborhood: 'Vila Sonia',
     city: 'Botucatu',
     state: 'SP',
     zipCode: '18607-750',
@@ -42,8 +36,19 @@ export const studioConfig: StudioConfig = {
   },
 
   branding: {
-    theme: 'dark',
-    primaryColor: '#d4af37',
+    theme: 'classic',
+    // Escala dourado RUAH (alinhada ao DESIGN_SYSTEM_RUAH.md)
+    primary: {
+      50:  '#FBF7EC',
+      100: '#F5EBC9',
+      300: '#E5C97A',
+      500: '#C9A24B', // cor principal
+      600: '#A8842F',
+      700: '#7E6320',
+      900: '#3D2F0E',
+    },
+    primaryForeground: '#0A0A0B', // texto sobre dourado
+    primaryColor: '#C9A24B', // legacy / compat
     secondaryColor: '#1a1a1a',
     accentColor: '#2c2c2c',
     logoUrl: '/logo.jpg',
@@ -51,9 +56,9 @@ export const studioConfig: StudioConfig = {
   },
 
   hero: {
-    title: 'Viva a experiência Ruah',
+    title: 'Viva a experiencia Ruah',
     subtitle:
-      'Muito mais que um corte de cabelo — um momento de cuidado e estilo em ambiente moderno e acolhedor.',
+      'Muito mais que um corte de cabelo â€” um momento de cuidado e estilo em ambiente moderno e acolhedor.',
     ctaText: 'Agendar agora',
     ctaSecondaryText: 'Falar no WhatsApp',
     backgroundImage: '/hero-bg.jpg',
@@ -62,8 +67,8 @@ export const studioConfig: StudioConfig = {
   about: {
     title: 'Sobre a Ruah',
     paragraphs: [
-      'Localizada no coração de Botucatu, a Barbearia Ruah nasceu com o propósito de elevar o padrão da barbearia tradicional.',
-      'Combinamos técnicas clássicas com as tendências mais modernas do mercado, em um espaço planejado para oferecer conforto, com Wi-Fi, ambiente climatizado e profissionais altamente qualificados.',
+      'Localizada no coracao de Botucatu, a Barbearia Ruah nasceu com o proposito de elevar o padrao da barbearia tradicional.',
+      'Combinamos tecnicas classicas com as tendencias mais modernas do mercado, em um espaco planejado para oferecer conforto, com Wi-Fi, ambiente climatizado e profissionais altamente qualificados.',
     ],
     image:
       'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=900&q=80',
@@ -102,6 +107,7 @@ export const studioConfig: StudioConfig = {
   },
 
   footer: {
-    copyrightText: '© 2026 Barbearia Ruah. Todos os direitos reservados.',
+    copyrightText: 'Â© 2026 Barbearia Ruah. Todos os direitos reservados.',
   },
 };
+

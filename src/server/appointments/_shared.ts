@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================
  * Appointments — server shared
  * ============================================
@@ -12,6 +12,8 @@
  *  - JOIN inline via PostgREST embedando clients_view, staff, services.
  *  - Sem view dedicada por enquanto (mantemos MVP simples).
  *  - RLS ja garante isolamento (admin ve tudo, staff ve proprios).
+ *  - Range filtering server-side (from/to obrigatorios) — evita carregar
+ *    historico inteiro do studio.
  *
  * Estrategia de escrita (create):
  *  - Input minimo do client: clientId, staffId, serviceId, startsAt, status?, price?, notes?
@@ -220,10 +222,14 @@ export function parseInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
 }
 
 // ============================================================
-// SCHEMAS — create input
+// SCHEMAS — primitivos compartilhados
 // ============================================================
 
 const uuidSchema = z.string().uuid("ID invalido");
+
+// ============================================================
+// SCHEMAS — create input
+// ============================================================
 
 /**
  * ISO 8601 com timezone (ex: "2026-05-25T14:30:00-03:00" ou "...Z").
@@ -298,3 +304,45 @@ export const createAppointmentInputSchema = z.object({
 });
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentInputSchema>;
+
+// ============================================================
+// SCHEMAS — list input (range filtering)
+// ============================================================
+
+/**
+ * Validador de string ISO 8601.
+ * Aceita "2026-05-25T00:00:00Z" ou "2026-05-25T00:00:00-03:00".
+ */
+const isoStringSchema = z
+  .string()
+  .trim()
+  .min(1, "Data e obrigatoria")
+  .refine(
+    (v) => !Number.isNaN(new Date(v).getTime()),
+    "Data invalida (ISO 8601 esperado)",
+  );
+
+/**
+ * Schema do range usado em listAppointments.
+ *
+ * - from/to em ISO 8601 (UTC ou com offset)
+ * - to deve ser > from
+ * - staffId opcional pra filtrar por profissional especifico
+ *
+ * O server usa esse range pra montar:
+ *   .gte("starts_at", from).lt("starts_at", to)
+ *
+ * "to" e exclusivo (padrao half-open interval).
+ */
+export const listAppointmentsInputSchema = z
+  .object({
+    from: isoStringSchema,
+    to: isoStringSchema,
+    staffId: uuidSchema.optional(),
+  })
+  .refine(
+    (data) => new Date(data.to).getTime() > new Date(data.from).getTime(),
+    { message: "to deve ser maior que from", path: ["to"] },
+  );
+
+export type ListAppointmentsInput = z.infer<typeof listAppointmentsInputSchema>;

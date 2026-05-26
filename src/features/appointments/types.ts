@@ -13,9 +13,12 @@
 import type { Tables } from "@/lib/supabase/types";
 
 // --------------------------------------------
-// INPUTS de mutation (Zod-inferred, server-side)
+// INPUTS de mutation/query (Zod-inferred, server-side)
 // --------------------------------------------
-export type { CreateAppointmentInput } from "@/server/appointments/_shared";
+export type {
+  CreateAppointmentInput,
+  ListAppointmentsInput,
+} from "@/server/appointments/_shared";
 
 /**
  * Status canonico do agendamento (espelha o enum `appointment_status` do banco).

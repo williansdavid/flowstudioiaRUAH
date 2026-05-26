@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Instagram, Facebook, MapPin } from 'lucide-react';
 import { studioConfig } from '@/config/studio.config';
-import { buildThemeTokens } from '@/lib/theme/applyTheme';
 import {
   getFacebookUrl,
   getInstagramUrl,
@@ -14,33 +13,29 @@ interface PublicLayoutProps {
 }
 
 /**
- * Layout público — wrapper de todas as páginas públicas (landing, /login, etc).
- * - Aplica tema adaptativo (dark/light) via CSS vars
+ * Layout publico — wrapper de todas as paginas publicas (landing, /login, etc).
+ * - Tema (CSS vars + classe theme-*) ja e aplicado no <html> via __root.tsx
  * - Header sticky com logo + CTAs
- * - Footer com redes + endereço
+ * - Footer com redes + endereco
  * - Mobile-first
  */
 export function PublicLayout({ children }: PublicLayoutProps) {
-  const theme = buildThemeTokens(studioConfig.branding);
   const instagram = getInstagramUrl();
   const facebook = getFacebookUrl();
   const maps = getMapsUrl();
 
   return (
-    <div
-      className={`${theme.className} flex min-h-screen flex-col bg-surface text-fg`}
-      style={theme.cssVars as React.CSSProperties}
-    >
+    <div className="flex min-h-screen flex-col bg-surface text-fg">
       {/* HEADER */}
       <header
         className="sticky top-0 z-50 border-b border-default bg-surface/90 backdrop-blur-md"
-        aria-label="Cabeçalho principal"
+        aria-label="Cabecalho principal"
       >
         <div className="container-landing flex h-16 items-center justify-between">
           <Link
             to="/"
             className="flex items-center gap-2"
-            aria-label={`${studioConfig.name} — Início`}
+            aria-label={`${studioConfig.name} — Inicio`}
           >
             <img
               src={studioConfig.branding.logoUrl}
@@ -54,13 +49,13 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
           <nav
             className="flex items-center gap-2 sm:gap-4"
-            aria-label="Navegação principal"
+            aria-label="Navegacao principal"
           >
             <a
               href="#servicos"
               className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline"
             >
-              Serviços
+              Servicos
             </a>
             <a
               href="#sobre"
@@ -76,7 +71,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             </a>
             <Link
               to="/login"
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition hover:opacity-90"
+              className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-brand-fg transition hover:bg-brand-600 hover:shadow-gold"
             >
               Entrar
             </Link>
@@ -111,16 +106,16 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               </p>
             </div>
 
-            {/* Coluna 2 — Endereço */}
+            {/* Coluna 2 — Endereco */}
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-fg-muted">
-                Endereço
+                Endereco
               </h3>
               <a
                 href={maps}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 flex items-start gap-2 text-sm text-fg hover:text-brand"
+                className="mt-3 flex items-start gap-2 text-sm text-fg hover:text-brand-500"
               >
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
@@ -144,7 +139,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Instagram"
-                    className="rounded-full border border-default p-2 text-fg-muted transition hover:border-brand hover:text-brand"
+                    className="rounded-full border border-default p-2 text-fg-muted transition hover:border-brand-500 hover:text-brand-500"
                   >
                     <Instagram className="h-4 w-4" />
                   </a>
@@ -155,7 +150,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Facebook"
-                    className="rounded-full border border-default p-2 text-fg-muted transition hover:border-brand hover:text-brand"
+                    className="rounded-full border border-default p-2 text-fg-muted transition hover:border-brand-500 hover:text-brand-500"
                   >
                     <Facebook className="h-4 w-4" />
                   </a>

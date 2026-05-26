@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tipos do StudioConfig - fonte unica da identidade do studio.
  * Cada studio (deploy) tera seu proprio studio.config.ts versionado.
  */
@@ -11,7 +11,12 @@ export type StudioCategory =
   | 'spa'
   | 'other';
 
-export type StudioTheme = 'dark' | 'light';
+/**
+ * Tema visual completo do studio.
+ * Cada tema corresponde a um arquivo CSS em src/styles/themes/.
+ * Selecionado em build-time via @import em tokens.css.
+ */
+export type StudioTheme = 'classic' | 'soft' | 'premium';
 
 export interface StudioContact {
   phone: string;
@@ -33,9 +38,29 @@ export interface StudioAddress {
   mapUrl: string;
 }
 
+/**
+ * Escala de cor da marca (50 -> 900).
+ * Permite uso semantico: bg-brand-500, hover:bg-brand-600, etc.
+ */
+export interface BrandColorScale {
+  50: string;
+  100: string;
+  300: string;
+  500: string;
+  600: string;
+  700: string;
+  900: string;
+}
+
 export interface StudioBranding {
+  /** Tema visual carregado em build-time. */
   theme: StudioTheme;
-  primaryColor: string;
+  /** Escala completa da cor da marca (white-label). */
+  primary: BrandColorScale;
+  /** Cor de texto que vai sobre brand-500 (gerado automaticamente se omitido). */
+  primaryForeground?: string;
+  /** @deprecated Use `primary[500]`. Mantido para compatibilidade. */
+  primaryColor?: string;
   secondaryColor: string;
   accentColor: string;
   logoUrl: string;
@@ -115,4 +140,3 @@ export interface StudioConfig {
   features: StudioFeatures;
   footer: StudioFooter;
 }
-
