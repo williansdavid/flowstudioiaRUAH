@@ -1,0 +1,82 @@
+src/sites/ruah/
+│
+├── RuahLanding.tsx              ★ Componente raiz da landing
+│                                  → importado em src/routes/index.tsx
+│
+├── index.ts                     barrel (já existe)
+│
+├── config/
+│   ├── branding.ts              ✅ JÁ EXISTE (perfeito)
+│   ├── identity.ts              ✅ JÁ EXISTE
+│   ├── businessHours.ts         ✅ JÁ EXISTE
+│   └── index.ts                 ✅ JÁ EXISTE
+│
+├── content/                     ★ NOVO — conteúdo textual hardcoded
+│   ├── hero.ts                  → headline, sub, CTAs, imagem
+│   ├── about.ts                 → história, valores, números
+│   ├── services.ts              → 9 services (hardcoded por ora)
+│   ├── team.ts                  → 5 barbeiros (foto, nome, role)
+│   ├── gallery.ts               → 8 imagens
+│   ├── testimonials.ts          → 6 depoimentos
+│   ├── contact.ts               → endereço, mapa, horários
+│   └── index.ts                 → barrel
+│
+├── data/                        ★ NOVO — futuras integrações Supabase
+│   └── (vazio por enquanto — só na fase de integração)
+│
+├── components/                  ★ NOVO — todos os componentes
+│   │
+│   ├── layout/
+│   │   ├── Navbar.tsx
+│   │   ├── Footer.tsx
+│   │   └── WhatsAppFab.tsx
+│   │
+│   ├── hero/
+│   │   ├── Hero.tsx             (export principal da section)
+│   │   ├── HeroBackground.tsx
+│   │   └── HeroCtas.tsx
+│   │
+│   ├── about/
+│   │   ├── About.tsx
+│   │   └── AboutStats.tsx
+│   │
+│   ├── services/
+│   │   ├── Services.tsx
+│   │   ├── ServiceCard.tsx
+│   │   └── ServiceIcon.tsx
+│   │
+│   ├── team/
+│   │   ├── Team.tsx
+│   │   └── TeamCard.tsx
+│   │
+│   ├── gallery/
+│   │   ├── Gallery.tsx
+│   │   └── GalleryItem.tsx
+│   │
+│   ├── testimonials/
+│   │   ├── Testimonials.tsx
+│   │   └── TestimonialCard.tsx
+│   │
+│   └── contact/
+│       ├── Contact.tsx
+│       ├── ContactInfo.tsx
+│       └── ContactHours.tsx
+│
+├── types/
+│   ├── branding.ts              ✅ JÁ EXISTE
+│   ├── identity.ts              ✅ JÁ EXISTE
+│   ├── businessHours.ts         ✅ JÁ EXISTE
+│   ├── content.ts               ★ NOVO — tipos do content
+│   └── index.ts                 ✅ JÁ EXISTE (atualizar)
+│
+├── utils/
+│   └── buildBrandingCss.ts      ✅ JÁ EXISTE (perfeito)
+│
+├── styles/                      ★ NOVO (opcional)
+│   └── theme.css                → se precisar de CSS específico
+│
+└── docs/                        ✅ JÁ EXISTE
+
+
+Seguir pra FASE 5.1 (componentes consumindo       │
+│            content) e resolver router context depois 

@@ -6,59 +6,53 @@ import { cn } from "@/lib/utils/cn";
 import type { PositionedAppointment } from "../types";
 
 interface AppointmentCardProps {
-  /** Agendamento ja posicionado pelo slot-mapping (ver slot-mapping.ts). */
   positioned: PositionedAppointment;
-  /** Callback opcional disparado ao clicar no card (ligado na fase 8.5). */
   onClick?: (positioned: PositionedAppointment) => void;
-  /** Classe extra opcional. */
   className?: string;
 }
 
 /**
- * Mapa de status -> estilos visuais do card.
+ * ============================================
+ * Mapa de status -> tokens visuais do tema.
+ * ============================================
  *
- * Convencao:
- *  - borda esquerda solida com cor forte (identificacao rapida)
- *  - background suave da mesma familia de cor
- *  - texto escuro pra contraste AA
+ * IMPORTANTE:
+ *  - Tokens declarados em src/styles/themes/luxury.css (linha 125-134).
+ *  - Status `no_show` (TS underscore) mapeia pra `--status-no-show-*` (CSS hifen).
+ *  - Borda esquerda usa o proprio `fg` do status (3px solido) pra identificacao.
+ *  - Fallback OKLCH inline garante funcionamento em temas que ainda nao
+ *    declararam os tokens (classic/premium/soft).
  *
- * Cores alinhadas com `components/ui/Badge.tsx`.
- *
- * Status `cancelled` e `no_show` recebem tratamento "morto":
- *  opacidade reduzida + line-through aplicado no nome do cliente.
+ * Cancelado / no_show: muted (opacity 60% + line-through no nome).
  */
-const statusStyles: Record<
+const statusTokens: Record<
   AppointmentStatus,
-  { border: string; bg: string; text: string; muted: boolean }
+  { bg: string; fg: string; muted: boolean }
 > = {
   pending: {
-    border: "border-l-amber-500",
-    bg: "bg-amber-50 hover:bg-amber-100",
-    text: "text-amber-900",
+    bg: "var(--status-pending-bg, oklch(0.78 0.14 80 / 0.15))",
+    fg: "var(--status-pending-fg, oklch(0.85 0.12 82))",
     muted: false,
   },
   confirmed: {
-    border: "border-l-blue-500",
-    bg: "bg-blue-50 hover:bg-blue-100",
-    text: "text-blue-900",
+    bg: "var(--status-confirmed-bg, oklch(0.70 0.10 230 / 0.15))",
+    fg: "var(--status-confirmed-fg, oklch(0.82 0.08 230))",
     muted: false,
   },
   completed: {
-    border: "border-l-green-500",
-    bg: "bg-green-50 hover:bg-green-100",
-    text: "text-green-900",
+    bg: "var(--status-completed-bg, oklch(0.72 0.13 145 / 0.15))",
+    fg: "var(--status-completed-fg, oklch(0.82 0.11 145))",
     muted: false,
   },
   cancelled: {
-    border: "border-l-neutral-400",
-    bg: "bg-neutral-50 hover:bg-neutral-100",
-    text: "text-neutral-700",
+    bg: "var(--status-cancelled-bg, oklch(0.65 0.18 25 / 0.15))",
+    fg: "var(--status-cancelled-fg, oklch(0.78 0.14 25))",
     muted: true,
   },
+  // ATENCAO: TS usa underscore, CSS token usa hifen.
   no_show: {
-    border: "border-l-red-500",
-    bg: "bg-red-50 hover:bg-red-100",
-    text: "text-red-900",
+    bg: "var(--status-no-show-bg, oklch(0.45 0.01 65 / 0.20))",
+    fg: "var(--status-no-show-fg, oklch(0.70 0.01 65))",
     muted: true,
   },
 };
@@ -69,25 +63,15 @@ const timeFmt = new Intl.DateTimeFormat("pt-BR", {
 });
 
 /**
- * Card visual de UM agendamento dentro do calendario.
+ * Card visual de UM agendamento.
  *
- * Renderizacao:
- *  - Posicionado via `position: absolute` dentro do wrapper relativo de coluna
- *    que o CalendarGrid renderiza (gridRow: 2 / span 24).
- *  - `top` = visibleSlotStart * CALENDAR_SLOT_HEIGHT_PX
- *  - `height` = (visibleSlotEnd - visibleSlotStart) * CALENDAR_SLOT_HEIGHT_PX
+ * Conteudo adaptativo por altura:
+ *  - 1 slot (30min):  hora inicio + nome
+ *  - 2 slots (60min): hora inicio-fim + nome + servico
+ *  - 3+ slots:        hora inicio-fim + nome + servico + staff
  *
- * Clipping (overflow do horario fora da janela 08:00-20:00):
- *  - isClippedStart: arredondamento removido no topo + indicador "..."
- *  - isClippedEnd:   arredondamento removido no rodape + indicador "..."
- *
- * Conteudo adaptativo:
- *  - 1 slot visivel (30min):  hora + nome do cliente
- *  - 2+ slots visiveis (60min+): hora + nome + servico
- *
- * Acessibilidade:
- *  - <button> quando ha onClick, <div role="article"> caso contrario
- *  - aria-label completo cobre cliente, servico, staff, horario e status
+ * Posicionamento: absolute dentro do wrapper de coluna do CalendarGrid.
+ * Clipping: indicador "..." no topo/rodape se appointment ultrapassa janela 08:00-20:00.
  */
 export const AppointmentCard = forwardRef<HTMLElement, AppointmentCardProps>(
   function AppointmentCard({ positioned, onClick, className }, ref) {
@@ -100,18 +84,36 @@ export const AppointmentCard = forwardRef<HTMLElement, AppointmentCardProps>(
     } = positioned;
 
     const slotsVisible = visibleSlotEnd - visibleSlotStart;
-    const style: CSSProperties = {
-      top: `${visibleSlotStart * CALENDAR_SLOT_HEIGHT_PX}px`,
-      height: `${slotsVisible * CALENDAR_SLOT_HEIGHT_PX}px`,
-    };
+    const tokens = statusTokens[appointment.status];
 
-    const statusStyle = statusStyles[appointment.status];
     const start = new Date(appointment.startsAt);
     const end = new Date(appointment.endsAt);
     const startLabel = timeFmt.format(start);
     const endLabel = timeFmt.format(end);
 
+    // Estilo inline: backgroundColor + cor da borda esquerda derivada do fg
+    const style: CSSProperties = {
+      top: `${visibleSlotStart * CALENDAR_SLOT_HEIGHT_PX}px`,
+      height: `${slotsVisible * CALENDAR_SLOT_HEIGHT_PX}px`,
+      backgroundColor: tokens.bg,
+      color: tokens.fg,
+      borderLeftColor: tokens.fg,
+      borderLeftWidth: "3px",
+      borderLeftStyle: "solid",
+      borderRightColor: "var(--border-subtle)",
+      borderTopColor: "var(--border-subtle)",
+      borderBottomColor: "var(--border-subtle)",
+      borderRightWidth: "1px",
+      borderTopWidth: "1px",
+      borderBottomWidth: "1px",
+      borderRightStyle: "solid",
+      borderTopStyle: "solid",
+      borderBottomStyle: "solid",
+    };
+
+    const showRange = slotsVisible >= 2;
     const showService = slotsVisible >= 2;
+    const showStaff = slotsVisible >= 3;
 
     const ariaLabel = [
       `Agendamento de ${appointment.clientName}`,
@@ -122,17 +124,17 @@ export const AppointmentCard = forwardRef<HTMLElement, AppointmentCardProps>(
     ].join(", ");
 
     const baseClasses = cn(
-      "absolute inset-x-1 z-10 overflow-hidden border border-l-[3px] border-neutral-200 px-2 py-1 text-left text-xs transition-colors",
-      "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1",
+      "absolute inset-x-1 z-10 overflow-hidden px-2 py-1 text-left text-xs",
+      "transition-all duration-150 ease-out",
+      "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+      "focus-visible:ring-[var(--border-focus)]",
       // Arredondamento condicional por clipping
       isClippedStart ? "rounded-b-md" : "rounded-md",
       isClippedEnd && !isClippedStart && "rounded-t-md rounded-b-none",
       isClippedStart && isClippedEnd && "rounded-none",
-      statusStyle.border,
-      statusStyle.bg,
-      statusStyle.text,
-      statusStyle.muted && "opacity-60",
-      onClick && "cursor-pointer",
+      tokens.muted && "opacity-60",
+      onClick &&
+        "cursor-pointer hover:-translate-y-px hover:shadow-[var(--elevation-floating)]",
       className,
     );
 
@@ -143,21 +145,35 @@ export const AppointmentCard = forwardRef<HTMLElement, AppointmentCardProps>(
             className="text-center text-[10px] leading-none opacity-60"
             aria-hidden
           >
-            ...
+            ⋯
           </div>
         )}
-        <div className="flex items-baseline gap-1 font-semibold leading-tight">
-          <span className="tabular-nums">{startLabel}</span>
+
+        {/* Linha 1: hora (range se altura permitir) */}
+        <div className="flex items-baseline gap-1 font-semibold leading-tight tabular-nums">
+          <span>{startLabel}</span>
+          {showRange && (
+            <>
+              <span className="opacity-50" aria-hidden>
+                –
+              </span>
+              <span className="opacity-75">{endLabel}</span>
+            </>
+          )}
         </div>
+
+        {/* Linha 2: nome do cliente */}
         <div
           className={cn(
-            "mt-0.5 truncate font-medium leading-tight",
-            statusStyle.muted && "line-through",
+            "mt-0.5 truncate text-[12px] font-semibold leading-tight",
+            tokens.muted && "line-through",
           )}
           title={appointment.clientName}
         >
           {appointment.clientName}
         </div>
+
+        {/* Linha 3: servico */}
         {showService && (
           <div
             className="mt-0.5 truncate text-[11px] leading-tight opacity-80"
@@ -166,12 +182,23 @@ export const AppointmentCard = forwardRef<HTMLElement, AppointmentCardProps>(
             {appointment.serviceName}
           </div>
         )}
+
+        {/* Linha 4: staff (so com altura confortavel) */}
+        {showStaff && (
+          <div
+            className="mt-0.5 truncate text-[10px] uppercase leading-tight tracking-wide opacity-60"
+            title={appointment.staffName}
+          >
+            {appointment.staffName}
+          </div>
+        )}
+
         {isClippedEnd && (
           <div
             className="text-center text-[10px] leading-none opacity-60"
             aria-hidden
           >
-            ...
+            ⋯
           </div>
         )}
       </>

@@ -6,16 +6,12 @@
  * Visualizacao de UM dia da agenda.
  * Uma coluna por staff que tem appointment no dia.
  *
- * Composicao:
- *  - CalendarGrid (estrutura)
- *  - AppointmentCard (cards posicionados)
- *  - CalendarNowLine (renderizada internamente pelo grid se showNowLine=true)
+ * Header de coluna premium:
+ *  - Avatar circular dourado com inicial do nome
+ *  - Nome do staff
+ *  - Badge de contagem de agendamentos
  *
- * Decisoes:
- *  - Dia sem appointments => EmptyState (nao renderiza grid vazio)
- *  - Linha do agora aparece em TODAS as colunas se a data for hoje
- *  - Filtro/agrupamento por staff fica em slot-mapping.ts (puro)
- *  - Sem estado interno — controlado 100% pelo parent
+ * Tematizado via tokens CSS.
  */
 
 import { useMemo } from "react";
@@ -28,19 +24,12 @@ import { AppointmentCard } from "./AppointmentCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 interface DayViewProps {
-  /** Lista de appointments. Pode conter de outros dias — o DayView filtra. */
   appointments: AdminAppointmentItem[];
-  /** Data alvo. So a parte de data (YYYY-MM-DD local) e usada. */
   date: Date;
-  /** Callback ao clicar em um card. */
   onAppointmentClick?: (positioned: PositionedAppointment) => void;
-  /** Callback ao clicar num slot vazio. Recebe staffId + indice do slot. */
   onSlotClick?: (params: { staffId: string; slotIndex: number }) => void;
 }
 
-/**
- * True se a data alvo e o dia local de hoje.
- */
 function isToday(date: Date): boolean {
   const now = new Date();
   return (
@@ -48,6 +37,16 @@ function isToday(date: Date): boolean {
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate()
   );
+}
+
+/**
+ * Extrai a inicial (1 letra maiuscula) do nome.
+ * "Maria Silva" -> "M"; "" -> "?".
+ */
+function getInitial(name: string): string {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) return "?";
+  return trimmed.charAt(0).toUpperCase();
 }
 
 export function DayView({
@@ -63,9 +62,6 @@ export function DayView({
 
   const todayFlag = useMemo(() => isToday(data.date), [data.date]);
 
-  // ============================================
-  // EMPTY STATE: nenhum staff com appointment no dia
-  // ============================================
   if (data.columns.length === 0) {
     return (
       <EmptyState
@@ -76,25 +72,62 @@ export function DayView({
     );
   }
 
-  // ============================================
-  // GRID NORMAL
-  // ============================================
   const gridColumns: CalendarGridColumn<DayViewColumn>[] = data.columns.map(
     (col) => ({
       key: col.staffId,
       data: col,
       showNowLine: todayFlag,
+      // No DayView, "isToday" se aplica a TODAS as colunas se a data e hoje
+      isToday: todayFlag,
     }),
   );
 
   return (
     <CalendarGrid
       columns={gridColumns}
-      renderHeader={(col) => (
-        <span className="truncate" title={col.data.staffName}>
-          {col.data.staffName}
-        </span>
-      )}
+      renderHeader={(col) => {
+        const count = col.data.appointments.length;
+        return (
+          <div className="flex w-full items-center justify-center gap-2 px-1">
+            {/* Avatar com inicial */}
+            <div
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+              style={{
+                background: "var(--brand-gradient, var(--brand-500))",
+                color: "var(--brand-fg)",
+                boxShadow: "var(--metal-highlight)",
+              }}
+              aria-hidden
+            >
+              {getInitial(col.data.staffName)}
+            </div>
+
+            {/* Nome */}
+            <span
+              className="truncate text-sm font-semibold"
+              style={{ color: "var(--fg-strong)" }}
+              title={col.data.staffName}
+            >
+              {col.data.staffName}
+            </span>
+
+            {/* Badge de contagem */}
+            {count > 0 && (
+              <span
+                className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums"
+                style={{
+                  backgroundColor: "oklch(0.72 0.12 80 / 0.15)",
+                  color: "var(--brand-300, var(--brand-500))",
+                  border: "1px solid oklch(0.72 0.12 80 / 0.25)",
+                }}
+                aria-label={`${count} agendamentos`}
+              >
+                {count}
+              </span>
+            )}
+          </div>
+        );
+      }}
       renderColumn={(col) =>
         col.data.appointments.map((positioned) => (
           <AppointmentCard

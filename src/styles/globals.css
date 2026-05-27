@@ -21,6 +21,18 @@
     box-sizing: border-box;
   }
 
+  /*
+    Cadeia de altura travada na viewport.
+    Necessário para que componentes com scroll interno (calendário, listas
+    virtualizadas, painéis admin) funcionem corretamente. Sem isso, h-full
+    no React resolve para "altura do conteúdo" em vez de "altura visível".
+  */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -28,7 +40,7 @@
 
   body {
     margin: 0;
-    min-height: 100vh;
+    /* min-height: 100vh removido — substituído por height: 100% na regra acima */
     font-family: var(--font-body, 'Inter', system-ui, sans-serif);
     font-size: var(--font-size-base);
     line-height: 1.55;
@@ -164,7 +176,7 @@
     transform: translateY(0);
     box-shadow: var(--shadow-xs), var(--glow-brand-sm);
   }
-  
+
   /* ============================================ */
   /*  CONTAINER LANDING — Mobile-first            */
   /*  Centraliza + dá respiro lateral responsivo  */
@@ -188,7 +200,7 @@
       padding-inline: 2rem;        /* lg: 32px */
     }
   }
-  
+
 }
 
 /* ============================================ */

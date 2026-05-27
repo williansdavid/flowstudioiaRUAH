@@ -1,117 +1,164 @@
+﻿/**
+ * __root.tsx â€” Root Route do TanStack React Start
+ * ----------------------------------------------------------------
+ * Responsabilidades:
+ *   1. Carregar branding + content + identity do studio
+ *   2. Injetar CSS variables no <head> via SSR (zero FOUC)
+ *   3. Aplicar a classe de tema no <html> (.theme-dark)
+ *   4. Carregar fontes Google via preconnect + link
+ *   5. Importar theme.css + base.css + animations.css
+ *   6. Resolver SEO com fallback identity (buildSeo)
+ *   7. SEO bÃ¡sico + Open Graph dinÃ¢micos
+ *   8. Renderizar <Outlet />
+ *   9. Tipar RouterContext global
+ *
+ * FONTE DA VERDADE ÃšNICA: src/sites/ruah/**
+ * ----------------------------------------------------------------
+ */
+
 import {
   createRootRouteWithContext,
   Outlet,
   HeadContent,
   Scripts,
-} from '@tanstack/react-router';
-import type { QueryClient } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-import { getSession, type SessionUser } from '@/lib/auth/session';
-import { studioConfig } from '@/config/studio.config';
-import {
-  buildBrandingTokens,
-  brandingTokensToCss,
-} from '@/lib/branding/applyBranding';
-import { RouteProgressBar } from '@/components/feedback/RouteProgressBar';
-import { NavigationOverlay } from '@/components/feedback/NavigationOverlay';
-import appCss from '@/styles/globals.css?url';
+} from '@tanstack/react-router'
+import type { QueryClient } from '@tanstack/react-query'
 
+import type { SessionUser } from '@/lib/auth/types'
+import { branding } from '@/sites/ruah/config/branding'
+import { content } from '@/sites/ruah/config/content'
+import { identity } from '@/sites/ruah/config/identity'
+import themeCss from '@/sites/ruah/styles/theme.css?url'
+import baseCss from '@/sites/ruah/styles/base.css?url'
+import animationsCss from '@/sites/ruah/styles/animations.css?url'
+import { buildBrandingCss, buildSeo } from '@/sites/ruah/utils'
+
+// ============================================================
+// Router Context
+// ============================================================
 export interface RouterContext {
-  queryClient: QueryClient;
-  user: SessionUser | null;
+  queryClient: QueryClient
+  user: SessionUser | null
 }
 
-const brandingCss = brandingTokensToCss(
-  buildBrandingTokens(studioConfig.branding),
-);
-const themeClass = `theme-${studioConfig.branding.theme}`;
+// CSS variables geradas a partir do branding
+const brandingCss = buildBrandingCss(branding)
+
+// Classe aplicada no <html>
+const themeClass = `theme-${branding.theme}`
+
+// SEO resolvido com fallback do identity (sempre definido)
+const seo = buildSeo(content.seo, identity)
+
+// URL Ãºnica de Google Fonts (3 famÃ­lias)
+const GOOGLE_FONTS_HREF =
+  'https://fonts.googleapis.com/css2?' +
+  'family=Playfair+Display:wght@400;600;700;900&' +
+  'family=Montserrat:wght@400;500;600;700&' +
+  'family=Lato:wght@300;400;700&' +
+  'display=swap'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: studioConfig.seo.title },
-      { name: 'description', content: studioConfig.seo.description },
+      // SEO bÃ¡sico â€” sempre definido via buildSeo()
+      { title: seo.title },
+      { name: 'description', content: seo.description },
+      ...(seo.keywords.length > 0
+        ? [{ name: 'keywords', content: seo.keywords.join(', ') }]
+        : []),
+      // Open Graph bÃ¡sico
+      { property: 'og:title', content: seo.title },
+      { property: 'og:description', content: seo.description },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:locale', content: 'pt_BR' },
     ],
     links: [
-      { rel: 'stylesheet', href: appCss },
-      { rel: 'icon', href: studioConfig.branding.faviconUrl },
-      // Google Fonts — preconnect para performance
+      // Preconnect Google Fonts
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       {
         rel: 'preconnect',
         href: 'https://fonts.gstatic.com',
         crossOrigin: 'anonymous',
       },
-      // Inter (UI) + Cormorant Garamond (display) — SSR-friendly
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap',
-      },
+      { rel: 'stylesheet', href: GOOGLE_FONTS_HREF },
+      // CSS do Ruah â€” ordem importa
+      { rel: 'stylesheet', href: themeCss },
+      { rel: 'stylesheet', href: baseCss },
+      { rel: 'stylesheet', href: animationsCss },
     ],
   }),
-  beforeLoad: async () => {
-    try {
-      const user = await getSession();
-      return { user };
-    } catch (err) {
-      console.error('[__root] getSession falhou:', err);
-      return { user: null };
-    }
-  },
   component: RootComponent,
   errorComponent: RootErrorBoundary,
   notFoundComponent: RootNotFound,
-});
+})
 
 function RootComponent() {
   return (
-    <html
-      lang="pt-BR"
-      className={themeClass}
-      style={{ cssText: brandingCss } as React.CSSProperties}
-    >
+    <html lang="pt-BR" className={themeClass}>
       <head>
         <HeadContent />
+        <style
+          id="ruah-branding-vars"
+          dangerouslySetInnerHTML={{ __html: brandingCss }}
+        />
       </head>
       <body>
-        <RouteProgressBar />
-        <NavigationOverlay>
-          <Outlet />
-        </NavigationOverlay>
-        <Toaster
-          position="top-right"
-          richColors
-          closeButton
-          duration={4000}
-        />
+        <Outlet />
         <Scripts />
       </body>
     </html>
-  );
+  )
 }
 
 function RootErrorBoundary({ error }: { error: Error }) {
   return (
-    <html
-      lang="pt-BR"
-      className={themeClass}
-      style={{ cssText: brandingCss } as React.CSSProperties}
-    >
+    <html lang="pt-BR" className={themeClass}>
       <head>
         <HeadContent />
-        <title>{`Erro - ${studioConfig.name}`}</title>
+        <style
+          id="ruah-branding-vars"
+          dangerouslySetInnerHTML={{ __html: brandingCss }}
+        />
       </head>
       <body>
-        <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
-          <div className="max-w-md rounded-lg bg-surface p-6 shadow-sm">
-            <h1 className="text-lg font-semibold text-fg">Algo deu errado</h1>
-            <p className="mt-2 text-sm text-fg-muted">
-              Tente recarregar a pagina. Se o problema persistir, contate o suporte.
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '32rem',
+              padding: '2rem',
+              borderRadius: 'var(--radius-card)',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <h1>Algo deu errado</h1>
+            <p>
+              Tente recarregar a pÃ¡gina. Se o problema persistir, entre em
+              contato com o suporte.
             </p>
             {import.meta.env.DEV && (
-              <pre className="mt-4 overflow-auto rounded bg-surface-subtle p-3 text-xs text-fg">
+              <pre
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.75rem',
+                  background: 'var(--color-surface-dark)',
+                  color: 'var(--color-text-muted)',
+                  fontSize: '0.75rem',
+                  overflow: 'auto',
+                  borderRadius: 'var(--radius-card)',
+                }}
+              >
                 {error.message}
               </pre>
             )}
@@ -120,35 +167,55 @@ function RootErrorBoundary({ error }: { error: Error }) {
         <Scripts />
       </body>
     </html>
-  );
+  )
 }
 
 function RootNotFound() {
   return (
-    <html
-      lang="pt-BR"
-      className={themeClass}
-      style={{ cssText: brandingCss } as React.CSSProperties}
-    >
+    <html lang="pt-BR" className={themeClass}>
       <head>
         <HeadContent />
-        <title>{`Pagina nao encontrada - ${studioConfig.name}`}</title>
+        <style
+          id="ruah-branding-vars"
+          dangerouslySetInnerHTML={{ __html: brandingCss }}
+        />
       </head>
       <body>
-        <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
-          <div className="max-w-md text-center">
-            <h1 className="text-2xl font-semibold text-fg">404</h1>
-            <p className="mt-2 text-sm text-fg-muted">Pagina nao encontrada.</p>
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ maxWidth: '28rem' }}>
+            <h1 style={{ fontSize: '3rem', margin: 0 }}>404</h1>
+            <p>PÃ¡gina nÃ£o encontrada.</p>
             <a
               href="/"
-              className="mt-4 inline-block rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-brand-fg hover:bg-brand-600"
+              style={{
+                display: 'inline-block',
+                marginTop: '1rem',
+                padding: '0.75rem 1.5rem',
+                background: 'var(--color-accent)',
+                color: 'var(--color-surface-dark)',
+                borderRadius: 'var(--radius-button)',
+                fontFamily: 'var(--font-heading)',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontSize: '0.875rem',
+              }}
             >
-              Voltar para o inicio
+              Voltar ao inÃ­cio
             </a>
           </div>
         </div>
         <Scripts />
       </body>
     </html>
-  );
+  )
 }

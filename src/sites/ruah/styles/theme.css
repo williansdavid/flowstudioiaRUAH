@@ -1,0 +1,111 @@
+﻿/* ============================================================
+ * Ruah Barber Lounge — Theme Base
+ * ------------------------------------------------------------
+ * Este arquivo NÃO contém valores de cor/font literais.
+ * Todas as cores e fontes vêm das CSS variables injetadas
+ * dinamicamente via buildBrandingCss() no __root.tsx (SSR).
+ *
+ * Fontes Google são carregadas via <link preconnect> no __root.tsx
+ * (não usar @import aqui — bloqueia first paint).
+ *
+ * Responsabilidades deste arquivo:
+ *   1. Reset mínimo aplicado ao escopo do tema
+ *   2. Estilos base de tipografia (h1..h6, p, a)
+ *   3. Utilidades de seleção de texto e scroll
+ *
+ * Importado em: src/routes/__root.tsx (via ?url import)
+ * ============================================================ */
+
+/* ---------- Reset mínimo ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- Aplicação do tema no root ---------- */
+.theme-dark {
+  background-color: var(--color-bg);
+  color: var(--color-text-body);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* ---------- Tipografia base ---------- */
+.theme-dark h1,
+.theme-dark h2,
+.theme-dark h3,
+.theme-dark h4,
+.theme-dark h5,
+.theme-dark h6 {
+  font-family: var(--font-display);
+  color: var(--color-text-heading);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.theme-dark p {
+  color: var(--color-text-body);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.theme-dark a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.theme-dark a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ---------- Seleção de texto ---------- */
+.theme-dark ::selection {
+  background-color: var(--color-accent);
+  color: var(--color-surface-dark);
+}
+
+/* ---------- Scrollbar (WebKit) ---------- */
+.theme-dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-dark ::-webkit-scrollbar-track {
+  background: var(--color-surface-dark);
+}
+
+.theme-dark ::-webkit-scrollbar-thumb {
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+}
+
+.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* ---------- Focus ring acessível ---------- */
+.theme-dark *:focus-visible {
+  outline: 2px solid var(--color-border-accent);
+  outline-offset: 2px;
+}

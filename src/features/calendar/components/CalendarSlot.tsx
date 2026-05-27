@@ -6,21 +6,15 @@
  * Celula vazia do grid. Renderiza o "fundo" de cada slot de 30min.
  *
  * - Click opcional (callback do parent).
- * - Visual leve: linha tracejada sutil pra separacao.
- * - Hover sutil pra indicar interatividade quando clicavel.
- *
- * IMPORTANTE: AppointmentCards sao renderizados POR CIMA destes slots
- * (mesma celula do grid, mas z-index maior).
+ * - Linha solida na hora cheia, tracejada no meio.
+ * - Hover dourado translucido pra indicar interatividade.
+ * - Tematizada via tokens CSS.
  */
 
 interface CalendarSlotProps {
-  /** Indice do slot (0 = 08:00, 1 = 08:30, ...). */
   slotIndex: number;
-  /** Coluna do grid (1-based, pq col 1 = time column). */
   columnIndex: number;
-  /** Se fornecido, slot vira clicavel. */
   onClick?: () => void;
-  /** Para acessibilidade — descreve o slot ao screen reader. */
   ariaLabel?: string;
 }
 
@@ -31,9 +25,17 @@ export function CalendarSlot({
   ariaLabel,
 }: CalendarSlotProps) {
   const isHourBoundary = slotIndex % 2 === 0; // 08:00, 09:00, ... (slots pares)
-  const baseClasses =
-    "border-neutral-100 transition-colors " +
-    (isHourBoundary ? "border-t" : "border-t border-dashed");
+
+  const baseStyle: React.CSSProperties = {
+    gridRow: slotIndex + 2,
+    gridColumn: columnIndex,
+    borderTopWidth: "1px",
+    borderTopStyle: isHourBoundary ? "solid" : "dashed",
+    borderTopColor: isHourBoundary
+      ? "var(--border-default)"
+      : "var(--border-subtle)",
+    transition: "background-color 160ms ease",
+  };
 
   if (onClick) {
     return (
@@ -41,23 +43,23 @@ export function CalendarSlot({
         type="button"
         onClick={onClick}
         aria-label={ariaLabel}
-        className={`${baseClasses} hover:bg-neutral-50 focus:bg-neutral-100 focus:outline-none`}
-        style={{
-          gridRow: slotIndex + 2,
-          gridColumn: columnIndex,
+        className="group focus:outline-none"
+        style={baseStyle}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "transparent";
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.backgroundColor = "transparent";
         }}
       />
     );
   }
 
-  return (
-    <div
-      className={baseClasses}
-      style={{
-        gridRow: slotIndex + 2,
-        gridColumn: columnIndex,
-      }}
-      aria-hidden="true"
-    />
-  );
+  return <div style={baseStyle} aria-hidden="true" />;
 }

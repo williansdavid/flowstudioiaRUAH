@@ -1,0 +1,635 @@
+================================================================================
+  RUAH BARBER LOUNGE — CONTRATO TÉCNICO V2.1
+  FlowStudio AI — Projeto Ruah (página piloto)
+  Versão: 2.1
+  Última atualização: 27/05/2026
+================================================================================
+
+  📌 COLE ESTE ARQUIVO NO CHAT SEMPRE QUE SENTIR QUE ESTAMOS SAINDO
+     DO TRILHO. ELE É A "ESTRELA DO NORTE" DO PROJETO.
+
+  📌 ESTE DOCUMENTO SUBSTITUI O V2 (RUAH-CONTRATO-V2.txt).
+     Versões anteriores ficam arquivadas SOMENTE como histórico.
+
+
+================================================================================
+  ⚠️ ALERTA DE FOCO — LEIA ANTES DE QUALQUER COISA
+================================================================================
+
+  ❌ NÃO EXISTE LEGADO NESTE PROJETO.
+     O site NÃO está em produção. Nenhum código atual precisa ser
+     "preservado". Qualquer arquivo fora de src/sites/ruah/ que estiver
+     quebrado é LIXO RESIDUAL — será limpo quando voltarmos a mexer no
+     sistema admin/login compartilhado.
+
+  ❌ NÃO propor soluções para "salvar legado":
+     - sem _legacy/
+     - sem prefix "-" no TSR
+     - sem tsconfig exclude
+     - sem ajustes em arquivos que vão morrer
+
+  ✅ FOCO TOTAL: deixar a PAGE PÚBLICA DO RUAH funcional, bonita e
+     pronta para ir ao ar isolada num deploy Netlify.
+
+  ✅ REFERÊNCIA VISUAL OBRIGATÓRIA:
+     C:\FlowStudio AI\docs\barber exemplo\client\src\
+     Toda decisão de UI/UX deve consultar esse exemplo primeiro.
+     Detalhes em §11.
+
+  ✅ Quando a page do Ruah estiver finalizada, AÍ SIM voltamos no
+     sistema admin/login comum e limpamos o resto.
+
+
+================================================================================
+  1. REGRA MESTRE — INEGOCIÁVEL
+================================================================================
+
+  🔒 PAGE INDEPENDENTE E ISOLADA POR CLIENTE.
+
+     • Cada cliente tem sua PRÓPRIA pasta em src/sites/<cliente>/
+     • A page do Ruah vive INTEIRA em src/sites/ruah/
+     • Nada da page do Ruah importa de fora de src/sites/ruah/
+       (exceto libs npm e código de src/shared/ no momento do CTA)
+     • Cada studio futuro = nova pasta em src/sites/<novo>/
+     • ZERO compartilhamento de tokens, cores, fontes, config
+       entre studios.
+
+     Se a solução proposta violar isolamento → REJEITAR.
+
+
+================================================================================
+  2. ARQUITETURA-ALVO DO PROJETO
+================================================================================
+
+  src/
+  ├── sites/                          ← PAGES PÚBLICAS (uma por cliente)
+  │   ├── ruah/                       ← page do Ruah Barber Lounge
+  │   │   ├── config/                 ← identity, branding, businessHours
+  │   │   ├── types/
+  │   │   ├── styles/                 ← theme.css (CSS vars locais)
+  │   │   ├── utils/                  ← buildBrandingCss, etc.
+  │   │   ├── components/             ← Hero, Services, About, Footer...
+  │   │   ├── content/                ← textos institucionais
+  │   │   ├── assets/                 ← imagens (ou public/sites/ruah/)
+  │   │   └── index.ts                ← barrel export público
+  │   │
+  │   ├── studio-x/                   ← FUTURO
+  │   └── studio-y/                   ← FUTURO
+  │
+  ├── shared/                         ← SISTEMA COMUM (admin + auth)
+  │   ├── auth/                       ← login, logout, recuperação senha
+  │   ├── admin/                      ← dashboard, calendar, services CRUD
+  │   ├── lib/                        ← supabase client, queries
+  │   └── ui/                         ← componentes do sistema admin
+  │
+  └── routes/                         ← TanStack Router (file-based)
+      ├── __root.tsx                  ← lê env, monta page do cliente ativo
+      ├── index.tsx                   ← LANDING do cliente ativo
+      ├── login.tsx                   ← entrada do sistema comum
+      └── admin/                      ← área logada (sistema comum)
+
+  Observação: hoje muito desse esqueleto AINDA NÃO EXISTE no projeto.
+  Arquivos atuais fora desse plano são LIXO residual (não-legado).
+
+
+================================================================================
+  3. COMO O BUILD ESCOLHE O CLIENTE ATIVO
+================================================================================
+
+  📄 .env (na raiz do projeto)
+
+     VITE_ACTIVE_STUDIO=ruah
+     VITE_SUPABASE_URL=https://<projeto>.supabase.co
+     VITE_SUPABASE_ANON_KEY=<chave>
+
+  📦 Cada deploy Netlify tem SEU PRÓPRIO .env:
+     - Deploy do Ruah: VITE_ACTIVE_STUDIO=ruah + URL/KEY do Supabase do Ruah
+     - Deploy do Studio X: VITE_ACTIVE_STUDIO=studio-x + URL/KEY do dele
+     - O CÓDIGO-FONTE é o mesmo. O que muda é o .env do deploy.
+
+  🔧 No código:
+     - __root.tsx (ou helper em src/sites/index.ts) lê VITE_ACTIVE_STUDIO
+     - Importa ESTATICAMENTE src/sites/<ACTIVE_STUDIO>/
+     - Aplica branding, fontes, tema e componentes daquele cliente
+
+  ✅ DECISÃO Q3.A — TRAVADA: RESOLUÇÃO ESTÁTICA.
+     Cada deploy = um cliente. Bundle final contém SÓ o código do
+     cliente ativo (tree-shaking funciona, sem peso de outros studios).
+
+
+================================================================================
+  4. STACK OFICIAL (NÃO MUDAR)
+================================================================================
+
+  ✅ TanStack React Start (SSR)        — framework principal
+  ✅ TanStack Router                   — routing file-based
+  ✅ TanStack React Query              — data fetching/cache
+  ✅ Supabase                          — 1 projeto por cliente
+  ✅ TypeScript                        — tipagem estrita
+  ✅ Vite                              — bundler
+  ✅ Netlify                           — deploy isolado por cliente
+  ✅ Lucide Icons                      — ícones
+  ✅ Sonner                            — toasts
+
+  ✅ DECISÃO Q4.A — TRAVADA: CSS PURO + CSS VARIABLES.
+     NÃO usar Tailwind no projeto Ruah.
+     Toda estilização via classes utilitárias próprias em theme.css
+     consumindo CSS Variables. Coerente com isolamento e SSR.
+
+  ❌ NÃO usar Tailwind (v3 nem v4)
+  ❌ NÃO usar wouter
+  ❌ NÃO usar shadcn/ui
+  ❌ NÃO usar framer-motion (decisão Q12)
+  ❌ NÃO usar react-hook-form / zod no MVP (decisão Q13)
+  ❌ NÃO usar embla-carousel (decisão Q14)
+  ❌ NÃO usar Google Maps Embed (decisão Q15)
+  ❌ NÃO usar next-themes
+  ❌ NÃO adicionar libs sem justificativa muito forte
+
+
+================================================================================
+  5. DADOS DA PAGE — DE ONDE VEM CADA COISA
+================================================================================
+
+  📁 HARDCODED em src/sites/ruah/config/ e src/sites/ruah/content/:
+     • Nome do studio, slogan, endereço, telefone, WhatsApp, Instagram
+     • Horários de funcionamento
+     • Branding (cores, fontes, radius, shadows)
+     • Textos institucionais (hero, sobre, CTAs)
+     • Lista de equipe (nome, foto, especialidade)
+     • Galeria (paths das imagens)
+     • Depoimentos
+
+  🗄️ VINDOS DO SUPABASE:
+     • TABELA: services
+       Campos consumidos pela landing:
+         - id
+         - name
+         - description
+         - duration_minutes
+         - price
+         - category
+         - image_url
+         - is_active        (filtrar onde true)
+         - display_order    (ordenar asc)
+
+  Observação: por enquanto SÓ a tabela services alimenta a landing.
+  Outras tabelas (appointments, clients, staff, etc.) pertencem
+  ao sistema admin/login — NÃO entram na page pública.
+
+
+================================================================================
+  6. SCHEMA OFICIAL — tabela `services`
+================================================================================
+
+  create table public.services (
+    id                uuid          not null default gen_random_uuid(),
+    name              text          not null,
+    description       text          null,
+    duration_minutes  integer       not null,
+    price             numeric(10,2) not null,
+    category          text          null,
+    image_url         text          null,
+    is_active         boolean       not null default true,
+    display_order     integer       not null default 0,
+    created_at        timestamptz   not null default now(),
+    updated_at        timestamptz   not null default now(),
+
+    constraint services_pkey primary key (id),
+    constraint services_duration_minutes_check check (duration_minutes > 0),
+    constraint services_price_check check (price >= 0)
+  );
+
+  create index if not exists idx_services_active
+    on public.services using btree (is_active)
+    where (is_active = true);
+
+  create index if not exists idx_services_category
+    on public.services using btree (category);
+
+  create trigger trg_services_updated_at before update on services
+    for each row execute function set_updated_at();
+
+
+================================================================================
+  7. FLUXO DE NAVEGAÇÃO
+================================================================================
+
+  Visitante anônimo (cliente final):
+
+     /                  Landing pública do Ruah
+                          └─ clica em "Agendar"
+                              └─→ /login
+                                   └─ faz login como cliente
+                                        └─→ fluxo de agendamento (sistema comum)
+
+  Admin / staff:
+
+     /                  Landing pública (vê o link "Área Restrita" no footer)
+                          └─ clica em "Login Admin" / "Área Restrita"
+                              └─→ /login
+                                   └─ faz login como admin/staff
+                                        └─→ /admin (sistema comum)
+
+  PONTO-CHAVE:
+     /login é a porta de entrada ÚNICA para TODOS os perfis.
+     Após autenticação, o role do usuário decide o redirecionamento.
+     Toda essa área (/login + /admin) = código COMPARTILHADO entre
+     todos os clientes. Não pertence ao src/sites/ruah/.
+
+
+================================================================================
+  8. SEÇÕES DA LANDING DO RUAH — MVP
+================================================================================
+
+  ✅ DECISÃO Q8.A — TRAVADA: TODAS as seções no primeiro corte.
+
+     ✅ 1.  Hero                  — imagem de fundo + título + CTA "Agendar"
+     ✅ 2.  Sobre                 — bloco institucional
+     ✅ 3.  Serviços              — grid alimentado pela tabela services
+     ✅ 4.  Galeria               — fotos com scroll-snap (Q14)
+     ✅ 5.  Equipe                — barbeiros (hardcoded no config)
+     ✅ 6.  Depoimentos           — hardcoded
+     ✅ 7.  Horário               — hardcoded (businessHours.ts)
+     ✅ 8.  Contato               — telefone, WhatsApp, Instagram, endereço
+     ✅ 9.  Mapa                  — imagem estática + link Google Maps (Q15)
+     ✅ 10. Footer                — links, redes sociais, "Área Restrita"
+
+
+================================================================================
+  9. PALETA DE CORES OFICIAL DO RUAH
+================================================================================
+
+  ✅ DECISÃO Q9.A — TRAVADA: PALETA V1 (VERDE MILITAR).
+
+  Verde militar profundo    #1a3a3a   → primary / background (light)
+  Verde militar claro       #2d5a5a   → card / muted / border
+  Verde militar escuro      #0f2020   → background (dark) / input
+  Dourado quente            #d4a574   → secondary / accent / ring
+  Marfim                    #f5f1e8   → foreground (texto principal)
+  Cinza neutro              #b8b4a8   → muted-foreground (texto secundário)
+
+  TOKENS CSS (escopo definido em Q11.A):
+     --primary               #1a3a3a
+     --primary-foreground    #f5f1e8
+     --secondary             #d4a574
+     --secondary-foreground  #1a3a3a
+     --accent                #d4a574
+     --accent-foreground     #1a3a3a
+     --background            #1a3a3a   (light)
+     --background-dark       #0f2020   (dark)
+     --foreground            #f5f1e8
+     --card                  #2d5a5a
+     --card-foreground       #f5f1e8
+     --muted                 #2d5a5a
+     --muted-foreground      #b8b4a8
+     --popover               #2d5a5a
+     --popover-foreground    #f5f1e8
+     --border                #2d5a5a
+     --input                 #0f2020
+     --ring                  #d4a574
+
+  ⚠️ branding.ts atual está com paleta V2 (verde profundo).
+     PRECISA SER REVISADO para refletir paleta V1 acima.
+
+
+================================================================================
+  10. TIPOGRAFIA OFICIAL DO RUAH
+================================================================================
+
+  ✅ FONTES TRAVADAS:
+
+  --font-display    'Playfair Display'  (pesos 600, 700, 800)
+                    — usar em h1 grandes e destaques editoriais
+
+  --font-heading    'Montserrat'        (pesos 500, 600, 700)
+                    — usar em h2, h3, botões, labels uppercase
+
+  --font-body       'Lato'              (pesos 400, 500, 700)
+                    — usar em parágrafos e textos corridos
+
+  Google Fonts URL (validada):
+  https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Montserrat:wght@500;600;700&family=Lato:wght@400;500;700&display=swap
+
+  ✅ DECISÃO Q10.A — TRAVADA: ROUTE HEAD do TanStack Router.
+
+  Carregar via head() na rota do Ruah usando a API oficial validada:
+
+     export const Route = createFileRoute('/')({
+       head: () => ({
+         links: [
+           { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+           { rel: 'preconnect', href: 'https://fonts.gstatic.com',
+             crossOrigin: '' },
+           { rel: 'stylesheet',
+             href: 'https://fonts.googleapis.com/css2?...&display=swap' }
+         ]
+       }),
+       component: RuahLanding
+     })
+
+  Vantagens:
+     ✅ SSR-aware (links no <head> antes do render)
+     ✅ Sem FOUT (preconnect + display=swap)
+     ✅ Isolado por rota (não polui outros studios)
+     ✅ Sintaxe oficial validada (TanStack Start docs)
+
+
+================================================================================
+  11. REFERÊNCIA VISUAL — EXEMPLO BARBER LOUNGE
+================================================================================
+
+  📁 LOCALIZAÇÃO: C:\FlowStudio AI\docs\barber exemplo\client\src\
+     Origem: projeto "ruah-barber-lounge" (gerado na plataforma Manus)
+
+  🎯 STATUS: REFERÊNCIA VISUAL OBRIGATÓRIA do projeto Ruah.
+
+  ────────────────────────────────────────────────────────────────────────
+  11.1  STACK DO EXEMPLO vs. STACK DO PROJETO (CRÍTICO)
+  ────────────────────────────────────────────────────────────────────────
+
+  EXEMPLO usa:                  PROJETO Ruah usa:
+  • wouter                  →   TanStack Router
+  • SPA + Express           →   TanStack Start SSR
+  • Tailwind v4 (@theme)    →   CSS puro + CSS Variables (decisão Q4.A)
+  • shadcn/ui (60+ comps)   →   HTML semântico + classes utilitárias
+  • next-themes             →   ThemeContext local em src/sites/ruah/
+  • framer-motion           →   CSS animations puras (decisão Q12)
+  • react-hook-form + zod   →   sem form no MVP (decisão Q13)
+  • embla-carousel-react    →   CSS scroll-snap nativo (decisão Q14)
+  • @types/google.maps      →   imagem estática + link (decisão Q15)
+
+  ────────────────────────────────────────────────────────────────────────
+  11.2  COMPONENTES DE REFERÊNCIA (caminho real auditado)
+  ────────────────────────────────────────────────────────────────────────
+
+  📍 docs\barber exemplo\client\src\
+
+      pages\Home.tsx                       → composição final das seções
+      pages\NotFound.tsx                   → página 404
+
+      components\HeroSection.tsx           (4,0 KB)
+      components\AboutSection.tsx          (4,0 KB)
+      components\ServicesSection.tsx       (5,5 KB)
+      components\GallerySection.tsx        (4,8 KB)
+      components\TeamSection.tsx           (6,0 KB)
+      components\TestimonialsSection.tsx   (4,7 KB)
+      components\ContactSection.tsx        (6,6 KB)
+      components\Footer.tsx                (5,4 KB)
+      components\Map.tsx                   (4,8 KB) → Google Maps embed
+      components\ErrorBoundary.tsx         (1,6 KB)
+
+      contexts\ThemeContext.tsx → padrão de dark/light a portar
+      hooks\useMobile.tsx       → padrão de responsividade
+
+  🚫 IGNORAR (lixo da plataforma Manus):
+      • components\ManusDialog.tsx
+      • pasta .manus\
+      • patches\wouter@3.7.1.patch
+      • vite-plugin-manus-runtime
+      • template.json / .project-config.json
+      • server\ (Express, não usamos)
+
+  🚫 NÃO PORTAR (60+ componentes shadcn/ui em components/ui/):
+      Servem apenas como REFERÊNCIA VISUAL.
+      Vamos reescrever cada elemento usado em HTML semântico + CSS.
+
+  ────────────────────────────────────────────────────────────────────────
+  11.3  REGRAS DE USO — O QUE COPIAR / O QUE NÃO COPIAR
+  ────────────────────────────────────────────────────────────────────────
+
+  ✅ COPIAR (essência visual e estrutural):
+     • estrutura de layout (ordem das seções, hierarquia)
+     • escolhas tipográficas (tamanhos, pesos, espaçamentos)
+     • paleta e aplicação das cores
+     • copy e tom da escrita
+     • posicionamento de CTAs
+     • estilo de imagens e composição
+     • micro-interações e animações (conceito, traduzir para CSS)
+
+  ❌ NÃO COPIAR 1:1 (código-fonte):
+     • Tailwind v4   → mapear para CSS puro + CSS Variables
+     • shadcn/ui    → reescrever em HTML semântico
+     • wouter       → trocar por TanStack Router
+     • SPA          → adaptar para SSR (sem useEffect no first render)
+     • next-themes  → usar ThemeContext local
+
+  ────────────────────────────────────────────────────────────────────────
+  11.4  FLUXO DE PORTE POR SEÇÃO (obrigatório nas Fases 9+)
+  ────────────────────────────────────────────────────────────────────────
+
+     1. Abrir o componente correspondente em docs\barber exemplo\
+     2. Identificar: layout, tokens, copy, imagens, animações
+     3. Mapear Tailwind v4 → CSS Variables + classes utilitárias
+     4. Mapear shadcn/ui → HTML semântico equivalente
+     5. Trocar wouter → TanStack Router (<Link to=...>)
+     6. Adaptar para SSR (cuidado com window/document no first render)
+     7. Implementar em src\sites\ruah\components\
+     8. Validar lado-a-lado com o exemplo
+
+  ⚠️ ANTES DE GERAR CÓDIGO de qualquer seção, sempre apresentar:
+     • o que vai ser portado (resumo)
+     • o mapeamento de adaptações (v4→CSS, shadcn→puro, wouter→TanStack)
+     • só depois, gerar o código
+
+
+================================================================================
+  12. ARQUITETURA DE ESTILO (FILOSOFIA)
+================================================================================
+
+  ✅ DECISÃO Q11.A — TRAVADA: CSS VARS no :root via theme.css carregado
+     APENAS na rota da landing (isolamento via route head + escopo de
+     classes utilitárias prefixadas).
+
+  ABORDAGEM:
+     • src/sites/ruah/styles/theme.css contém:
+         - definição de --vars no :root (escopo da rota)
+         - classes utilitárias (.ruah-btn, .ruah-section, etc.)
+     • Carregado via route head() com import '?url'
+         (padrão oficial TanStack Start documentado)
+     • Componentes consomem var(--primary), var(--font-body), etc.
+
+  Por que CSS Variables (e não Tailwind):
+     ✅ Isolamento absoluto (theme.css só carrega nas rotas do Ruah)
+     ✅ Permite light/dark via class no <html> ou data-attribute
+     ✅ Refatorável: para isolar Ruah em outro repo, copiar
+        src/sites/ruah/ inteiro funciona.
+     ✅ SSR-friendly (CSS injetado no <head> antes do render)
+     ✅ Zero overhead de build (sem PostCSS plugin, sem JIT)
+
+
+================================================================================
+  13. DECISÕES Q12-Q15 (NOVAS, TRAVADAS)
+================================================================================
+
+  ✅ Q12 — ANIMAÇÕES: CSS animations puras
+     • @keyframes + transition + animation
+     • Sem framer-motion
+     • Padrão: fade-in + translate-y nas seções via IntersectionObserver
+       (apenas se necessário — preferir CSS-only com :hover/scroll)
+
+  ✅ Q13 — FORMULÁRIO DE CONTATO: sem form no MVP
+     • CTA "Fale conosco no WhatsApp" abre https://wa.me/...
+       com mensagem pré-preenchida via parâmetro ?text=
+     • Sem react-hook-form, sem zod, sem backend de e-mail
+     • Se houver demanda real depois, adicionar como melhoria
+
+  ✅ Q14 — GALERIA: CSS scroll-snap nativo
+     • overflow-x: auto + scroll-snap-type: x mandatory
+     • scroll-snap-align: start nas imagens
+     • Sem embla-carousel
+     • Em desktop: grid responsivo; em mobile: carousel touch nativo
+
+  ✅ Q15 — MAPA: imagem estática + link
+     • Imagem (PNG/WEBP) salva em public/sites/ruah/images/map.jpg
+     • Clique abre Google Maps em nova aba (target="_blank")
+     • Sem Google Maps Embed API, sem API key, sem JS de mapa
+
+
+================================================================================
+  14. ESTADO ATUAL DO PROJETO (CHECKPOINT)
+================================================================================
+
+  ✅ JÁ EXISTE em src/sites/ruah/:
+     ✅ types/identity.ts
+     ✅ types/branding.ts
+     ✅ types/businessHours.ts
+     ✅ types/index.ts
+     ✅ config/identity.ts
+     ✅ config/branding.ts        (⚠️ revisar: aplicar paleta V1)
+     ✅ config/businessHours.ts
+     ✅ config/index.ts
+     ✅ utils/buildBrandingCss.ts (⚠️ revisar conforme decisão Q11.A)
+     ✅ styles/theme.css          (⚠️ revisar conforme decisão Q11.A)
+     ✅ index.ts (barrel export)
+
+  ✅ JÁ REESCRITO:
+     ✅ src/routes/__root.tsx
+        — consome src/sites/ruah/, aplica tema.
+        ⚠️ revisar: implementar leitura de VITE_ACTIVE_STUDIO e
+           carregamento de fontes via head() oficial.
+
+  ⏳ FALTAM (escopo Ruah MVP):
+     ⏳ Helper de resolução em src/sites/index.ts (mapa nome → módulo)
+     ⏳ src/routes/index.tsx (landing — arquivo atual é lixo residual)
+     ⏳ src/sites/ruah/content/ (textos, hero, sobre, depoimentos, equipe)
+     ⏳ Componentes (Hero, About, Services, Gallery, Team, Testimonials,
+                     Contact, Map, Footer)
+     ⏳ Hook useServices (Supabase + React Query) — ler tabela services
+     ⏳ Cliente Supabase em src/shared/lib/supabase.ts
+     ⏳ Imagens / assets do Ruah em public/sites/ruah/images/
+
+  🗑️ LIXO RESIDUAL (não-legado — limpar na Fase 20):
+     • src/routes/admin/**
+     • src/routes/login.tsx (versão antiga)
+     • src/routes/403.tsx (versão antiga)
+     • src/routes/index.tsx (versão antiga)
+     • src/hooks/, src/lib/, src/config/, src/components/, src/styles/
+     • backups .bak-* em qualquer pasta
+
+     ⚠️ DEIXAR PRA DEPOIS. Não bloquear o Ruah por causa de lixo.
+
+
+================================================================================
+  15. ORDEM DE EXECUÇÃO ATUAL
+================================================================================
+
+  ✅ FASE 1  — Tipagem (types/)                                CONCLUÍDA
+  ✅ FASE 2  — Config base (config/)                           CONCLUÍDA
+  ✅ FASE 3  — Branding + buildBrandingCss + theme.css         CONCLUÍDA*
+  ✅ FASE 4  — __root.tsx reescrito                            CONCLUÍDA*
+                (*precisa revisão conforme decisões V2.1)
+
+  ⏳ FASE 5  — Revisar branding.ts (paleta V1) + theme.css
+              + buildBrandingCss conforme Q9.A/Q11.A           PRÓXIMA
+  ⏳ FASE 6  — Helper src/sites/index.ts (resolução por env)
+              + revisar __root.tsx para usar VITE_ACTIVE_STUDIO
+              + carregar fontes via head() oficial
+  ⏳ FASE 7  — Cliente Supabase em src/shared/lib/supabase.ts
+  ⏳ FASE 8  — Hook useServices (React Query + Supabase)
+  ⏳ FASE 9  — Criar src/sites/ruah/content/ (todos os textos)
+  ⏳ FASE 10 — Portar HeroSection
+  ⏳ FASE 11 — Portar AboutSection
+  ⏳ FASE 12 — Portar ServicesSection (alimentada pelo Supabase)
+  ⏳ FASE 13 — Portar GallerySection (scroll-snap)
+  ⏳ FASE 14 — Portar TeamSection
+  ⏳ FASE 15 — Portar TestimonialsSection
+  ⏳ FASE 16 — Portar ContactSection (CTA WhatsApp)
+  ⏳ FASE 17 — Portar Map (imagem estática + link)
+  ⏳ FASE 18 — Portar Footer
+  ⏳ FASE 19 — Criar src/routes/index.tsx (composição final + SEO)
+  ⏳ FASE 20 — Deploy Netlify isolado do Ruah
+  ⏳ FASE 21 — Voltar no sistema comum e limpar lixo residual
+
+
+================================================================================
+  16. REGRAS DE TRABALHO COM A IA
+================================================================================
+
+  ✅ Sempre INVESTIGAR antes de propor (PowerShell de verificação)
+  ✅ Sempre VALIDAR a API/sintaxe real antes de afirmar (web search se preciso)
+  ✅ Sempre apresentar ORDEM DE EXECUÇÃO antes dos comandos
+  ✅ Sempre fornecer comandos PowerShell prontos para Windows
+  ✅ Sempre escrever arquivos com UTF-8 sem BOM
+  ✅ Sempre CONSULTAR docs/barber exemplo/ antes de portar uma seção
+  ✅ Sempre apresentar a ADAPTAÇÃO da seção do exemplo ANTES de gerar código
+     (mapeando v4→CSS puro, shadcn→HTML puro, wouter→TanStack)
+  ✅ Sempre adicionar contexto importante à memória persistente
+  ✅ Sempre rejeitar overengineering
+  ✅ Sempre proteger o isolamento entre studios
+  ✅ Sempre proteger o MVP
+
+  ❌ NÃO assumir multi-tenant
+  ❌ NÃO sugerir microserviços / Kubernetes / event sourcing / CQRS
+  ❌ NÃO adicionar libs sem justificativa forte
+  ❌ NÃO usar bibliotecas/sintaxe incompatíveis com a stack oficial
+  ❌ NÃO propor soluções para "preservar legado" (NÃO HÁ LEGADO)
+  ❌ NÃO mover lixo residual para _legacy/ enquanto Ruah não está pronto
+  ❌ NÃO mexer em src/routes/admin/** agora (sistema comum, depois)
+  ❌ NÃO mexer em src/hooks/, src/lib/, src/config/, src/components/,
+     src/styles/ agora (lixo residual, depois)
+
+
+================================================================================
+  17. COMO USAR ESTE DOCUMENTO
+================================================================================
+
+  📌 QUANDO COLAR NO CHAT:
+     • Sempre que sentir que estamos saindo do trilho
+     • Sempre que abrir uma nova sessão de chat
+     • Sempre que a IA propor algo que parece "fora do escopo"
+     • Sempre que houver dúvida sobre o que é prioridade
+
+  📌 COMO ATUALIZAR:
+     • Sempre que uma decisão pendente for fechada → atualizar aqui
+     • Sempre que uma fase for concluída → marcar ✅
+     • Sempre que surgir nova regra permanente → adicionar em §16
+     • Sempre que mudar paleta/tipo/stack → atualizar §9/§10/§4
+
+  📌 ARMA CONTRA DESVIO:
+     "Cola o contrato V2.1." → IA deve reler e ajustar postura.
+
+
+================================================================================
+  18. RESUMO EXECUTIVO — DECISÕES TRAVADAS
+================================================================================
+
+  📊 TODAS AS DECISÕES PENDENTES FORAM FECHADAS NESTA V2.1:
+
+  Q3.A   → Resolução do site:    ESTÁTICA (import direto via env literal)
+  Q4.A   → Tailwind vs CSS puro: CSS PURO + CSS Variables
+  Q8.A   → Seções no MVP:        TODAS as 10 seções no primeiro corte
+  Q9.A   → Paleta:               V1 (verde militar #1a3a3a + dourado #d4a574)
+  Q10.A  → Fontes:               route head() oficial do TanStack Start
+  Q11.A  → Escopo CSS vars:      :root via theme.css carregado por rota
+  Q12    → Animações:            CSS animations puras (sem framer-motion)
+  Q13    → Form de contato:      Sem form no MVP, só CTA WhatsApp
+  Q14    → Galeria/Carousel:     CSS scroll-snap nativo
+  Q15    → Mapa:                 Imagem estática + link Google Maps
+
+  ✅ Zero decisões pendentes. O caminho está livre para a Fase 5.
+
+
+================================================================================
+  FIM DO CONTRATO V2.1
+================================================================================

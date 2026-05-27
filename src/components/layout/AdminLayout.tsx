@@ -112,7 +112,8 @@ export function AdminLayout({ user }: AdminLayoutProps) {
   const userLabel = getUserLabel(user);
 
   return (
-    <div className="flex min-h-screen bg-bg-page text-text-default">
+    // h-screen trava a altura na viewport (essencial para scroll interno funcionar)
+    <div className="flex h-screen bg-bg-page text-text-default">
       {/* === SIDEBAR DESKTOP === */}
       <aside className="hidden w-60 flex-col border-r border-border-subtle bg-sidebar md:flex">
         <SidebarContent
@@ -156,9 +157,10 @@ export function AdminLayout({ user }: AdminLayoutProps) {
       )}
 
       {/* === ÁREA PRINCIPAL === */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      {/* min-w-0 protege contra overflow horizontal em flex */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header mobile */}
-        <header className="flex items-center justify-between border-b border-border-subtle bg-bg-card px-4 py-3 md:hidden">
+        <header className="flex flex-shrink-0 items-center justify-between border-b border-border-subtle bg-bg-card px-4 py-3 md:hidden">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -180,8 +182,20 @@ export function AdminLayout({ user }: AdminLayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-7xl p-4 md:p-6">
+        {/*
+          MAIN:
+          - flex-1: ocupa toda altura restante
+          - min-h-0: regra de ouro do flex — permite que o filho com overflow funcione
+          - overflow-hidden: cada rota controla seu próprio scroll
+        */}
+        <main className="min-h-0 flex-1 overflow-hidden">
+          {/*
+            Wrapper centralizado com h-full para preservar cadeia de altura.
+            Rotas que precisam de scroll vertical normal (dashboard, clientes, etc)
+            devem usar `<div className="h-full overflow-auto p-4 md:p-6">` no topo.
+            Rotas full-height (calendario) usam `<div className="flex h-full flex-col">`.
+          */}
+          <div className="mx-auto h-full max-w-7xl">
             <Outlet />
           </div>
         </main>

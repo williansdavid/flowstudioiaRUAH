@@ -7,9 +7,9 @@
 
 /* === @import DEVE vir antes de qualquer regra CSS === */
 /*@import './themes/classic.css';*/
-/* @import './themes/soft.css'; */
-/* @import './themes/premium.css'; */
-@import './themes/luxury.css';
+ /*@import './themes/soft.css';*/ 
+ /*@import './themes/premium.css'; */
+	@import './themes/luxury.css'; 
 :root {
   /* ============================================
      FONT FAMILIES (referência semântica)

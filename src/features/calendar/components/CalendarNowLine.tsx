@@ -3,12 +3,12 @@
  * CalendarNowLine
  * ============================================
  *
- * Linha horizontal vermelha indicando o horario atual.
+ * Linha horizontal DOURADA indicando o horario atual.
  *
  * - Aparece SOMENTE se "agora" estiver dentro da janela 08:00-20:00
  *   e se a coluna corresponder ao DIA atual (controle do parent via prop `show`).
  * - Atualiza a cada 60 segundos.
- * - Posicionada absolutamente sobre as colunas de conteudo.
+ * - Glow sutil pra dar peso visual sem agressividade (linha vermelha era brega).
  */
 
 import { useEffect, useState } from "react";
@@ -20,7 +20,6 @@ import {
 } from "../constants";
 
 interface CalendarNowLineProps {
-  /** Se false, nao renderiza (ex: nao e hoje). */
   show: boolean;
 }
 
@@ -42,7 +41,6 @@ export function CalendarNowLine({ show }: CalendarNowLineProps) {
   const minutesInWindow =
     (CALENDAR_DAY_END_HOUR - CALENDAR_DAY_START_HOUR) * 60;
 
-  // Fora da janela visivel — nao renderiza
   if (minutesFromDayStart < 0 || minutesFromDayStart >= minutesInWindow) {
     return null;
   }
@@ -50,14 +48,34 @@ export function CalendarNowLine({ show }: CalendarNowLineProps) {
   const pixelsPerMinute = CALENDAR_SLOT_HEIGHT_PX / CALENDAR_SLOT_MINUTES;
   const topPx = minutesFromDayStart * pixelsPerMinute;
 
+  const timeLabel = `${String(now.getHours()).padStart(2, "0")}:${String(
+    now.getMinutes(),
+  ).padStart(2, "0")}`;
+
   return (
     <div
       className="pointer-events-none absolute inset-x-0 z-30 flex items-center"
       style={{ top: `${topPx}px` }}
-      aria-hidden="true"
+      aria-label={`Agora: ${timeLabel}`}
     >
-      <div className="h-2 w-2 -translate-x-1/2 rounded-full bg-red-500" />
-      <div className="h-px flex-1 bg-red-500" />
+      {/* Bolinha dourada com glow */}
+      <div
+        className="relative h-2.5 w-2.5 -translate-x-1/2 rounded-full"
+        style={{
+          backgroundColor: "var(--brand-500)",
+          boxShadow:
+            "0 0 0 3px var(--bg-card), 0 0 12px 2px oklch(0.72 0.12 80 / 0.55)",
+        }}
+      />
+      {/* Linha dourada */}
+      <div
+        className="h-px flex-1"
+        style={{
+          background:
+            "linear-gradient(to right, var(--brand-500) 0%, var(--brand-500) 60%, transparent 100%)",
+          boxShadow: "0 0 6px 0 oklch(0.72 0.12 80 / 0.4)",
+        }}
+      />
     </div>
   );
 }

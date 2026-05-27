@@ -1,98 +1,152 @@
-# 🔧 Tech Debt — FlowStudio AI
+# 🧾 Tech Debt — FlowStudio AI
 
-> Registro de débitos técnicos conhecidos e priorizados.  
-> Resolver em sprints dedicadas, sem comprometer o MVP.
-
----
-
-## Legenda de Prioridade
-
-- 🔴 **HIGH** — Bloqueia funcionalidades ou produção
-- 🟡 **MEDIUM** — Afeta DX ou pode causar problemas futuros
-- 🟢 **LOW** — Cosmético ou melhoria opcional
+> **Última atualização:** 27/05/2026
+> **Contexto:** Débitos identificados durante a Fase 6 (Landing Page RUAH).
+> **Política:** Itens fora do escopo da landing são suspensos até retomada explícita do sistema.
 
 ---
 
-## Status: Aberto
+## 📋 Política de Escopo
 
-### 🟢 [LOW] DEBT-001 — Upgrade Vite 5 → 7 + TanStack Start latest
+Durante a entrega da **Landing Page RUAH**, qualquer item que **não bloqueie** a renderização visual/funcional da landing é registrado aqui como **débito técnico** e adiado.
 
-- **Identificado em**: CHECKPOINT 01 (21/05/2026)
-- **Sintoma**: Warning `vite invalid: ">=7.0.0"` ao rodar `npm ls`
-- **Causa**: TanStack Start 1.166+ pede Vite 7+ como peer dep
-- **Impacto atual**: ZERO em runtime (peer dep optional)
-- **Solução proposta**:
-  - Migrar config Vite 5 → 7 (breaking changes em config)
-  - Atualizar TanStack Start para latest
-  - Validar plugins compatíveis (`@vitejs/plugin-react`, `vite-tsconfig-paths`)
-  - Testar SSR e build completo
-- **Esforço estimado**: 4-8h
-- **Quando resolver**: Sprint de upgrades (~6 meses)
-- **Bloqueia produção?**: ❌ Não
+**Regra prática:**
+> Se o problema não impede a landing de funcionar bonita e estável → vira débito.
+
+**Critérios para promoção de débito → tarefa ativa:**
+- Bloqueia uma nova feature crítica
+- Causa bug em produção
+- Impede onboarding de novo studio
+- Acumula risco arquitetural significativo
 
 ---
 
-### 🟢 [LOW] DEBT-002 — Vulnerabilidades npm (2 low, 2 moderate)
+## 🗂️ Backlog de Débitos Técnicos
 
-- **Identificado em**: CHECKPOINT 01 (21/05/2026)
-- **Sintoma**: `npm audit` reporta 4 vulnerabilidades
-- **Causa**: Dependências transitivas
-- **Impacto atual**: Baixo (em devDependencies)
-- **Solução proposta**:
-  - Rodar `npm audit` para detalhar quais pacotes
-  - Avaliar caso a caso (não rodar `--force`, quebra a stack)
-  - Atualizar em conjunto com DEBT-001
-- **Esforço estimado**: 1-2h
-- **Quando resolver**: Junto com DEBT-001
-- **Bloqueia produção?**: ❌ Não
-
----
-
-## Status: Resolvido
-
-> Nenhum até o momento.
+### DEBT-001 — Remover types/sections.ts duplicado
+- **Categoria:** Limpeza
+- **Prioridade:** Média
+- **Origem:** Fase 6.0 — Auditoria
+- **Problema:** Existe `src/types/sections.ts` (legacy) duplicado com `src/sites/ruah/types/sections.ts`. Mesmo conteúdo, mantido em dois lugares.
+- **Risco:** Divergência futura entre os dois arquivos; confusão sobre qual é a fonte da verdade.
+- **Ação:**
+  1. Confirmar que ninguém importa `@/types/sections`
+  2. Deletar `src/types/sections.ts`
+  3. Validar build TypeScript
+- **Esforço estimado:** 15 min
 
 ---
 
-## Como adicionar novos débitos
+### DEBT-002 — Mover components/landing → sites/ruah/components
+- **Categoria:** Refactor estrutural
+- **Prioridade:** Média
+- **Origem:** Fase 6.0
+- **Problema:** Componentes da landing RUAH estão em `src/components/landing/` (estrutura genérica antiga) em vez de `src/sites/ruah/components/` (padrão site auto-contido).
+- **Arquivos afetados:**
+  - `src/components/landing/SectionsRenderer.tsx`
+  - `src/components/landing/WhatsAppFloatingButton.tsx`
+  - `src/components/landing/hero/*` (HeroFullscreen, HeroSplit, HeroMinimal, _shared/*)
+  - `src/components/landing/services/*` (ServicesGrid, _shared/ServiceCard)
+- **Risco:** Quebra a regra arquitetural de "site auto-contido"; dificulta replicação para novos studios.
+- **Ação:**
+  1. Mover via `Move-Item` preservando estrutura
+  2. Atualizar imports automaticamente (script PowerShell)
+  3. Validar build + SSR
+- **Esforço estimado:** 1-2h
+
+---
+
+### DEBT-003 — Remover HeroSection.legacy.tsx
+- **Categoria:** Limpeza
+- **Prioridade:** Baixa
+- **Origem:** Fase 6.0
+- **Problema:** `src/components/landing/HeroSection.legacy.tsx` já está marcado como legacy no nome, mas continua no projeto.
+- **Risco:** Baixo (não está sendo importado), mas polui o repo.
+- **Ação:** Confirmar não-uso e deletar.
+- **Esforço estimado:** 5 min
+
+---
+
+### DEBT-004 — Eliminar src/config/studio.config.ts
+- **Categoria:** Refactor
+- **Prioridade:** Alta (pós-landing)
+- **Origem:** Fase 6.0
+- **Problema:** A rota `/` ainda importa `@/config/studio.config`, conflitando com o padrão novo `@/sites/ruah/config/*`. Existem duas fontes de configuração do studio.
+- **Risco:** Dados desincronizados; quem edita um pode esquecer do outro.
+- **Ação:**
+  1. Mapear todos os consumidores de `@/config/studio*`
+  2. Migrar cada consumidor para `@/sites/ruah`
+  3. Deletar `src/config/studio.config.ts`
+- **Esforço estimado:** 2-3h
+
+---
+
+### DEBT-005 — Avaliar destino de lib/sections/fetchServices.ts
+- **Categoria:** Decisão arquitetural
+- **Prioridade:** Média
+- **Origem:** Fase 6.0
+- **Problema:** `src/lib/sections/fetchServices.ts` é genérico ou específico do RUAH? Hoje está em local genérico, mas só serve à landing.
+- **Decisão pendente:**
+  - **Opção A:** Manter genérico → renomear para `src/lib/landing/fetchPublicServices.ts`
+  - **Opção B:** Mover para `src/sites/ruah/lib/queries/fetchServices.ts` (site auto-contido)
+- **Recomendação técnica:** Opção B (consistência com padrão site auto-contido).
+- **Esforço estimado:** 30 min
+
+---
+
+### DEBT-006 — Reescrever rota / 100% via @/sites/ruah
+- **Categoria:** Refactor
+- **Prioridade:** Alta (pós-landing)
+- **Origem:** Fase 6.0
+- **Problema:** A rota `src/routes/index.tsx` mistura imports do legacy (`@/components/landing`, `@/config/studio.config`, `@/lib/sections`) com a estrutura nova.
+- **Risco:** Dificulta manter padrão de site auto-contido; cria duas formas de fazer a mesma coisa.
+- **Ação:** Após DEBT-002 e DEBT-004, reescrever rota importando apenas de `@/sites/ruah`.
+- **Esforço estimado:** 1h
+
+---
+
+### DEBT-007 — Auditoria global de imports legacy
+- **Categoria:** Auditoria
+- **Prioridade:** Média
+- **Origem:** Fase 6.0
+- **Problema:** Não há mapa completo de quem importa:
+  - `@/components/landing/*`
+  - `@/types/sections`
+  - `@/config/studio.config`
+  - `@/lib/sections/*`
+- **Ação:** Rodar script de varredura e gerar relatório `docs/IMPORTS_AUDIT.md`.
+- **Esforço estimado:** 30 min
+
+---
+
+### DEBT-008 — Padronizar barrel exports
+- **Categoria:** Padronização
+- **Prioridade:** Baixa
+- **Origem:** Fase 6.0
+- **Problema:** Mistura de `export *`, `export type *` e exports nomeados em diferentes `index.ts` do projeto. Falta convenção única.
+- **Ação:**
+  1. Definir convenção oficial (preferência: exports nomeados explícitos)
+  2. Aplicar em todos os barrels (`sites/ruah/index.ts`, `content/index.ts`, etc.)
+- **Esforço estimado:** 1h
+
+---
+
+### DEBT-009 — Documentar Pattern "Site Auto-Contido"
+- **Categoria:** Documentação
+- **Prioridade:** Baixa
+- **Origem:** Fase 6.0
+- **Problema:** O padrão `src/sites/<studio>/` está sendo aplicado de forma orgânica, sem documento de referência. Próximos studios não terão blueprint claro.
+- **Ação:** Criar `docs/SITE_PATTERN.md` documentando:
+  - Estrutura de pastas obrigatória
+  - O que vai em `config/`, `content/`, `lib/`, `components/`, `pages/`, `types/`
+  - Como o `index.ts` (barrel) deve expor o site
+  - Regras de SSR
+  - Como integrar com Supabase (futuro)
+- **Esforço estimado:** 2h
+
+---
+
+## 🆕 Como adicionar novos débitos
 
 Use o template:
 
-```markdown
-### 🔴/🟡/🟢 [HIGH/MEDIUM/LOW] DEBT-XXX — Título curto
-
-- **Identificado em**: CHECKPOINT XX (DATA)
-- **Sintoma**: O que se observa
-- **Causa**: Por que acontece
-- **Impacto atual**: O que afeta hoje
-- **Solução proposta**: Como resolver
-- **Esforço estimado**: Horas
-- **Quando resolver**: Prazo / sprint
-- **Bloqueia produção?**: Sim / Não
-```
-### 🟡 [MEDIUM] DEBT-003 — Padronizar nomenclatura feature staff
-- Sintoma: feature chamada `team` mas types/server/banco usam `staff`
-- Solucao: renomear `features/team` → `features/staff` + types/permissao
-- Esforco: 30-45 min
-- Quando: antes de adicionar 2+ devs ou em sprint de polimento
-
-### 🟢 [LOW] DEBT-004 — Limpeza de arquivos legacy
-- `features/staff` vazia (deletar)
-- `routes/admin/route.tsx.backup` (deletar)
-- Esforco: 5 min
-- Quando: qualquer momento
-### 🟡 [MEDIUM] DEBT-003 — Padronizar nomenclatura feature `team` vs `staff`
-- **Sintoma:** feature em `src/features/team/` mas types/server/banco usam `staff`.
-- **Causa:** divergencia historica entre UI ("Equipe") e camada tecnica.
-- **Solucao:** renomear `features/team` -> `features/staff`, types `TeamMember` -> `StaffMember`, permissao `team.manage` -> `staff.manage`. UI continua "Equipe" (label PT-BR).
-- **Esforco:** 30-45 min (refactor mecanico).
-- **Quando:** antes de adicionar 2+ devs OU em sprint de polimento. Nao bloqueia features.
-- **Risco se postergar:** baixo (cosmetico).
-
-### 🟢 [LOW] DEBT-005 — Bundle client acima de 500kB
-- **Sintoma:** `index-*.js` ~566kB (175kB gzip) no build de producao.
-- **Causa:** sem code-splitting agressivo, lazy loading de rotas pesadas pendente.
-- **Solucao:** configurar `build.rollupOptions.output.manualChunks` no Vite + lazy de views futuras (calendario, charts).
-- **Esforco:** 1h.
-- **Quando:** apos calendario de agendamentos ou primeiro modulo financeiro.
-- **Risco se postergar:** baixo no MVP, medio em producao com 3G.

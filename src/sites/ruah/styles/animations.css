@@ -1,0 +1,193 @@
+/* ============================================================
+ * Ruah Barber Lounge — Animations
+ * ------------------------------------------------------------
+ * Keyframes + classes de reveal-on-scroll.
+ *
+ * Funcionamento:
+ *   1. Elemento renderiza SSR com classe `.ruah-reveal` (estado inicial)
+ *   2. Hook useReveal() observa via IntersectionObserver
+ *   3. Quando entra na viewport, adiciona `.is-visible` → anima
+ *
+ * Acessibilidade:
+ *   - Respeita prefers-reduced-motion → desliga animações
+ *
+ * Importado em: src/routes/__root.tsx (via ?url import)
+ * ============================================================ */
+
+/* ============================================================
+ * 1. Keyframes
+ * ============================================================ */
+@keyframes ruah-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ruah-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ruah-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ruah-fade-left {
+  from {
+    opacity: 0;
+    transform: translateX(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes ruah-fade-right {
+  from {
+    opacity: 0;
+    transform: translateX(-2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes ruah-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================
+ * 2. Reveal base — estado inicial (antes de entrar na viewport)
+ * ============================================================ */
+.theme-dark .ruah-reveal {
+  opacity: 0;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  will-change: opacity, transform;
+}
+
+/* ============================================================
+ * 3. Variantes de reveal — estado inicial por direção
+ * ============================================================ */
+.theme-dark .ruah-reveal--up {
+  transform: translateY(2rem);
+}
+
+.theme-dark .ruah-reveal--down {
+  transform: translateY(-2rem);
+}
+
+.theme-dark .ruah-reveal--left {
+  transform: translateX(2rem);
+}
+
+.theme-dark .ruah-reveal--right {
+  transform: translateX(-2rem);
+}
+
+.theme-dark .ruah-reveal--scale {
+  transform: scale(0.95);
+}
+
+/* ============================================================
+ * 4. Estado visível — disparado via JS (.is-visible)
+ * ============================================================ */
+.theme-dark .ruah-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* ============================================================
+ * 5. Delays utilitários (stagger)
+ * ============================================================ */
+.theme-dark .ruah-delay-100 {
+  transition-delay: 100ms;
+}
+
+.theme-dark .ruah-delay-200 {
+  transition-delay: 200ms;
+}
+
+.theme-dark .ruah-delay-300 {
+  transition-delay: 300ms;
+}
+
+.theme-dark .ruah-delay-400 {
+  transition-delay: 400ms;
+}
+
+.theme-dark .ruah-delay-500 {
+  transition-delay: 500ms;
+}
+
+/* ============================================================
+ * 6. Hover utilities (efeito premium)
+ * ============================================================ */
+.theme-dark .ruah-hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.theme-dark .ruah-hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+.theme-dark .ruah-hover-zoom {
+  overflow: hidden;
+}
+
+.theme-dark .ruah-hover-zoom img {
+  transition: transform 0.6s ease;
+}
+
+.theme-dark .ruah-hover-zoom:hover img {
+  transform: scale(1.05);
+}
+
+/* ============================================================
+ * 7. Acessibilidade — respeita prefers-reduced-motion
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .theme-dark .ruah-reveal,
+  .theme-dark .ruah-reveal--up,
+  .theme-dark .ruah-reveal--down,
+  .theme-dark .ruah-reveal--left,
+  .theme-dark .ruah-reveal--right,
+  .theme-dark .ruah-reveal--scale {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .theme-dark .ruah-hover-lift,
+  .theme-dark .ruah-hover-zoom img {
+    transition: none !important;
+  }
+
+  .theme-dark .ruah-hover-lift:hover {
+    transform: none !important;
+  }
+}

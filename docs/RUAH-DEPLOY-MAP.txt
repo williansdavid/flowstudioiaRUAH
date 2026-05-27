@@ -1,0 +1,739 @@
+================================================================================
+  MAPA DE PROCEDIMENTO DE DEPLOY - FlowStudio AI
+================================================================================
+  Projeto: FlowStudio AI (white-label para studios de beleza)
+  Versao: 1.0
+  Data: 27/05/2026
+  Stack: TanStack React Start SSR + Vite + Supabase + Netlify
+================================================================================
+
+
+================================================================================
+  ARQUITETURA DE DEPLOY (visao geral)
+================================================================================
+
+                    +--------------------------+
+                    |   1 REPOSITORIO GITHUB   |
+                    |   (branch unica: main)   |
+                    |                          |
+                    |  src/sites/ruah/         |
+                    |  src/sites/raissa/       |
+                    |  src/sites/<futuro>/     |
+                    +------------+-------------+
+                                 | git push
+                  +--------------+--------------+
+                  |                             |
+                  v                             v
+       +--------------------+        +--------------------+
+       |  NETLIFY SITE A    |        |  NETLIFY SITE B    |
+       |  (Ruah)            |        |  (Raissa)          |
+       +--------------------+        +--------------------+
+       | env:               |        | env:               |
+       | ACTIVE=ruah        |        | ACTIVE=raissa      |
+       | SUPABASE_URL=...   |        | SUPABASE_URL=...   |
+       | SUPABASE_KEY=...   |        | SUPABASE_KEY=...   |
+       +---------+----------+        +---------+----------+
+                 |                             |
+                 v                             v
+       ruahbarberlounge.com.br        raissastudio.com.br
+       (landing Ruah)                 (landing Raissa)
+                 |                             |
+                 v                             v
+       +--------------------+        +--------------------+
+       | SUPABASE PROJETO A |        | SUPABASE PROJETO B |
+       | (dados Ruah)       |        | (dados Raissa)     |
+       +--------------------+        +--------------------+
+
+PRINCIPIOS FUNDAMENTAIS:
+- 1 repositorio Git compartilhado (main e a unica branch de producao)
+- N sites Netlify (1 por cliente, mesmo repositorio)
+- Diferenciacao 100% por variaveis de ambiente do Netlify
+- Cada cliente possui Supabase proprio (isolamento total de dados)
+- Dominio proprio por cliente (configurado no Netlify)
+
+
+================================================================================
+  INDICE DE CENARIOS
+================================================================================
+
+  1. Subir um cliente NOVO do zero
+  2. Atualizar landing/codigo de cliente existente
+  3. Mudanca rapida (foto/texto/cor) de um cliente
+  5. Rollback de deploy quebrado
+  7. Debug quando um cliente nao carrega
+  8. Configurar variaveis de ambiente locais (dev)
+  9. Primeira configuracao do projeto na maquina
+
+  APENDICES:
+  A. Tabela de variaveis de ambiente
+  B. Configuracao de dominio customizado
+  C. Troubleshooting - erros comuns
+  D. Debitos tecnicos conhecidos
+  E. Cronograma de build tipico
+
+
+================================================================================
+  CENARIO 1 - SUBIR UM CLIENTE NOVO DO ZERO
+================================================================================
+
+QUANDO USAR: novo studio contratou e quer landing no ar.
+TEMPO ESTIMADO: 2h-4h (preenchimento de conteudo e o gargalo).
+
+PRE-REQUISITOS:
+[ ] Acesso ao painel Supabase (supabase.com)
+[ ] Acesso ao painel Netlify (netlify.com)
+[ ] Repositorio Git clonado localmente
+[ ] Conteudo do cliente em maos (textos, fotos, paleta, fontes)
+[ ] Dominio proprio do cliente ja adquirido (registro.br ou similar)
+
+--------------------------------------------------------------------------------
+PASSO 1 - Criar projeto Supabase do cliente
+--------------------------------------------------------------------------------
+
+1. Acessar https://supabase.com/dashboard
+2. Clicar em "New Project"
+3. Preencher:
+   - Name: flowstudio-<slug-cliente> (ex: flowstudio-raissa)
+   - Database Password: gerar senha forte e salvar em local seguro
+   - Region: South America (Sao Paulo)
+   - Pricing Plan: Free (suficiente para MVP)
+4. Aguardar criacao (~2 minutos)
+5. ANOTAR EM LOCAL SEGURO:
+   - Project URL (ex: https://xxxxx.supabase.co)
+   - anon public key (em Project Settings -> API)
+   - service_role key (NUNCA expor - so backend)
+
+--------------------------------------------------------------------------------
+PASSO 2 - Rodar migrations no Supabase do cliente
+--------------------------------------------------------------------------------
+
+1. No painel do projeto Supabase -> SQL Editor
+2. Clicar em "New query"
+3. Copiar o conteudo de supabase/migrations/<latest>.sql do repositorio
+4. Colar no editor e clicar "Run"
+5. Validar em Table Editor se tabelas foram criadas:
+   - services
+   - profiles
+   - user_roles
+   - clients
+   - staff
+   - appointments
+   - finance_transactions
+   - leads
+   - whatsapp_messages
+   - whatsapp_settings
+   - ai_messages
+6. (Opcional MVP) Popular tabela services com dados iniciais via INSERT
+
+NOTA: futuramente migrar para Supabase CLI (supabase db push) para automatizar.
+
+--------------------------------------------------------------------------------
+PASSO 3 - Criar pasta do cliente no codigo
+--------------------------------------------------------------------------------
+
+Comandos PowerShell na raiz do projeto:
+
+    $slug = "raissa"
+    $dest = "src\sites\$slug"
+    Copy-Item -Path "src\sites\ruah" -Destination $dest -Recurse
+    New-Item -ItemType Directory -Path "public\sites\$slug\images" -Force
+
+ARQUIVOS A EDITAR dentro de src/sites/<slug>/:
+[ ] config/identity.ts - nome, telefone, WhatsApp, endereco, redes sociais
+[ ] config/branding.ts - paleta de cores, fontes
+[ ] config/businessHours.ts - horarios de funcionamento
+[ ] content/ - todos os textos (hero, sobre, equipe, depoimentos)
+[ ] index.ts - confirmar barrel exports
+
+IMAGENS A COLOCAR em public/sites/<slug>/images/:
+[ ] hero.webp
+[ ] about.webp
+[ ] gallery-1.webp ate gallery-N.webp
+[ ] team-<nome>.webp para cada membro
+
+--------------------------------------------------------------------------------
+PASSO 4 - Registrar o cliente no helper de resolucao
+--------------------------------------------------------------------------------
+
+Editar src/sites/index.ts:
+
+    import { ruah } from './ruah';
+    import { raissa } from './raissa';   // adicionar import
+
+    const studios = {
+      ruah,
+      raissa,                            // adicionar entrada
+    } as const;
+
+--------------------------------------------------------------------------------
+PASSO 5 - Commit e push
+--------------------------------------------------------------------------------
+
+    git add .
+    git commit -m "feat: adiciona estrutura do cliente Raissa"
+    git push origin main
+
+IMPORTANTE: este push vai fazer redeploy de TODOS os sites Netlify
+existentes. E esperado. Cada um pega seu env e renderiza corretamente.
+
+--------------------------------------------------------------------------------
+PASSO 6 - Criar site Netlify do cliente
+--------------------------------------------------------------------------------
+
+1. Acessar https://app.netlify.com
+2. "Add new site" -> "Import an existing project"
+3. Conectar GitHub e selecionar o repositorio do FlowStudio AI
+4. Configurar build:
+   - Branch to deploy: main
+   - Build command: npm run build
+   - Publish directory: dist
+5. NAO CLICAR EM "DEPLOY" AINDA - antes adicionar envs (Passo 7)
+
+--------------------------------------------------------------------------------
+PASSO 7 - Adicionar variaveis de ambiente
+--------------------------------------------------------------------------------
+
+No painel do site recem-criado:
+Site Settings -> Environment Variables -> Add a variable
+
+  KEY                          VALUE                              SCOPE
+  ---------------------------  ---------------------------------  -----
+  VITE_ACTIVE_STUDIO           raissa                             All
+  VITE_SUPABASE_URL            https://xxxxx.supabase.co          All
+  VITE_SUPABASE_ANON_KEY       eyJhbGc...                         All
+
+Depois ir em: Deploys -> Trigger deploy -> Deploy site
+
+--------------------------------------------------------------------------------
+PASSO 8 - Configurar dominio proprio do cliente
+--------------------------------------------------------------------------------
+
+1. No painel do site Netlify: Domain management -> Add a domain
+2. Digitar o dominio (ex: raissastudio.com.br)
+3. Netlify vai mostrar os DNS records necessarios:
+   - Opcao A (recomendada): apontar nameservers para Netlify DNS
+   - Opcao B: criar registros CNAME/A no DNS atual do cliente
+4. Aguardar propagacao DNS (5min a 48h)
+5. Netlify provisiona SSL automaticamente (Let's Encrypt)
+6. Validar acesso: https://raissastudio.com.br
+
+--------------------------------------------------------------------------------
+CHECKLIST FINAL - Cliente no Ar
+--------------------------------------------------------------------------------
+
+[ ] Supabase criado e migrations rodadas
+[ ] Pasta src/sites/<slug>/ preenchida com conteudo do cliente
+[ ] Imagens em public/sites/<slug>/images/
+[ ] Cliente registrado em src/sites/index.ts
+[ ] Commit e push feitos na main
+[ ] Site Netlify criado e conectado ao repo
+[ ] 3 variaveis de ambiente configuradas
+[ ] Dominio proprio apontado e SSL ativo
+[ ] Landing carrega corretamente no dominio final
+[ ] Botao WhatsApp testado (abre conversa correta)
+[ ] Lighthouse score > 90 (Performance/SEO)
+
+
+================================================================================
+  CENARIO 2 - ATUALIZAR LANDING/CODIGO DE CLIENTE EXISTENTE
+================================================================================
+
+QUANDO USAR: mudancas que envolvem codigo (componentes, logica, features).
+TEMPO ESTIMADO: depende da mudanca + 3 minutos de build.
+
+FLUXO:
+
+    # 1. Garantir branch atualizada
+    git checkout main
+    git pull origin main
+
+    # 2. Fazer as alteracoes necessarias
+    #    (no VS Code, editar arquivos em src/sites/<slug>/ ou src/shared/)
+
+    # 3. Testar localmente
+    $env:VITE_ACTIVE_STUDIO = "ruah"
+    npm run dev
+
+    # 4. Build local para validar
+    npm run build
+
+    # 5. Commit e push
+    git add .
+    git commit -m "feat(ruah): ajuste no componente X"
+    git push origin main
+
+O QUE ACONTECE AUTOMATICAMENTE:
+- Netlify detecta o push
+- Cada site Netlify roda npm run build com seu proprio env
+- Deploy entra em producao em ~3 minutos por site
+- Cada cliente fica com sua versao correta no ar
+
+CUIDADO: alteracoes em src/shared/ ou src/sites/_base/ afetam TODOS os
+clientes. Testar com cuidado.
+
+
+================================================================================
+  CENARIO 3 - MUDANCA RAPIDA (FOTO, TEXTO, COR)
+================================================================================
+
+QUANDO USAR: cliente pediu trocar uma foto, ajustar um texto, mudar cor.
+TEMPO ESTIMADO: 5-10 minutos + 3 min de build.
+
+--------------------------------------------------------------------------------
+MUDANCA DE TEXTO
+--------------------------------------------------------------------------------
+
+    # Editar arquivo correspondente em src/sites/<slug>/content/
+    code src/sites/ruah/content/hero.ts
+
+    # Commit e push
+    git add src/sites/ruah/content/hero.ts
+    git commit -m "content(ruah): atualiza headline do hero"
+    git push origin main
+
+--------------------------------------------------------------------------------
+MUDANCA DE FOTO
+--------------------------------------------------------------------------------
+
+    # Substituir arquivo em public/sites/<slug>/images/
+    # IMPORTANTE: manter mesmo nome de arquivo se possivel
+    Copy-Item "C:\downloads\nova-foto.webp" `
+              -Destination "public\sites\ruah\images\hero.webp" -Force
+
+    git add public/sites/ruah/images/hero.webp
+    git commit -m "content(ruah): nova foto do hero"
+    git push origin main
+
+--------------------------------------------------------------------------------
+MUDANCA DE COR (paleta)
+--------------------------------------------------------------------------------
+
+    # Editar src/sites/<slug>/config/branding.ts
+    code src/sites/ruah/config/branding.ts
+
+    # Validar visualmente em dev
+    $env:VITE_ACTIVE_STUDIO = "ruah"
+    npm run dev
+
+    git add src/sites/ruah/config/branding.ts
+    git commit -m "design(ruah): ajusta paleta de cores"
+    git push origin main
+
+
+================================================================================
+  CENARIO 5 - ROLLBACK DE DEPLOY QUEBRADO
+================================================================================
+
+QUANDO USAR: push subiu bug em producao e precisa reverter agora.
+TEMPO ESTIMADO: 1 minuto (rollback Netlify) ou 5 min (revert Git).
+
+--------------------------------------------------------------------------------
+OPCAO A - Rollback INSTANTANEO via Netlify (RECOMENDADO)
+--------------------------------------------------------------------------------
+
+1. Acessar painel do site Netlify quebrado
+2. Ir em Deploys
+3. Localizar o ultimo deploy que funcionava (status verde)
+4. Clicar nos 3 pontinhos "..." -> "Publish deploy"
+5. Confirmar - site volta ao estado anterior em segundos
+
+VANTAGEM: nao precisa mexer no Git, e imediato.
+IMPORTANTE: o codigo quebrado continua na main. Use Opcao B em seguida
+para limpar.
+
+--------------------------------------------------------------------------------
+OPCAO B - Revert via Git (corrige a fonte)
+--------------------------------------------------------------------------------
+
+    # Ver ultimos commits
+    git log --oneline -5
+
+    # Reverter o commit problematico (cria novo commit de revert)
+    git revert <hash-do-commit-quebrado>
+
+    # Push para refazer deploy correto
+    git push origin main
+
+--------------------------------------------------------------------------------
+OPCAO C - Reset (USE COM CUIDADO - reescreve historico)
+--------------------------------------------------------------------------------
+
+    # SO usar se ninguem mais trabalhou no repo depois
+    git reset --hard <hash-anterior>
+    git push --force origin main
+
+NUNCA fazer --force em projeto com mais de um dev sem combinar antes.
+
+
+================================================================================
+  CENARIO 7 - DEBUG QUANDO CLIENTE NAO CARREGA
+================================================================================
+
+QUANDO USAR: site do cliente esta fora, com tela branca, ou erro.
+
+CHECKLIST DE DIAGNOSTICO (na ordem):
+
+--------------------------------------------------------------------------------
+1) O deploy foi feito com sucesso?
+--------------------------------------------------------------------------------
+- Painel Netlify -> Deploys
+- Ultimo deploy deve estar verde ("Published")
+- Se vermelho -> clicar e ler o log de erro
+
+--------------------------------------------------------------------------------
+2) As variaveis de ambiente estao corretas?
+--------------------------------------------------------------------------------
+- Site Settings -> Environment Variables
+- Verificar:
+  * VITE_ACTIVE_STUDIO bate com o slug da pasta em src/sites/?
+  * VITE_SUPABASE_URL e a URL CORRETA do Supabase desse cliente?
+  * VITE_SUPABASE_ANON_KEY e a anon public key (nao a service_role)?
+
+--------------------------------------------------------------------------------
+3) O slug existe no helper?
+--------------------------------------------------------------------------------
+
+    Get-Content src\sites\index.ts | Select-String "raissa"
+
+--------------------------------------------------------------------------------
+4) O DNS esta correto?
+--------------------------------------------------------------------------------
+
+    # Testar resolucao DNS
+    nslookup raissastudio.com.br
+
+    # Deve apontar para Netlify (IPs comecam com 75.x ou 99.x)
+
+--------------------------------------------------------------------------------
+5) O Supabase esta acessivel?
+--------------------------------------------------------------------------------
+- Acessar https://xxxxx.supabase.co no browser
+- Deve mostrar pagina padrao do Supabase (nao erro 404)
+
+--------------------------------------------------------------------------------
+6) Erros no console do browser?
+--------------------------------------------------------------------------------
+- Abrir o site quebrado
+- F12 -> aba Console
+- Procurar por erros vermelhos
+- Erros comuns:
+  * "Studio X nao encontrado" -> env VITE_ACTIVE_STUDIO errado
+  * "Failed to fetch" -> Supabase URL ou KEY incorretos
+  * "Module not found" -> import quebrado, faltou commitar arquivo
+
+--------------------------------------------------------------------------------
+7) Logs do Netlify Function (se SSR ativo)
+--------------------------------------------------------------------------------
+- Painel Netlify -> Functions -> ver logs em tempo real
+
+
+================================================================================
+  CENARIO 8 - VARIAVEIS DE AMBIENTE LOCAIS (DEV)
+================================================================================
+
+QUANDO USAR: desenvolver localmente simulando um cliente especifico.
+
+--------------------------------------------------------------------------------
+CRIAR ARQUIVO .env.local NA RAIZ
+--------------------------------------------------------------------------------
+
+Conteudo do .env.local (NAO commitar - ja esta no .gitignore):
+
+    VITE_ACTIVE_STUDIO=ruah
+    VITE_SUPABASE_URL=https://xxxxx.supabase.co
+    VITE_SUPABASE_ANON_KEY=eyJhbGc...
+
+--------------------------------------------------------------------------------
+TROCAR DE CLIENTE EM DEV RAPIDAMENTE
+--------------------------------------------------------------------------------
+
+    # Rodar como Ruah
+    $env:VITE_ACTIVE_STUDIO = "ruah"
+    npm run dev
+
+    # Parar com Ctrl+C, trocar e rodar como Raissa
+    $env:VITE_ACTIVE_STUDIO = "raissa"
+    npm run dev
+
+--------------------------------------------------------------------------------
+BOAS PRATICAS
+--------------------------------------------------------------------------------
+- NUNCA commitar .env.local (ja esta no .gitignore)
+- Manter .env.example no repo como template
+- Usar Supabase de DEV (nao o de producao) para testes destrutivos
+- Se for usar Supabase de producao em dev, SO LEITURA
+
+--------------------------------------------------------------------------------
+TEMPLATE .env.example (COMMITAR ESTE SIM)
+--------------------------------------------------------------------------------
+
+    # .env.example
+    # Copie para .env.local e preencha com valores reais
+
+    VITE_ACTIVE_STUDIO=ruah
+    VITE_SUPABASE_URL=https://your-project.supabase.co
+    VITE_SUPABASE_ANON_KEY=your-anon-key-here
+
+
+================================================================================
+  CENARIO 9 - PRIMEIRA CONFIGURACAO NA MAQUINA
+================================================================================
+
+QUANDO USAR: dev novo entrou no time, ou trocou de maquina.
+TEMPO ESTIMADO: 30-45 minutos.
+
+--------------------------------------------------------------------------------
+PRE-REQUISITOS A INSTALAR
+--------------------------------------------------------------------------------
+
+1. Node.js LTS (versao >= 20)
+   Baixar de: https://nodejs.org
+
+   Validar instalacao:
+       node --version    # deve mostrar v20.x ou maior
+       npm --version
+
+2. Git
+   Baixar de: https://git-scm.com
+
+       git --version
+
+3. VS Code (recomendado)
+   Baixar de: https://code.visualstudio.com
+
+--------------------------------------------------------------------------------
+EXTENSOES VS CODE RECOMENDADAS
+--------------------------------------------------------------------------------
+- ESLint
+- Prettier
+- TypeScript and JavaScript Language Features (nativa)
+- GitLens
+
+--------------------------------------------------------------------------------
+CLONAR E CONFIGURAR PROJETO
+--------------------------------------------------------------------------------
+
+    # 1. Clonar repositorio
+    cd C:\
+    git clone <url-do-repo> "FlowStudio AI"
+    cd "FlowStudio AI"
+
+    # 2. Instalar dependencias
+    npm install
+
+    # 3. Copiar template de env
+    Copy-Item .env.example .env.local
+
+    # 4. Editar .env.local com credenciais reais
+    code .env.local
+
+    # 5. Rodar projeto em dev
+    npm run dev
+
+    # Deve abrir em http://localhost:3000 (ou porta indicada)
+
+--------------------------------------------------------------------------------
+ACESSOS A SOLICITAR AO GESTOR
+--------------------------------------------------------------------------------
+[ ] Convite no repositorio GitHub
+[ ] Convite no team Netlify
+[ ] Convite no organizacao Supabase (se for mexer em DB)
+[ ] Credenciais do Supabase de DEV (para .env.local)
+[ ] Acesso ao Notion/Drive de documentacao (se houver)
+
+--------------------------------------------------------------------------------
+VALIDACAO FINAL
+--------------------------------------------------------------------------------
+[ ] npm run dev roda sem erros
+[ ] Landing do Ruah aparece em http://localhost:3000
+[ ] Console do browser sem erros vermelhos
+[ ] npm run build completa com sucesso
+
+
+================================================================================
+  APENDICE A - TABELA DE VARIAVEIS DE AMBIENTE
+================================================================================
+
+VARIAVEL                  OBRIG  ONDE SETAR              EXEMPLO
+------------------------  -----  ---------------------   --------------------
+VITE_ACTIVE_STUDIO        SIM    Netlify + .env.local    ruah
+VITE_SUPABASE_URL         SIM    Netlify + .env.local    https://x.supabase.co
+VITE_SUPABASE_ANON_KEY    SIM    Netlify + .env.local    eyJhbGc...
+
+ATENCAO: NUNCA colocar service_role key do Supabase no frontend
+(Vite expoe ENVs com prefixo VITE_ no client).
+
+
+================================================================================
+  APENDICE B - CONFIGURACAO DE DOMINIO CUSTOMIZADO
+================================================================================
+
+CENARIO: Cliente ja tem dominio em outro registrador.
+
+--------------------------------------------------------------------------------
+OPCAO 1 - Netlify DNS (mais simples)
+--------------------------------------------------------------------------------
+1. Netlify: Domain management -> Add custom domain
+2. Netlify mostra 4 nameservers (ex: dns1.p01.nsone.net)
+3. No painel do registrador do cliente (registro.br, GoDaddy etc.):
+   - Trocar nameservers para os do Netlify
+4. Aguardar propagacao (ate 48h)
+5. SSL automatico apos DNS estabilizar
+
+--------------------------------------------------------------------------------
+OPCAO 2 - Manter DNS atual
+--------------------------------------------------------------------------------
+1. Netlify: Domain management -> Add custom domain
+2. No registrador atual, adicionar:
+   - Registro A: @ -> IP do Netlify (mostrado no painel)
+   - Registro CNAME: www -> <seu-site>.netlify.app
+3. Aguardar propagacao
+4. SSL automatico apos validacao
+
+
+================================================================================
+  APENDICE C - TROUBLESHOOTING - ERROS COMUNS
+================================================================================
+
+ERRO                         CAUSA PROVAVEL              SOLUCAO
+---------------------------  --------------------------  ------------------------
+Tela branca em producao      VITE_ACTIVE_STUDIO errado   Validar env no Netlify
+                             ou pasta inexistente        + src/sites/index.ts
+
+Failed to fetch services     Supabase URL/KEY errados    Re-conferir envs
+                                                         no Netlify
+
+Build quebra no Netlify      Versao Node diferente       Setar NODE_VERSION=20
+mas funciona local                                       nas envs do Netlify
+
+Imagens nao carregam         Path incorreto ou arquivo   Validar
+                             nao foi commitado           public/sites/<slug>/
+
+SSL pendente apos 48h        DNS nao propagou            Validar com nslookup
+                                                         + suporte Netlify
+
+Deploy redeploya tudo a      Comportamento esperado      Ver Debito Tecnico
+cada push                    (1 repo, N sites)           DT-01 abaixo
+
+
+================================================================================
+  APENDICE D - DEBITOS TECNICOS CONHECIDOS
+================================================================================
+
+--------------------------------------------------------------------------------
+DT-01 - IGNORE SCRIPT DO NETLIFY (PRIORIDADE: MEDIA)
+--------------------------------------------------------------------------------
+
+PROBLEMA:
+Atualmente todo push na main causa rebuild de TODOS os sites Netlify
+(Ruah, Raissa, futuros). Isso gasta minutos de build mensal do Netlify
+e aumenta tempo de deploy global.
+
+SOLUCAO PLANEJADA:
+Criar script netlify-ignore.sh na raiz do projeto que verifica se a
+mudanca afeta o cliente especifico daquele site Netlify. Se nao afetar,
+pula o build.
+
+EXEMPLO DO SCRIPT:
+
+    #!/bin/bash
+    # netlify-ignore.sh
+
+    # Se mudou algo em src/shared/, src/routes/ ou raiz -> buildar TUDO
+    git diff --quiet HEAD^ HEAD ./src/shared ./src/routes ./package.json
+    if [ $? -eq 1 ]; then exit 1; fi
+
+    # Se mudou na pasta do cliente atual -> buildar
+    git diff --quiet HEAD^ HEAD ./src/sites/$VITE_ACTIVE_STUDIO ./public/sites/$VITE_ACTIVE_STUDIO
+    if [ $? -eq 1 ]; then exit 1; fi
+
+    # Nada relevante mudou -> pular build
+    exit 0
+
+CONFIGURACAO NO NETLIFY:
+- Site Settings -> Build and deploy -> Build settings
+- Ignore builds: bash netlify-ignore.sh
+
+QUANDO IMPLEMENTAR:
+Quando o numero de clientes >= 5 OU quando ultrapassar 70% da cota
+mensal de build do Netlify.
+
+--------------------------------------------------------------------------------
+DT-02 - MIGRATIONS VIA SUPABASE CLI (PRIORIDADE: BAIXA)
+--------------------------------------------------------------------------------
+
+PROBLEMA:
+Migrations rodadas manualmente via SQL Editor sao propensas a erro
+humano e dificultam versionamento.
+
+SOLUCAO PLANEJADA:
+Adotar Supabase CLI com:
+
+    supabase link --project-ref <ref>
+    supabase db push
+
+QUANDO IMPLEMENTAR:
+Quando houver mais de 3 clientes em producao.
+
+--------------------------------------------------------------------------------
+DT-03 - AMBIENTE DE STAGING (PRIORIDADE: BAIXA)
+--------------------------------------------------------------------------------
+
+PROBLEMA:
+Branch unica main significa que codigo vai direto pra producao sem
+ambiente intermediario de testes.
+
+SOLUCAO PLANEJADA:
+Criar branch develop com sites Netlify de staging por cliente
+(ex: staging-ruah.netlify.app).
+
+QUANDO IMPLEMENTAR:
+Quando o produto tiver pago seu primeiro cliente em producao e bugs
+ficarem caros.
+
+
+================================================================================
+  APENDICE E - CRONOGRAMA DE BUILD TIPICO (NETLIFY)
+================================================================================
+
+Push no Git ---------------------------------> 0s
+Netlify detecta webhook ---------------------> +5s
+Provisiona container ------------------------> +15s
+git clone do repo ---------------------------> +30s
+npm install ---------------------------------> +60s (com cache)
+npm run build (Vite SSR) --------------------> +90s
+Upload de assets ----------------------------> +20s
+Invalidacao de CDN --------------------------> +5s
+---------------------------------------------------
+TOTAL: ~3-4 minutos por site
+
+
+================================================================================
+  HISTORICO DE VERSOES
+================================================================================
+
+  VERSAO    DATA          MUDANCAS
+  ------    ----------    --------------------------------------------
+  1.0       27/05/2026    Versao inicial do mapa de deploy
+
+
+================================================================================
+  REFERENCIAS
+================================================================================
+
+- Netlify Docs - Environment Variables:
+  https://docs.netlify.com/environment-variables/overview/
+
+- Netlify Docs - Custom Domains:
+  https://docs.netlify.com/domains-https/custom-domains/
+
+- Supabase Docs - Project Setup:
+  https://supabase.com/docs/guides/getting-started
+
+- TanStack Start - Deployment:
+  https://tanstack.com/start/latest/docs/framework/react/hosting
+
+
+================================================================================
+  FIM DO MAPA DE PROCEDIMENTO
+================================================================================

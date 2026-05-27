@@ -3,26 +3,17 @@ import { cn } from "@/lib/utils/cn";
 import type { CalendarView } from "../types";
 
 interface CalendarHeaderProps {
-  /** Data de referencia atual (dia selecionado ou primeiro dia da semana). */
   currentDate: Date;
-  /** View ativa: 'day' | 'week'. */
   view: CalendarView;
-  /** Disparado quando o usuario navega (prev/next/hoje). */
   onDateChange: (date: Date) => void;
-  /** Disparado quando o usuario alterna a view. */
   onViewChange: (view: CalendarView) => void;
 }
 
 /**
  * Header de navegacao do calendario.
+ * Tematizado via tokens CSS (funciona em qualquer skin).
  *
- * Responsabilidades:
- *  - Exibir titulo contextual (dia ou intervalo da semana)
- *  - Navegar prev/next por unidade (1 dia ou 7 dias)
- *  - Botao "Hoje" pra resetar pra data atual
- *  - Alternar entre view 'day' e 'week'
- *
- * Componente puramente controlado: nao mantem estado interno.
+ * Toggle Dia/Semana usa pill dourado pro estado ativo.
  */
 export function CalendarHeader({
   currentDate,
@@ -33,54 +24,57 @@ export function CalendarHeader({
   const isToday = isSameDay(currentDate, new Date());
   const title = formatTitle(currentDate, view);
 
-  const handlePrev = () => {
-    onDateChange(shiftDate(currentDate, view, -1));
-  };
-
-  const handleNext = () => {
-    onDateChange(shiftDate(currentDate, view, 1));
-  };
-
-  const handleToday = () => {
-    onDateChange(new Date());
-  };
+  const handlePrev = () => onDateChange(shiftDate(currentDate, view, -1));
+  const handleNext = () => onDateChange(shiftDate(currentDate, view, 1));
+  const handleToday = () => onDateChange(new Date());
 
   return (
-    <div className="flex flex-col gap-3 border-b border-neutral-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+    <div
+      className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"
+      style={{
+        backgroundColor: "var(--bg-subtle)",
+        borderBottomColor: "var(--border-default)",
+        boxShadow: "var(--metal-highlight)",
+      }}
+    >
       {/* Bloco esquerdo: navegacao + titulo */}
       <div className="flex items-center gap-2">
-        <button
-          type="button"
+        <NavButton
           onClick={handlePrev}
-          aria-label={view === "day" ? "Dia anterior" : "Semana anterior"}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 transition-colors hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          ariaLabel={view === "day" ? "Dia anterior" : "Semana anterior"}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
-        </button>
+        </NavButton>
 
-        <button
-          type="button"
+        <NavButton
           onClick={handleNext}
-          aria-label={view === "day" ? "Proximo dia" : "Proxima semana"}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-700 transition-colors hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          ariaLabel={view === "day" ? "Proximo dia" : "Proxima semana"}
         >
           <ChevronRight className="h-4 w-4" aria-hidden />
-        </button>
+        </NavButton>
 
         <button
           type="button"
           onClick={handleToday}
           disabled={isToday}
           className={cn(
-            "ml-1 inline-flex h-9 items-center justify-center rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 transition-colors",
-            "hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-            "disabled:cursor-not-allowed disabled:opacity-50",
+            "ml-1 inline-flex h-9 items-center justify-center rounded-md border px-3 text-sm font-medium transition-all",
+            "focus:outline-none focus-visible:ring-2",
+            "disabled:cursor-not-allowed disabled:opacity-40",
           )}
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderColor: "var(--border-default)",
+            color: "var(--fg-default)",
+          }}
         >
           Hoje
         </button>
 
-        <h2 className="ml-2 truncate text-sm font-semibold text-neutral-900 sm:text-base">
+        <h2
+          className="ml-2 truncate text-sm font-semibold sm:text-base"
+          style={{ color: "var(--fg-strong)" }}
+        >
           {title}
         </h2>
       </div>
@@ -89,7 +83,11 @@ export function CalendarHeader({
       <div
         role="tablist"
         aria-label="Visualizacao do calendario"
-        className="inline-flex self-start rounded-md border border-neutral-200 bg-neutral-50 p-0.5 sm:self-auto"
+        className="inline-flex self-start rounded-md border p-0.5 sm:self-auto"
+        style={{
+          backgroundColor: "var(--bg-card)",
+          borderColor: "var(--border-default)",
+        }}
       >
         <ViewToggleButton
           active={view === "day"}
@@ -107,7 +105,34 @@ export function CalendarHeader({
 }
 
 // --------------------------------------------
-// Subcomponente: botao do toggle de view
+// Subcomponente: botao de navegacao (prev/next)
+// --------------------------------------------
+interface NavButtonProps {
+  onClick: () => void;
+  ariaLabel: string;
+  children: React.ReactNode;
+}
+
+function NavButton({ onClick, ariaLabel, children }: NavButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all hover:-translate-y-px focus:outline-none focus-visible:ring-2"
+      style={{
+        backgroundColor: "var(--bg-card)",
+        borderColor: "var(--border-default)",
+        color: "var(--fg-default)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// --------------------------------------------
+// Subcomponente: toggle Dia/Semana com pill dourado
 // --------------------------------------------
 interface ViewToggleButtonProps {
   active: boolean;
@@ -122,13 +147,19 @@ function ViewToggleButton({ active, onClick, label }: ViewToggleButtonProps) {
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={cn(
-        "inline-flex h-8 items-center justify-center rounded px-3 text-sm font-medium transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+      className="inline-flex h-8 items-center justify-center rounded px-4 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2"
+      style={
         active
-          ? "bg-white text-neutral-900 shadow-sm"
-          : "text-neutral-600 hover:text-neutral-900",
-      )}
+          ? {
+              background: "var(--brand-gradient, var(--brand-500))",
+              color: "var(--brand-fg)",
+              boxShadow: "var(--metal-highlight), var(--shadow-gold, none)",
+            }
+          : {
+              backgroundColor: "transparent",
+              color: "var(--fg-subtle)",
+            }
+      }
     >
       {label}
     </button>
@@ -151,36 +182,21 @@ const weekDayMonthFmt = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
 });
 
-const weekYearFmt = new Intl.DateTimeFormat("pt-BR", {
-  year: "numeric",
-});
+const weekYearFmt = new Intl.DateTimeFormat("pt-BR", { year: "numeric" });
 
-/**
- * Compara se duas datas representam o mesmo dia civil.
- * Usa toDateString pra evitar problemas de timezone/hora.
- */
 function isSameDay(a: Date, b: Date): boolean {
   return a.toDateString() === b.toDateString();
 }
 
-/**
- * Retorna o primeiro dia (segunda-feira) da semana que contem `date`.
- * Padrao brasileiro: semana comeca na segunda.
- */
 function getWeekStart(date: Date): Date {
   const result = new Date(date);
-  const day = result.getDay(); // 0=domingo, 1=segunda, ..., 6=sabado
-  const diff = day === 0 ? -6 : 1 - day; // se domingo, volta 6 dias; senao volta ate segunda
+  const day = result.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   result.setDate(result.getDate() + diff);
   result.setHours(0, 0, 0, 0);
   return result;
 }
 
-/**
- * Avanca/retrocede a data conforme a view ativa.
- *  - day:  +/- 1 dia
- *  - week: +/- 7 dias
- */
 function shiftDate(date: Date, view: CalendarView, direction: 1 | -1): Date {
   const result = new Date(date);
   const delta = view === "day" ? 1 : 7;
@@ -188,11 +204,6 @@ function shiftDate(date: Date, view: CalendarView, direction: 1 | -1): Date {
   return result;
 }
 
-/**
- * Formata o titulo do header conforme a view.
- *  - day:  "segunda-feira, 26 de maio de 2026"
- *  - week: "26 de mai - 01 de jun de 2026"
- */
 function formatTitle(date: Date, view: CalendarView): string {
   if (view === "day") {
     return capitalize(dayTitleFmt.format(date));
@@ -209,9 +220,6 @@ function formatTitle(date: Date, view: CalendarView): string {
   return `${startLabel} - ${endLabel} de ${yearLabel}`;
 }
 
-/**
- * Capitaliza primeira letra (PT-BR retorna lowercase no weekday).
- */
 function capitalize(str: string): string {
   if (str.length === 0) return str;
   return str.charAt(0).toUpperCase() + str.slice(1);

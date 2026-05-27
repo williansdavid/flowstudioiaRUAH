@@ -38,11 +38,6 @@ type CalendarSearch = z.infer<typeof calendarSearchSchema>;
 // Helpers
 // ============================================
 
-/**
- * Resolve a data efetiva da rota:
- *  - Se search.date veio na URL, parseia (local).
- *  - Caso contrario, usa hoje 00:00 local.
- */
 function resolveCurrentDate(search: CalendarSearch): Date {
   if (search.date) {
     return parseISODate(search.date);
@@ -52,10 +47,6 @@ function resolveCurrentDate(search: CalendarSearch): Date {
   return today;
 }
 
-/**
- * Calcula o range (dia ou semana) que sera usado pelo loader e pelo hook.
- * MESMO range nos dois lados garante cache hit.
- */
 function resolveRange(date: Date, view: CalendarView) {
   return view === "day" ? getDayRange(date) : getWeekRange(date);
 }
@@ -93,20 +84,14 @@ function CalendarRouteComponent() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
-  // Date local derivada dos search params
   const currentDate = useMemo(() => resolveCurrentDate(search), [search]);
 
-  // Range estavel — bate com o cache do loader
   const range = useMemo(
     () => resolveRange(currentDate, search.view),
     [currentDate, search.view],
   );
 
   const { data, isLoading, error } = useAppointments(range);
-
-  // ============================================
-  // Handlers (atualizam URL via search params)
-  // ============================================
 
   const handleViewChange = (next: CalendarView) => {
     navigate({
@@ -122,22 +107,15 @@ function CalendarRouteComponent() {
     });
   };
 
-  // ============================================
-  // Click handlers (placeholders — fase 8.5)
-  // ============================================
-
   const handleAppointmentClick = (positioned: { appointment: { id: string } }) => {
-    // TODO 8.5: abrir modal de detalhes/edicao
     console.log("[calendar] appointment click:", positioned.appointment.id);
   };
 
   const handleDaySlotClick = (params: { staffId: string; slotIndex: number }) => {
-    // TODO 8.5: abrir modal de criacao pre-preenchido
     console.log("[calendar] day slot click:", params);
   };
 
   const handleWeekSlotClick = (params: { date: Date; slotIndex: number }) => {
-    // TODO 8.5: abrir modal de criacao pre-preenchido
     console.log("[calendar] week slot click:", {
       date: params.date.toISOString(),
       slotIndex: params.slotIndex,
@@ -147,14 +125,46 @@ function CalendarRouteComponent() {
   // ============================================
   // Render
   // ============================================
+  //
+  // Cadeia de altura (CRÍTICA):
+  // <main min-h-0 flex-1 overflow-hidden>
+  //   <div h-full max-w-7xl>            ← AdminLayout
+  //     <div flex h-full flex-col>      ← AQUI (raiz desta rota)
+  //       <PageHeader flex-shrink-0 />
+  //       <CalendarHeader flex-shrink-0 />
+  //       <ErrorBanner flex-shrink-0 /> (opcional)
+  //       <LoadingBanner flex-shrink-0 /> (opcional)
+  //       <div flex-1 min-h-0 overflow-hidden>  ← container do grid
+  //         <DayView/WeekView h-full />
+  //       </div>
+  //     </div>
+  //   </div>
+  // </main>
+  //
+  // Cada filho fixo (headers, banners) usa flex-shrink-0 para NÃO encolher.
+  // O container do grid usa flex-1 + min-h-0 para ocupar o resto e permitir scroll interno.
 
   return (
     <div className="flex h-full flex-col">
-      {/* Page header */}
-      <div className="flex flex-col gap-3 border-b border-neutral-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between md:p-6">
+      {/* Page header — não encolhe */}
+      <div
+        className="flex flex-shrink-0 flex-col gap-3 border-b p-4 sm:flex-row sm:items-start sm:justify-between md:p-6"
+        style={{
+          backgroundColor: "var(--bg-card)",
+          borderBottomColor: "var(--border-default)",
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Calendário</h1>
-          <p className="mt-1 text-sm text-neutral-600">
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: "var(--fg-strong)" }}
+          >
+            Calendário
+          </h1>
+          <p
+            className="mt-1 text-sm"
+            style={{ color: "var(--fg-muted)" }}
+          >
             Visualização temporal dos agendamentos.
           </p>
         </div>
@@ -168,32 +178,39 @@ function CalendarRouteComponent() {
         </Button>
       </div>
 
-      {/* Navegacao + toggle view */}
-      <CalendarHeader
-        currentDate={currentDate}
-        view={search.view}
-        onDateChange={handleDateChange}
-        onViewChange={handleViewChange}
-      />
+      {/* Navegação + toggle view — não encolhe */}
+      <div className="flex-shrink-0">
+        <CalendarHeader
+          currentDate={currentDate}
+          view={search.view}
+          onDateChange={handleDateChange}
+          onViewChange={handleViewChange}
+        />
+      </div>
 
-      {/* Estados */}
+      {/* Estados — não encolhem */}
       {error && (
         <div
           role="alert"
-          className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 md:px-6"
+          className="flex-shrink-0 border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 md:px-6"
         >
           Erro ao carregar agendamentos: {error.message}
         </div>
       )}
 
       {isLoading && !data && (
-        <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600 md:px-6">
+        <div className="flex-shrink-0 border-b border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600 md:px-6">
           Carregando agendamentos...
         </div>
       )}
 
-      {/* Grid principal */}
-      <div className="flex-1 overflow-hidden">
+      {/*
+        Container do grid:
+        - flex-1: ocupa todo espaço restante
+        - min-h-0: REGRA DE OURO do flex — permite encolher abaixo do conteúdo
+        - overflow-hidden: o scroll real fica DENTRO de DayView/WeekView
+      */}
+      <div className="min-h-0 flex-1 overflow-hidden">
         {search.view === "day" ? (
           <DayView
             date={currentDate}

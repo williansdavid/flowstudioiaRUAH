@@ -20,6 +20,10 @@ interface NavigationOverlayProps {
  * visuais no conteudo sao mais perceptiveis que uma barra de topo.
  *
  * SSR-safe: o estado inicial e sempre "sem navegacao".
+ *
+ * IMPORTANTE: usa `h-full` para preservar a cadeia de altura entre
+ * <body> -> #root -> AdminLayout -> rotas filhas. Sem isso, rotas
+ * que dependem de altura (ex: calendario com scroll interno) quebram.
  */
 export function NavigationOverlay({ children }: NavigationOverlayProps) {
   const { isNavigating } = useNavigationState();
@@ -28,7 +32,6 @@ export function NavigationOverlay({ children }: NavigationOverlayProps) {
   useEffect(() => {
     if (!isNavigating) {
       setShowFeedback(false);
-      // Garante limpeza do cursor mesmo em transicoes instantaneas
       if (typeof document !== 'undefined') {
         document.body.style.removeProperty('cursor');
       }
@@ -52,7 +55,7 @@ export function NavigationOverlay({ children }: NavigationOverlayProps) {
 
   return (
     <div
-      className="transition-opacity duration-200 ease-out"
+      className="h-full transition-opacity duration-200 ease-out"
       style={{
         opacity: showFeedback ? 0.6 : 1,
         pointerEvents: showFeedback ? 'none' : 'auto',
