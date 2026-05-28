@@ -1,7 +1,12 @@
 import type { StudioContent } from '../types'
-import type { StudioContent } from '../types'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
 
+export type AboutHighlightIcon = 'wifi' | 'award' | 'sparkles' | 'scissors' | 'heart' | 'shield'
+
+export interface AboutHighlight {
+  icon: AboutHighlightIcon
+  label: string
+}
 /**
  * ============================================================
  * STUDIO CONTENT — Barbearia Ruah
@@ -50,8 +55,23 @@ export const content: StudioContent = {
     headlineLine2: 'Barber Lounge',
     subheadline:
       'Onde a sofisticação encontra a precisão.' ,
-    backgroundImage: '/ruah/hero-barber-premium.webp',
+/*    backgroundImage: '/ruah/hero-barber-premium.webp', */ 
+/*	backgroundImage: '/ruah/images/hero/imgHero.webp',*/
 /*	backgroundImage: '/ruah/images/hero/img1.jpeg',*/
+    /**
+     * Carrossel de fundo do hero.
+     * Crossfade automático a cada 7s entre as imagens.
+     * Para voltar a 1 imagem só, troque o array por uma string.
+     *
+     * TODO: adicionar 3ª foto em /ruah/images/hero/ (sugestão:
+     * detalhe da cadeira/navalha ou cliente sendo atendido,
+     * 1920×1080, WebP qualidade 80).
+     */
+    backgroundImage: [
+      '/ruah/images/hero/ca1.webp',
+      '/ruah/images/hero/ca2.webp',
+	  '/ruah/images/hero/ca3.webp',
+    ],
     primaryCta: {
       label: 'Agendar Horário',
       href: buildWhatsAppUrl(
@@ -75,12 +95,12 @@ export const content: StudioContent = {
       'Combinamos técnicas clássicas com as tendências mais modernas do mercado, em um espaço planejado para oferecer conforto, com Wi-Fi, ambiente climatizado e profissionais altamente qualificados.',
     ],
     image:
-      'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
-    highlights: [
-      'Ambiente climatizado e Wi-Fi grátis',
-      'Profissionais altamente qualificados',
-      'Atendimento personalizado',
-    ],
+	'/ruah/images/hero/imgabout.jpg',
+	highlights: [
+	  { icon: 'wifi',     label: 'Ambiente climatizado e Wi-Fi grátis' },
+	  { icon: 'award',    label: 'Profissionais altamente qualificados' },
+	  { icon: 'sparkles', label: 'Atendimento personalizado' },
+	],
   },
 
   // ─────────────────────────────────────────────────────────

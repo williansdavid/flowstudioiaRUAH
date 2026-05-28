@@ -15,3 +15,5 @@ export { useReveal } from './useReveal'
 export type { UseRevealOptions } from './useReveal'
 
 export { useScrolled } from './useScrolled'
+export { formatPrice } from './formatPrice'
+export { formatDuration } from './formatDuration'

@@ -191,3 +191,51 @@
     transform: none !important;
   }
 }
+/* ============================================================
+ * 8. Stroke Reveal — desenho progressivo de SVG
+ * ------------------------------------------------------------
+ * Usado pelas accents douradas do AboutSection.
+ *
+ * Comportamento:
+ *   - Estado inicial: stroke "escondido" (dashoffset = perímetro)
+ *   - .is-visible    : stroke desenha do início ao fim (offset → 0)
+ *
+ * O perímetro do <rect> é 4 × 100 = 400 (viewBox 100×100).
+ * Usamos 420 como pathLength fictício pra garantir folga visual.
+ *
+ * Compatível com .ruah-delay-* (herda transition-delay).
+ * ============================================================ */
+.theme-dark .ruah-reveal-stroke {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  will-change: opacity;
+}
+
+.theme-dark .ruah-reveal-stroke .ruah-about__media-accent-rect {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  transition: stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: stroke-dashoffset;
+}
+
+/* Estado visível — aparece o wrapper e desenha o stroke */
+.theme-dark .ruah-reveal-stroke.is-visible {
+  opacity: 1;
+}
+
+.theme-dark .ruah-reveal-stroke.is-visible .ruah-about__media-accent-rect {
+  stroke-dashoffset: 0;
+}
+
+/* Acessibilidade — respeita prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .theme-dark .ruah-reveal-stroke {
+    opacity: 1 !important;
+    transition: none !important;
+  }
+  .theme-dark .ruah-reveal-stroke .ruah-about__media-accent-rect {
+    stroke-dasharray: none !important;
+    stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+}

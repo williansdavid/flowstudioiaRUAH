@@ -64,8 +64,19 @@ export interface HeroContent {
   /** Subtítulo de apoio (1-2 linhas curtas) */
   subheadline?: string
 
-  /** Imagem de fundo do hero (path absoluto desde /public) */
-  backgroundImage: string
+  /**
+   * Imagem(ns) de fundo do hero (path absoluto desde /public).
+   *
+   * Aceita 2 formatos:
+   *   • string    → 1 imagem estática (modo legado)
+   *   • string[]  → carrossel crossfade automático (7s/slide)
+   *
+   * Comportamento em runtime (HeroSection):
+   *   • string                 → 1 imagem (sem timer)
+   *   • string[] com 1 item    → 1 imagem (sem timer)
+   *   • string[] com 2+ itens  → carrossel ativo
+   */
+  backgroundImage: string | string[]
 
   /** Botão primário (geralmente "Agende seu horário") */
   primaryCta: {

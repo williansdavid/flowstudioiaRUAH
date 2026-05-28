@@ -1,0 +1,105 @@
+================================================================================
+PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
+Última atualização: 28/05/2026
+================================================================================
+
+| #  | Fase                    | Status | Entregáveis                                                                                                      | Arquivos  |
+|----|-------------------------|--------|------------------------------------------------------------------------------------------------------------------|-----------|
+| 1  | Tipos base              | ✅     | Contratos TS de identity, branding, business hours                                                               | 4         |
+| 2  | Identity                | ✅     | Dados do studio: nome, contato, endereço                                                                         | 1         |
+| 3  | Branding                | ✅     | Cores, tipografia, logo, raios                                                                                   | 1         |
+| 4  | Business Hours          | ✅     | Horários de funcionamento estruturados                                                                           | 1         |
+| 5  | Content + Barrels       | ✅     | Hero, services, contact, footer, about, team, gallery, testimonials, SEO + barrels                               | 3         |
+| 6  | Estilos + Utils         | ✅     | theme.css, base.css, animations.css, buildBrandingCss, useReveal                                                 | 6         |
+| 7  | Integração __root.tsx   | ✅     | Injetar CSS vars + fontes + theme no SSR                                                                         | 1         |
+| 8  | Componentes UI base     | ⚠️     | PULADO — substituído por classes CSS escopadas: .ruah-btn, .ruah-container, .ruah-section, .ruah-section-label. Revisitar se for criar admin. | — |
+| 9  | Layout: Header          | ✅     | Header fixo, scroll-aware, menu mobile com animações otimizadas, CTAs WhatsApp                                   | 2         |
+| 10 | Seção Hero              | ✅     | Hero full-screen com CTAs, overlay quente, headline Art Deco uppercase                                           | 1 + 1 CSS |
+| 11 | Seção About             | ⏳     | Sobre + valores + highlights                                                                                     | ~1        |
+| 12 | Seção Services          | ⏳     | Grid de serviços com preços usando loader Supabase                                                               | ~2        |
+| 13 | Seção Team              | ⏳     | Profissionais com fotos e especialidades                                                                         | ~2        |
+| 14 | Seção Gallery           | ⏳     | Galeria de fotos com lightbox simples                                                                            | ~2        |
+| 15 | Seção Testimonials      | ⏳     | Depoimentos em carrossel ou grid                                                                                 | ~2        |
+| 16 | Seção Hours             | ⏳     | Tabela de horários + status "aberto agora"                                                                       | ~1        |
+| 17 | Seção Contact + Map     | ⏳     | Formulário/CTA + mapa estático                                                                                   | ~1        |
+| 18 | Footer                  | ⏳     | CTA final WhatsApp + colunas (contato/horários/redes) + copyright                                                | ~1        |
+| 19 | Página / montada        | 🟡     | routes/index.tsx compondo todas as seções — parcial, atualmente Header + Hero                                    | 1         |
+| 20 | SEO + Metadata          | ⏳     | Open Graph, Twitter Cards, schema.org JSON-LD                                                                    | 1         |
+| 21 | WhatsApp Float          | ⏳     | Botão flutuante + deep link                                                                                      | ~1        |
+| 22 | Performance audit       | ⏳     | Lighthouse, lazy loading, preload críticos                                                                       | —         |
+| 23 | Deploy Netlify          | ⏳     | Build, env vars, domínio custom                                                                                  | —         |
+
+
+================================================================================
+FASE 10 — SEÇÃO HERO  ✅ CONCLUÍDA
+================================================================================
+
+| #    | Passo                            | Tipo | Ação                                                                                 | Status |
+|------|----------------------------------|------|--------------------------------------------------------------------------------------|--------|
+| 10.0 | Inspeção arquivos existentes     | 🔍   | HeroSection.tsx + HeroSection.legacy.tsx localizados                                 | ✅     |
+| 10.1 | Análise comparativa vs referência| 🔬   | Diff entre manus.space e build local                                                 | ✅     |
+| 10.2 | Ajuste de content.ts             | ✏️   | Eyebrow + headlines + subheadline + CTAs alinhados à referência                      | ✅     |
+| 10.3 | Fix classe __actions → __ctas    | 🐛   | Bug de classe sem CSS aplicado                                                       | ✅     |
+| 10.4 | Headline uppercase + maior       | 🎨   | font-size clamp(3.5rem, 10vw, 7.5rem) + text-transform uppercase + line-height 0.95 | ✅     |
+| 10.5 | Overlay frio → quente            | 🎨   | rgba(15,32,32) → rgba(8,6,4) / rgba(20,14,8), com matiz âmbar                       | ✅     |
+| 10.6 | CTAs case normal no hero         | 🎨   | Override text-transform: none em .ruah-hero__ctas .ruah-btn                         | ✅     |
+| 10.7 | CTA primário → WhatsApp          | 🔗   | href dinâmico via content.hero.primaryCta + target _blank                            | ✅     |
+| 10.8 | Validação visual final           | 👁️   | Comparado localhost vs manus.space                                                   | ✅     |
+
+
+================================================================================
+FASE 9 — LAYOUT: HEADER  ✅ CONCLUÍDA
+================================================================================
+
+| #   | Passo                            | Tipo | Ação                                                                              | Status |
+|-----|----------------------------------|------|-----------------------------------------------------------------------------------|--------|
+| 9.0 | Inspeção                         | 🔍   | Listado src/sites/ruah/components/layout/                                         | ✅     |
+| 9.1 | Decisão arquitetural             | 🧠   | Header fixo com scroll-aware (transparent topo → glassmorphism rolado em 50px)    | ✅     |
+| 9.2 | Header.tsx                       | ✏️   | Logo + nav (Início, Sobre, Serviços, Equipe, Galeria, Contato) + toggle mobile   | ✅     |
+| 9.3 | Mobile Menu integrado            | ✏️   | Drawer fullscreen com framer-motion (AnimatePresence + cascata)                  | ✅     |
+| 9.4 | CSS Header                       | 🎨   | .ruah-header, .ruah-header--scrolled, .ruah-mobile-menu, .ruah-mobile-menu__link  | ✅     |
+| 9.5 | Hook useScrolled                 | 🪝   | Detecção de scroll com threshold configurável                                     | ✅     |
+| 9.6 | Logo com fallback                | 🖼️   | <img /ruah/images/logo/logo.jpeg> + fallback textual em caso de erro             | ✅     |
+| 9.7 | CTAs Header → WhatsApp           | 🔗   | Header desktop + mobile usando content.hero.primaryCta com target _blank          | ✅     |
+| 9.8 | Otimização animações mobile      | ⚡   | Drawer 0.15s | links 0.2s | cascata 0.02s × idx (≈55% mais rápido)                | ✅     |
+| 9.9 | Validação TS + visual            | 🔬   | npx tsc --noEmit ok + testado em mobile e desktop                                | ✅     |
+
+
+================================================================================
+FASE 11 — SEÇÃO ABOUT  ⏳ PRÓXIMA
+================================================================================
+
+| #    | Passo                              | Tipo | Ação                                                                       | Risco |
+|------|------------------------------------|------|----------------------------------------------------------------------------|-------|
+| 11.0 | Inspeção                           | 🔍   | Verificar se já existe AboutSection.tsx + revisar content.about            | 🟢    |
+| 11.1 | Validar conteúdo                   | 📝   | Garantir que content/about.ts está completo (eyebrow, headline, body, highlights) | 🟢 |
+| 11.2 | Estrutura HTML semântica           | ✏️   | <section id="sobre"> com .ruah-section + .ruah-container                   | 🟢    |
+| 11.3 | Layout: 2 colunas (texto + imagem) | 🎨   | Grid responsivo: mobile stack → desktop split 50/50                        | 🟡    |
+| 11.4 | Bloco de highlights/valores        | 🎨   | Lista de 3-4 pilares com ícones Lucide + título + descrição curta          | 🟡    |
+| 11.5 | Animações de entrada               | ⚡   | useReveal nos blocos (fade-up no scroll)                                   | 🟢    |
+| 11.6 | CSS dedicado                       | 🎨   | .ruah-about, .ruah-about__grid, .ruah-about__highlights                    | 🟢    |
+| 11.7 | Integração em routes/index.tsx     | 🔗   | Adicionar <AboutSection /> após <HeroSection />                            | 🟢    |
+| 11.8 | Validação TS + visual              | 🔬   | npx tsc --noEmit + comparar com manus.space                                | 🟡    |
+
+
+================================================================================
+NOTAS ARQUITETURAIS
+================================================================================
+
+✅ PADRÕES CONSOLIDADOS:
+- CTAs principais (WhatsApp) → single source: content.hero.primaryCta
+- Animações UI mobile: duration 0.15s–0.25s | cascata 0.015–0.025s × idx
+- Classes CSS escopadas com prefixo .ruah-* (evita conflito futuro com admin)
+- Imagens em /ruah/images/ (servidas via public/)
+- Fallbacks visuais obrigatórios em <img> com onError
+
+⚠️ DÉBITOS TÉCNICOS:
+- Fase 8 (componentes UI base) postergada para quando iniciar admin
+- Footer ainda não implementado (Fase 18)
+- WhatsApp Float pendente (Fase 21)
+
+🎯 PRÓXIMO PASSO:
+→ Iniciar Fase 11 — Seção About
+→ Comando inicial: inspecionar arquivos existentes em /components/sections/
+
+================================================================================

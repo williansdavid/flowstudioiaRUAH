@@ -95,7 +95,7 @@ export function Header() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.15 }}
             role="dialog"
             aria-modal="true"
             aria-label="Menu de navegação"
@@ -109,7 +109,7 @@ export function Header() {
                   onClick={handleNavClick}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.05 * idx }}
+                  transition={{ duration: 0.4, delay: 0.03 * idx }}
                 >
                   {link.label}
                 </motion.a>
