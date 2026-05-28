@@ -23,10 +23,9 @@ import { identity } from '@/sites/ruah/config/identity'
 const navLinks = [
   { label: 'Início', href: '#inicio' },
   { label: 'Sobre', href: '#sobre' },
-  { label: 'Serviços', href: '#servicos' },
-  { label: 'Equipe', href: '#equipe' },
+  { label: 'Serviços', href: '#servicos' }, 
   { label: 'Galeria', href: '#galeria' },
-  { label: 'Contato', href: '#contato' },
+  { label: 'Depoimentos', href: '#testimonials' },
 ]
 
 export function Header() {

@@ -1,6 +1,6 @@
 ================================================================================
 PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
-Última atualização: 28/05/2026 — pós Fase 14
+Última atualização: 28/05/2026 — pós Fase 15 + loop stroke About
 ================================================================================
 
 | #  | Fase                    | Status | Entregáveis                                                                                                      | Arquivos  |
@@ -15,15 +15,15 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 | 8  | Componentes UI base     | ⚠️     | PULADO — substituído por classes CSS escopadas. Revisitar se for criar admin.                                    | —         |
 | 9  | Layout: Header          | ✅     | Header fixo, scroll-aware, menu mobile com animações otimizadas, CTAs WhatsApp                                   | 2         |
 | 10 | Seção Hero              | ✅     | Hero full-screen com carrossel + progress bar dourada + CTAs + overlay quente Art Deco                           | 1 + 1 CSS |
-| 11 | Seção About             | ✅     | Sobre + highlights cards Art Deco + media frame com accents SVG animados (stroke-dashoffset reveal)              | 1 + 1 CSS |
+| 11 | Seção About             | ✅     | Sobre + highlights cards Art Deco + media frame com accents SVG (desenho inicial + LOOP contínuo do stroke)      | 1 + 1 CSS |
 | 12 | Seção Services          | ✅     | Grid de serviços com cards premium (white border refinada) + categoria + duração + preço                         | 2 + 1 CSS |
 | 13 | Seção Team              | ✅     | Profissionais com fotos, role, especialidades, hover refinado + reveal stagger                                   | 2         |
 | 14 | Seção Gallery           | ✅     | Carrossel spotlight (foto+vídeo) + swipe touch + autoplay 5s + progress bar + lightbox + teclado                 | 1 + 1 CSS |
-| 15 | Seção Testimonials      | ⏳     | Depoimentos em carrossel ou grid                                                                                 | ~2        |
+| 15 | Seção Testimonials      | ✅     | Depoimentos com layout premium + reveal stagger + estrelas Lucide                                                | 2         |
 | 16 | Seção Hours             | ⏳     | Tabela de horários + status "aberto agora"                                                                       | ~1        |
 | 17 | Seção Contact + Map     | ⏳     | Formulário/CTA + mapa estático                                                                                   | ~1        |
 | 18 | Footer                  | ⏳     | CTA final WhatsApp + colunas (contato/horários/redes) + copyright                                                | ~1        |
-| 19 | Página / montada        | 🟡     | routes/index.tsx — atualmente Header + Hero + About + Services + Team + Gallery                                  | 1         |
+| 19 | Página / montada        | 🟡     | routes/index.tsx — atualmente Header + Hero + About + Services + Team + Gallery + Testimonials                   | 1         |
 | 20 | SEO + Metadata          | ⏳     | Open Graph, Twitter Cards, schema.org JSON-LD                                                                    | 1         |
 | 21 | WhatsApp Float          | ⏳     | Botão flutuante + deep link                                                                                      | ~1        |
 | 22 | Performance audit       | ⏳     | Lighthouse, lazy loading, preload críticos                                                                       | —         |
@@ -31,42 +31,51 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 
 
 ================================================================================
-FASE 14 — SEÇÃO GALLERY  ✅ CONCLUÍDA
+FASE 15 — SEÇÃO TESTIMONIALS  ✅ CONCLUÍDA
 ================================================================================
 
-| #     | Passo                              | Tipo | Ação                                                                                  | Status |
-|-------|------------------------------------|------|---------------------------------------------------------------------------------------|--------|
-| 14.0  | Inspeção                           | 🔍   | GallerySection.tsx + content.gallery validados                                        | ✅     |
-| 14.1  | Estrutura HTML semântica           | ✏️   | <section id="galeria"> com header (eyebrow + título + subtítulo)                      | ✅     |
-| 14.2  | Carrossel spotlight                | 🎠   | Slide central destacado + laterais reduzidas (desktop) | slide único (mobile)         | ✅     |
-| 14.3  | Suporte foto + vídeo               | 🎬   | Tipo GalleryMedia ('image' | 'video') + autoplay/muted/loop em slide ativo           | ✅     |
-| 14.4  | Setas + dots de navegação          | ⏯️   | ChevronLeft/Right + dots clicáveis com aria-selected                                  | ✅     |
-| 14.5  | Lightbox modal                     | 🔍   | Click no slide ativo abre modal + close (X) + setas + counter (n/total)               | ✅     |
-| 14.6  | Navegação por teclado              | ⌨️   | ←/→/Esc no lightbox + body scroll lock                                                | ✅     |
-| 14.7  | Swipe touch nativo                 | 📱   | onTouchStart/Move/End com threshold 50px + pausa autoplay durante drag                | ✅     |
-| 14.8  | Autoplay 5s sincronizado           | ⏱️   | setInterval com pausa em hover/lightbox/swipe + respeita prefers-reduced-motion       | ✅     |
-| 14.9  | Progress bar dourada               | ✨   | Barra centralizada (280px desktop / 180px mobile) + animação CSS sync com autoplay    | ✅     |
-| 14.10 | Setas escondidas mobile            | 🎨   | display: none em <1024px (swipe assume função de navegação)                           | ✅     |
-| 14.11 | Constante única AUTOPLAY_INTERVAL  | 🧠   | Single source of truth — sincroniza setInterval + animationDuration                   | ✅     |
-| 14.12 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + testado desktop + mobile DevTools                               | ✅     |
+| #    | Passo                              | Tipo | Ação                                                                       | Status |
+|------|------------------------------------|------|----------------------------------------------------------------------------|--------|
+| 15.0 | Inspeção                           | 🔍   | TestimonialsSection.tsx + content.testimonials validados                   | ✅     |
+| 15.1 | Validação de conteúdo              | 📝   | Array de depoimentos (autor, role, texto, rating)                          | ✅     |
+| 15.2 | Layout definido                    | 🧠   | Layout premium escolhido e aplicado                                        | ✅     |
+| 15.3 | Estrutura HTML semântica           | ✏️   | <section id="depoimentos"> + header padrão eyebrow/título/subtítulo        | ✅     |
+| 15.4 | Card de depoimento                 | 🎨   | Aspas decorativas + texto + autor + role + rating (estrelas Lucide)        | ✅     |
+| 15.5 | Hover refinado                     | ✨   | Lift + glow dourado sutil + border accent                                  | ✅     |
+| 15.6 | Animações de entrada               | ⚡   | useReveal com stagger                                                      | ✅     |
+| 15.7 | CSS dedicado                       | 🎨   | .ruah-testimonials__* com variáveis CSS                                    | ✅     |
+| 15.8 | Integração em routes/index.tsx     | 🔗   | <TestimonialsSection /> após <GallerySection />                            | ✅     |
+| 15.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + visual aprovado                                      | ✅     |
 
 
 ================================================================================
-FASE 15 — SEÇÃO TESTIMONIALS  ⏳ PRÓXIMA
+BÔNUS — REFINAMENTO ABOUT (pós Fase 11)  ✅ CONCLUÍDO
+================================================================================
+
+| #    | Passo                              | Tipo | Ação                                                                              | Status |
+|------|------------------------------------|------|-----------------------------------------------------------------------------------|--------|
+| B1   | Stroke das accents douradas        | 🔄   | Após desenho inicial (1.6s), traço entra em LOOP infinito (8s linear)             | ✅     |
+| B2   | Técnica sem pisco                  | 🧠   | @keyframes ruah-stroke-loop: dashoffset 0 → -400 (perímetro do rect)              | ✅     |
+| B3   | Acessibilidade                     | ♿   | Respeita prefers-reduced-motion (loop desativado)                                 | ✅     |
+
+
+================================================================================
+FASE 16 — SEÇÃO HOURS  ⏳ PRÓXIMA
 ================================================================================
 
 | #    | Passo                              | Tipo | Ação                                                                       | Risco |
 |------|------------------------------------|------|----------------------------------------------------------------------------|-------|
-| 15.0 | Inspeção                           | 🔍   | Verificar TestimonialsSection.tsx + content.testimonials                   | 🟢    |
-| 15.1 | Validar conteúdo                   | 📝   | Array de depoimentos (autor, role, texto, rating, avatar opcional)         | 🟢    |
-| 15.2 | Decisão de layout                  | 🧠   | Carrossel único vs grid 3 colunas vs slider com autoplay                   | 🟡    |
-| 15.3 | Estrutura HTML semântica           | ✏️   | <section id="depoimentos"> + header padrão eyebrow/título/subtítulo        | 🟢    |
-| 15.4 | Card de depoimento                 | 🎨   | Aspas decorativas + texto + autor + role + rating (estrelas Lucide)        | 🟡    |
-| 15.5 | Hover refinado                     | ✨   | Lift + glow dourado sutil + border accent                                  | 🟢    |
-| 15.6 | Animações de entrada               | ⚡   | useReveal com stagger                                                      | 🟢    |
-| 15.7 | CSS dedicado                       | 🎨   | .ruah-testimonials__* com variáveis CSS                                    | 🟢    |
-| 15.8 | Integração em routes/index.tsx     | 🔗   | <TestimonialsSection /> após <GallerySection />                            | 🟢    |
-| 15.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit + comparar vs manus.space                                 | 🟡    |
+| 16.0 | Inspeção                           | 🔍   | Verificar HoursSection.tsx (se existe) + content.businessHours             | 🟢    |
+| 16.1 | Estrutura de dados                 | 📝   | Validar shape: dias da semana + open/close + closed flag                   | 🟢    |
+| 16.2 | Helper "aberto agora"              | 🧠   | util getCurrentStatus(hours, now) → { isOpen, nextChange, label }          | 🟡    |
+| 16.3 | Estrutura HTML semântica           | ✏️   | <section id="horarios"> + header padrão eyebrow/título/subtítulo           | 🟢    |
+| 16.4 | Tabela de horários                 | 🎨   | Grid responsivo: dia | horário (destaque no dia atual)                     | 🟡    |
+| 16.5 | Badge "Aberto agora"               | ✨   | Pill com dot verde pulsante + texto dinâmico (SSR-safe!)                   | 🟡    |
+| 16.6 | Cuidado SSR                        | ⚠️   | Hidratação: status calculado no client via useEffect (evita mismatch)      | 🔴    |
+| 16.7 | Animações de entrada               | ⚡   | useReveal stagger por linha                                                | 🟢    |
+| 16.8 | CSS dedicado                       | 🎨   | .ruah-hours__* com variáveis                                               | 🟢    |
+| 16.9 | Integração em routes/index.tsx     | 🔗   | <HoursSection /> após <TestimonialsSection />                              | 🟢    |
+| 16.10| Validação TS + visual              | 🔬   | npx tsc --noEmit + testar virada de dia/horário                            | 🟡    |
 
 
 ================================================================================
@@ -86,19 +95,22 @@ NOTAS ARQUITETURAIS
 - Carrosséis: autoplay com constante única (AUTOPLAY_INTERVAL_MS) + progress bar sync
 - Acessibilidade: respeitar prefers-reduced-motion em todas as animações automáticas
 - Mobile: swipe touch como navegação primária | setas escondidas <1024px
+- Animações decorativas em loop: usar dashoffset crescente (sem reset visível) →
+  ver About accents (@keyframes ruah-stroke-loop, dashoffset 0 → -perímetro)
 
 ⚠️ DÉBITOS TÉCNICOS:
 - Fase 8 (componentes UI base) postergada para quando iniciar admin
 - Footer ainda não implementado (Fase 18)
 - WhatsApp Float pendente (Fase 21)
-- routes/index.tsx monta Hero + About + Services + Team + Gallery
-- Falta loader Supabase real para services + team + gallery (atualmente content estático)
+- routes/index.tsx monta Hero + About + Services + Team + Gallery + Testimonials
+- Falta loader Supabase real para services + team + gallery + testimonials (atualmente content estático)
 - Lightbox da galeria não tem swipe touch (apenas teclado + setas) — revisitar se necessário
+- Helper getCurrentStatus para "aberto agora" precisa ser SSR-safe (calcular no client)
 
 🎯 PRÓXIMO PASSO:
-→ Iniciar Fase 15 — Seção Testimonials
+→ Iniciar Fase 16 — Seção Hours
 → Comando inicial:
-   Get-ChildItem -Path ".\src\sites\ruah\components\sections\" -Filter "Testimonials*"
-   Get-Content ".\src\sites\ruah\config\content.ts" | Select-String -Pattern "testimonials" -Context 0,30
+   Get-ChildItem -Path ".\src\sites\ruah\components\sections\" -Filter "Hours*"
+   Get-Content ".\src\sites\ruah\config\content.ts" | Select-String -Pattern "businessHours|hours" -Context 0,30
 
 ================================================================================
