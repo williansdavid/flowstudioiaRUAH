@@ -6,7 +6,7 @@
  *   2. Injetar CSS variables no <head> via SSR (zero FOUC)
  *   3. Aplicar a classe de tema no <html> (.theme-dark)
  *   4. Carregar fontes Google via preconnect + link
- *   5. Importar theme.css + base.css + animations.css
+ *   5. *   5. Importar theme.css + base.css + animations.css + gallery.css
  *   6. Resolver SEO com fallback identity (buildSeo)
  *   7. SEO bÃ¡sico + Open Graph dinÃ¢micos
  *   8. Renderizar <Outlet />
@@ -31,6 +31,7 @@ import { identity } from '@/sites/ruah/config/identity'
 import themeCss from '@/sites/ruah/styles/theme.css?url'
 import baseCss from '@/sites/ruah/styles/base.css?url'
 import animationsCss from '@/sites/ruah/styles/animations.css?url'
+import galleryCss from '@/sites/ruah/styles/gallery.css?url'
 import { buildBrandingCss, buildSeo } from '@/sites/ruah/utils'
 
 // ============================================================
@@ -88,6 +89,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: 'stylesheet', href: themeCss },
       { rel: 'stylesheet', href: baseCss },
       { rel: 'stylesheet', href: animationsCss },
+	  { rel: 'stylesheet', href: galleryCss },
     ],
   }),
   component: RootComponent,

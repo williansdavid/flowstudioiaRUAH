@@ -5,9 +5,8 @@
  *
  * Fonte da verdade: src/sites/ruah/**
  *
- * Estado atual: Header ✅ + Hero ✅ + About ✅ + Services ✅
+ * Estado atual: Header ✅ + Hero ✅ + About ✅ + Services ✅ + Gallery ✅
  * Próximas fases:
- *   - GallerySection
  *   - TeamSection
  *   - TestimonialsSection
  *   - ContactSection
@@ -27,6 +26,7 @@ import {
   HeroSection,
   AboutSection,
   ServicesSection,
+  GallerySection,
 } from '@/sites/ruah/components'
 import { fetchPublicServices } from '@/lib/sections/fetchServices'
 
@@ -45,6 +45,7 @@ function LandingRuah() {
         <HeroSection />
         <AboutSection />
         <ServicesSection services={services} />
+        <GallerySection />
       </main>
     </>
   )

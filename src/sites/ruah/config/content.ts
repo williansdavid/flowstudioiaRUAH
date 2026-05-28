@@ -1,12 +1,5 @@
 import type { StudioContent } from '../types'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
-
-export type AboutHighlightIcon = 'wifi' | 'award' | 'sparkles' | 'scissors' | 'heart' | 'shield'
-
-export interface AboutHighlight {
-  icon: AboutHighlightIcon
-  label: string
-}
 /**
  * ============================================================
  * STUDIO CONTENT — Barbearia Ruah
@@ -111,6 +104,66 @@ export const content: StudioContent = {
     title: 'Nosso menu',
     subtitle: 'Tradição, técnica e estilo em cada atendimento.',
     // items: omitido de propósito → ServicesGrid busca do Supabase
+  },
+
+
+  // ────────────────────────────────────────────────────────────
+  // GALLERY — Carrossel premium de fotos e vídeos
+  // ────────────────────────────────────────────────────────────
+  /**
+   * Galeria mista de fotos e vídeos.
+   *
+   * Para adicionar mídia:
+   *   1. Coloque o arquivo em /public/ruah/images/gallery/ ou /public/ruah/videos/
+   *   2. Adicione um item no array abaixo respeitando o discriminator `type`
+   *
+   * Vídeos: recomendado mp4 H.264, <5MB, 720p, sem áudio, 5-15s em loop.
+   */
+  gallery: {
+    eyebrow: 'Galeria Premium',
+    title: 'Nosso Trabalho',
+    subtitle:
+      'Cada imagem conta a história de precisão, elegância e dedicação ao ofício.',
+    items: [
+      // TODO: substituir pelos arquivos reais que você colocar em
+      // /public/ruah/images/gallery/ e /public/ruah/videos/
+      {
+        type: 'image',
+        src: '/ruah/images/gallery/img1.webp',
+        alt: 'Atendimento na cadeira premium',
+        featured: true,
+      },
+      {
+        type: 'image',
+        src: '/ruah/images/gallery/img2.webp',
+        alt: 'Detalhe do acabamento clássico',
+      },
+      {
+        type: 'image',
+        src: '/ruah/images/gallery/img3.webp',
+        alt: 'Ambiente lounge da barbearia',
+      },
+      {
+        type: 'image',
+        src: '/ruah/images/hero/showreel-poster.webp',
+        alt: 'Acabamento de barba com navalha',
+      },
+      // Exemplo de vídeo (descomente quando tiver o arquivo):
+       {
+         type: 'video',
+         src: '/ruah/videos/v1.mp4',
+         poster: '/ruah/images/gallery/showreel-poster.webp',
+         alt: 'Showreel da barbearia Ruah',
+         featured: true,
+       },
+       {
+         type: 'video',
+         src: '/ruah/videos/v2.mp4',
+         poster: '/ruah/images/gallery/showreel-poster.webp',
+         alt: 'Showreel da barbearia Ruah',
+         featured: true,
+       },	   
+    ],
   },
 
   // ─────────────────────────────────────────────────────────

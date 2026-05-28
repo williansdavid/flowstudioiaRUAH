@@ -192,6 +192,26 @@ export interface FooterContent {
 // ABOUT — história do studio (OPCIONAL)
 // ════════════════════════════════════════════════════════════════
 
+/**
+ * Ícone disponível para um highlight do About.
+ * Mapeado em AboutSection.tsx → HIGHLIGHT_ICONS.
+ */
+export type AboutHighlightIcon =
+  | 'wifi'
+  | 'award'
+  | 'sparkles'
+  | 'scissors'
+  | 'heart'
+  | 'shield'
+
+/**
+ * Diferencial do studio (1 ícone + 1 label curto).
+ */
+export interface AboutHighlight {
+  icon: AboutHighlightIcon
+  label: string
+}
+
 export interface AboutContent {
   eyebrow?: string
   title: string
@@ -202,8 +222,8 @@ export interface AboutContent {
   /** Imagem ilustrativa (interna do studio) */
   image?: string
 
-  /** Lista curta de diferenciais (ex.: "+5 anos de experiência") */
-  highlights?: string[]
+  /** Lista curta de diferenciais com ícone + label */
+  highlights?: AboutHighlight[]
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -235,26 +255,69 @@ export interface TeamContent {
 }
 
 // ════════════════════════════════════════════════════════════════
-// GALLERY — grid de fotos do studio (OPCIONAL)
+// GALLERY — grid/carrossel de fotos E vídeos do studio (OPCIONAL)
 // ════════════════════════════════════════════════════════════════
 
+/**
+ * Item de imagem da galeria.
+ * Discriminator: type: 'image'
+ */
 export interface GalleryImage {
+  type: 'image'
+
   /** Path absoluto desde /public */
   src: string
 
   /** Texto alt acessibilidade (descrever a foto) */
   alt: string
 
-  /** Destaca esta imagem (span maior no grid masonry) */
+  /** Destaca este item (span maior em layouts masonry) */
   featured?: boolean
 }
+
+/**
+ * Item de vídeo da galeria.
+ * Discriminator: type: 'video'
+ *
+ * Recomendações de produção:
+ *   - Formato: mp4 H.264, max 5MB, 720p, sem áudio
+ *   - Duração: 5-15s em loop
+ *   - Poster: frame estático para fallback antes do play
+ */
+export interface GalleryVideo {
+  type: 'video'
+
+  /** Path absoluto desde /public do arquivo .mp4/.webm */
+  src: string
+
+  /** Texto alt acessibilidade */
+  alt: string
+
+  /** Imagem de poster (mostrada antes do vídeo carregar) */
+  poster?: string
+
+  /** Destaca este item */
+  featured?: boolean
+}
+
+/**
+ * União discriminada — cada item da galeria pode ser foto ou vídeo.
+ * Use o campo `type` para discriminar no render.
+ */
+export type GalleryMedia = GalleryImage | GalleryVideo
 
 export interface GalleryContent {
   eyebrow?: string
   title: string
   subtitle?: string
-  images: GalleryImage[]
+
+  /**
+   * Lista de mídias da galeria (fotos e/ou vídeos misturados).
+   * Ordem do array = ordem do carrossel.
+   */
+  items: GalleryMedia[]
 }
+
 
 // ════════════════════════════════════════════════════════════════
 // TESTIMONIALS — depoimentos reais de clientes (OPCIONAL)

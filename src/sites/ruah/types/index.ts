@@ -38,11 +38,15 @@ export type {
   FooterContent,
   // About
   AboutContent,
+  AboutHighlight,
+  AboutHighlightIcon,
   // Team
   TeamMember,
   TeamContent,
   // Gallery
   GalleryImage,
+  GalleryVideo,
+  GalleryMedia,
   GalleryContent,
   // Testimonials
   Testimonial,
@@ -52,3 +56,4 @@ export type {
   // Container
   StudioContent,
 } from './content'
+
