@@ -1,18 +1,18 @@
-﻿/**
- * __root.tsx â€” Root Route do TanStack React Start
+/**
+ * __root.tsx — Root Route do TanStack React Start
  * ----------------------------------------------------------------
  * Responsabilidades:
  *   1. Carregar branding + content + identity do studio
  *   2. Injetar CSS variables no <head> via SSR (zero FOUC)
  *   3. Aplicar a classe de tema no <html> (.theme-dark)
  *   4. Carregar fontes Google via preconnect + link
- *   5. *   5. Importar theme.css + base.css + animations.css + gallery.css
+ *   5. Importar theme.css + base.css + animations.css + gallery.css + testimonials.css
  *   6. Resolver SEO com fallback identity (buildSeo)
- *   7. SEO bÃ¡sico + Open Graph dinÃ¢micos
+ *   7. SEO completo: Open Graph + Twitter Card + favicon + theme-color
  *   8. Renderizar <Outlet />
  *   9. Tipar RouterContext global
  *
- * FONTE DA VERDADE ÃšNICA: src/sites/ruah/**
+ * FONTE DA VERDADE ÚNICA: src/sites/ruah/**
  * ----------------------------------------------------------------
  */
 
@@ -28,6 +28,7 @@ import type { SessionUser } from '@/lib/auth/types'
 import { branding } from '@/sites/ruah/config/branding'
 import { content } from '@/sites/ruah/config/content'
 import { identity } from '@/sites/ruah/config/identity'
+import { buildLocalBusinessJsonLd } from '@/sites/ruah/config/seo/jsonLd'
 import themeCss from '@/sites/ruah/styles/theme.css?url'
 import baseCss from '@/sites/ruah/styles/base.css?url'
 import animationsCss from '@/sites/ruah/styles/animations.css?url'
@@ -51,8 +52,18 @@ const themeClass = `theme-${branding.theme}`
 
 // SEO resolvido com fallback do identity (sempre definido)
 const seo = buildSeo(content.seo, identity)
+// JSON-LD Schema.org (LocalBusiness/HairSalon) — rich snippets Google
+const localBusinessJsonLd = JSON.stringify(
+  buildLocalBusinessJsonLd(seo.canonicalUrl),
+).replace(/</g, '\\u003c')
+// Logo oficial (usada como favicon, apple-touch-icon e og:image fallback)
+const LOGO_PATH = '/ruah/images/logo/logo.jpg'
+const OG_IMAGE = seo.ogImage ?? LOGO_PATH
 
-// URL Ãºnica de Google Fonts (3 famÃ­lias)
+// Theme color do navegador mobile (cor accent dourada do Ruah)
+const THEME_COLOR = '#D4AF37'
+
+// URL única de Google Fonts (3 famílias)
 const GOOGLE_FONTS_HREF =
   'https://fonts.googleapis.com/css2?' +
   'family=Playfair+Display:wght@400;600;700;900&' +
@@ -65,19 +76,48 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      // SEO bÃ¡sico â€” sempre definido via buildSeo()
+
+      // SEO básico — sempre definido via buildSeo()
       { title: seo.title },
       { name: 'description', content: seo.description },
       ...(seo.keywords.length > 0
         ? [{ name: 'keywords', content: seo.keywords.join(', ') }]
         : []),
-      // Open Graph bÃ¡sico
+
+      // Theme color (barra de navegador mobile)
+      { name: 'theme-color', content: THEME_COLOR },
+
+      // Open Graph completo
       { property: 'og:title', content: seo.title },
       { property: 'og:description', content: seo.description },
       { property: 'og:type', content: 'website' },
       { property: 'og:locale', content: 'pt_BR' },
+      { property: 'og:site_name', content: identity.name },
+      { property: 'og:image', content: OG_IMAGE },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: identity.name },
+      ...(seo.canonicalUrl
+        ? [{ property: 'og:url', content: seo.canonicalUrl }]
+        : []),
+
+      // Twitter Card
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: seo.title },
+      { name: 'twitter:description', content: seo.description },
+      { name: 'twitter:image', content: OG_IMAGE },
+      { name: 'twitter:image:alt', content: identity.name },
     ],
     links: [
+      // Favicon + apple-touch-icon (usa a logo oficial)
+      { rel: 'icon', type: 'image/jpeg', href: LOGO_PATH },
+      { rel: 'apple-touch-icon', href: LOGO_PATH },
+
+      // Canonical URL (se configurada)
+      ...(seo.canonicalUrl
+        ? [{ rel: 'canonical', href: seo.canonicalUrl }]
+        : []),
+
       // Preconnect Google Fonts
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       {
@@ -86,15 +126,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         crossOrigin: 'anonymous',
       },
       { rel: 'stylesheet', href: GOOGLE_FONTS_HREF },
-      // CSS do Ruah â€” ordem importa
+
+      // CSS do Ruah — ordem importa
       { rel: 'stylesheet', href: themeCss },
       { rel: 'stylesheet', href: baseCss },
       { rel: 'stylesheet', href: animationsCss },
-	  { rel: 'stylesheet', href: galleryCss },
-	  { rel: 'stylesheet', href: testimonialsCss },
-    ],
-  }),
-  component: RootComponent,
+      { rel: 'stylesheet', href: galleryCss },
+      { rel: 'stylesheet', href: testimonialsCss },
+		],
+		scripts: [
+		  {
+			type: 'application/ld+json',
+			children: localBusinessJsonLd,
+		  },
+		],
+	  }),
+	  component: RootComponent,
   errorComponent: RootErrorBoundary,
   notFoundComponent: RootNotFound,
 })
@@ -148,7 +195,7 @@ function RootErrorBoundary({ error }: { error: Error }) {
           >
             <h1>Algo deu errado</h1>
             <p>
-              Tente recarregar a pÃ¡gina. Se o problema persistir, entre em
+              Tente recarregar a página. Se o problema persistir, entre em
               contato com o suporte.
             </p>
             {import.meta.env.DEV && (
@@ -197,7 +244,7 @@ function RootNotFound() {
         >
           <div style={{ maxWidth: '28rem' }}>
             <h1 style={{ fontSize: '3rem', margin: 0 }}>404</h1>
-            <p>PÃ¡gina nÃ£o encontrada.</p>
+            <p>Página não encontrada.</p>
             <a
               href="/"
               style={{
@@ -214,7 +261,7 @@ function RootNotFound() {
                 fontSize: '0.875rem',
               }}
             >
-              Voltar ao inÃ­cio
+              Voltar ao início
             </a>
           </div>
         </div>

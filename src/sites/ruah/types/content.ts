@@ -338,8 +338,14 @@ export interface Testimonial {
   /** Foto do cliente (opcional, gera avatar mais humano) */
   avatar?: string
 
-  /** Data/contexto opcional (ex.: "Cliente desde 2023") */
+  /** Contexto curto (ex.: "Combo Barba e Cabelo · com Renato Soares") */
   context?: string
+
+  /** Origem do depoimento — renderiza badge sutil no card */
+  source?: 'booksy' | 'google' | 'instagram' | 'whatsapp'
+
+  /** Data/período do depoimento (ex.: "mar 2026", "mai 2026") */
+  date?: string
 }
 
 export interface TestimonialsContent {

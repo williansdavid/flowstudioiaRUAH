@@ -80,9 +80,9 @@ export function HeroSection() {
             <img
               src={src}
               alt=""
-              loading={idx === 0 ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={idx === 0 ? "high" : "low"}
+			  loading={idx === 0 ? 'eager' : 'lazy'}
+			  decoding="async"
+			  {...({ fetchpriority: idx === 0 ? 'high' : 'low' } as any)}
             />
           </div>
         ))}

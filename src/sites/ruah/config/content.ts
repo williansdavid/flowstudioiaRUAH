@@ -192,7 +192,7 @@ export const content: StudioContent = {
       'barba botucatu',
       'ruah barbearia',
     ],
-    ogImage: '/og.jpg',
+    ogImage: '/ruah/images/logo/logo.jpg',
   },
 
   // ─────────────────────────────────────────────────────────
@@ -217,37 +217,48 @@ export const content: StudioContent = {
     title: 'O que dizem nossos clientes',
     subtitle:
       'Avaliações reais e verificadas no Booksy — 100% recomendam o Ruah.',
-    items: [
-      {
-        id: 'andre-2026-03',
-        name: 'André',
-        quote: 'Atendimento excepcional! Renatão é fera demais!',
-        rating: 5,
-        context: 'Combo Barba e Cabelo · com Renato Soares',
-      },
-      {
-        id: 'alexandre-2026-04',
-        name: 'Alexandre',
-        quote: 'Como sempre, excelente! 👊🏻',
-        rating: 5,
-        context: 'Cliente recorrente · com Renato Soares',
-      },
-      {
-        id: 'caio-2026-04',
-        name: 'Caio',
-        quote: 'Sensacional 🙌🏻',
-        rating: 5,
-        context: 'Cabelo · com Renato Soares',
-      },
-      {
-        id: 'joaopaulo-2026-03',
-        name: 'João Paulo',
-        quote:
-          'Renatão o que ele não tem de cabelo, tem de qualidade kkkk Tmj irmão',
-        rating: 5,
-        context: 'Cabelo · com Renato Soares',
-      },
-    ],
+items: [
+  {
+    id: 'andre-2026-03',
+    name: 'André',
+    quote: 'Atendimento excepcional! Renatão é fera demais!',
+    rating: 5,
+    context: 'Combo Barba e Cabelo · com Renato Soares',
+    source: 'booksy',
+    date: 'mar 2026',
+  },
+  {
+    id: 'joaopaulo-2026-03',
+    name: 'João Paulo',
+    quote:
+      'Renatão o que ele não tem de cabelo, tem de qualidade kkkk Tmj irmão!',
+    rating: 5,
+    context: 'Cabelo · com Renato Soares',
+    source: 'booksy',
+    date: 'mar 2026',
+  },
+  {
+    id: 'julio-teixeira-google',
+    name: 'Julio Teixeira',
+    quote:
+      'Cara talentoso e cuidadoso, podem confiar. Recomendo demais.',
+    rating: 5,
+    context: 'Avaliação no Google',
+    source: 'google',
+    date: '2025',
+  },
+  {
+    id: 'miguel-2026-05',
+    name: 'Miguel',
+    quote:
+      'Excelente atendimento e resultado impecável. Já virei cliente fixo!',
+    rating: 5,
+    context: 'Cabelo · com Leonardo De Paula',
+    source: 'booksy',
+    date: 'mai 2026',
+  },
+],
+
   },
   
 }

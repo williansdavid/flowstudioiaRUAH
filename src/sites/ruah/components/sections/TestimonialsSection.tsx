@@ -3,10 +3,11 @@ import { content, useReveal } from '@/sites/ruah'
 import type { Testimonial } from '@/sites/ruah/types'
 
 /**
- * TestimonialsSection — Depoimentos reais (Booksy)
+ * TestimonialsSection — Depoimentos reais (Booksy + Google)
  * ----------------------------------------------------------------
- * - Layout: Grid estático 2x2 (desktop) / 1 coluna (mobile)
- * - Avatar: Inicial estilizada em gradiente accent
+ * - Layout: Grid 2x2 (desktop) / 1 coluna (mobile)
+ * - Avatar: inicial em gradiente accent
+ * - Badge de origem (Booksy / Google) + data no rodapé do card
  * - Prova social agregada: ★ 5.0 · 61 avaliações · 100% recomendam
  * - Link externo Booksy no rodapé
  * - Zero JS — SSR puro, hydration-safe
@@ -20,10 +21,16 @@ const BOOKSY_URL =
 const TOTAL_REVIEWS = 61
 const AVERAGE_RATING = '5.0'
 
+const SOURCE_LABEL: Record<NonNullable<Testimonial['source']>, string> = {
+  booksy: 'Booksy',
+  google: 'Google',
+  instagram: 'Instagram',
+  whatsapp: 'WhatsApp',
+}
+
 export function TestimonialsSection() {
   const testimonials = content.testimonials
 
-  // Guard: section opcional
   if (!testimonials || !testimonials.items || testimonials.items.length === 0) {
     return null
   }
@@ -42,7 +49,6 @@ export function TestimonialsSection() {
       aria-labelledby="testimonials-title"
     >
       <div className="testimonials-container">
-        {/* Header */}
         <div ref={headerRef} className="testimonials-header">
           {eyebrow && <span className="testimonials-eyebrow">{eyebrow}</span>}
           <h2 id="testimonials-title" className="testimonials-title">
@@ -51,7 +57,6 @@ export function TestimonialsSection() {
           {subtitle && <p className="testimonials-subtitle">{subtitle}</p>}
         </div>
 
-        {/* Social Proof Badges */}
         <div
           ref={proofRef}
           className="testimonials-proof"
@@ -74,14 +79,12 @@ export function TestimonialsSection() {
           </span>
         </div>
 
-        {/* Grid */}
         <div ref={gridRef} className="testimonials-grid">
           {items.map((item) => (
             <TestimonialCard key={item.id} testimonial={item} />
           ))}
         </div>
 
-        {/* Footer — Booksy Link */}
         <div ref={footerRef} className="testimonials-footer">
           <a
             href={BOOKSY_URL}
@@ -100,19 +103,19 @@ export function TestimonialsSection() {
 }
 
 /* ─────────────────────────────────────────────────────────── */
-/* TestimonialCard — Card individual                            */
+/* TestimonialCard                                              */
 /* ─────────────────────────────────────────────────────────── */
 interface TestimonialCardProps {
   testimonial: Testimonial
 }
 
 function TestimonialCard({ testimonial }: TestimonialCardProps) {
-  const { name, quote, rating, context } = testimonial
+  const { name, quote, rating, context, source, date } = testimonial
   const initial = name.charAt(0).toUpperCase()
+  const sourceLabel = source ? SOURCE_LABEL[source] : null
 
   return (
     <article className="testimonial-card">
-      {/* Rating stars */}
       {rating && (
         <div
           className="testimonial-rating"
@@ -124,12 +127,10 @@ function TestimonialCard({ testimonial }: TestimonialCardProps) {
         </div>
       )}
 
-      {/* Quote */}
       <blockquote className="testimonial-quote">
-        <p>"{quote}"</p>
+        <p>“{quote}”</p>
       </blockquote>
 
-      {/* Author */}
       <div className="testimonial-author">
         <div className="testimonial-avatar" aria-hidden="true">
           {initial}
@@ -141,6 +142,19 @@ function TestimonialCard({ testimonial }: TestimonialCardProps) {
           )}
         </div>
       </div>
+
+      {(sourceLabel || date) && (
+        <div className="testimonial-meta">
+          {sourceLabel && (
+            <span
+              className={`testimonial-source testimonial-source--${source}`}
+            >
+              {sourceLabel}
+            </span>
+          )}
+          {date && <span className="testimonial-date">{date}</span>}
+        </div>
+      )}
     </article>
   )
 }
