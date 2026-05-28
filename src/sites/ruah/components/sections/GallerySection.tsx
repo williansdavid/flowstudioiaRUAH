@@ -3,21 +3,24 @@ import { ChevronLeft, ChevronRight, Play, X } from 'lucide-react'
 import { content, useReveal } from '@/sites/ruah'
 import type { GalleryMedia } from '@/sites/ruah/types'
 
-
 /**
  * GallerySection — Carrossel premium de fotos e vídeos
  * ----------------------------------------------------
  * - Spotlight central + laterais reduzidas (desktop)
- * - Slide único + swipe nativo (mobile)
+ * - Slide único + swipe touch (mobile)
+ * - Autoplay 5s com pausa em hover/lightbox/drag
+ * - Progress bar dourada sincronizada
  * - Vídeo autoplay/muted/loop SOMENTE no slide ativo
- * - Lightbox modal ao clicar
- * - Navegação por teclado (←/→/Esc) quando lightbox aberto
- * - Guard: se gallery ausente ou vazia, não renderiza
+ * - Lightbox modal ao clicar no slide ativo
+ * - Navegação por teclado (←/→/Esc) no lightbox
  */
+
+const AUTOPLAY_INTERVAL_MS = 7000
+const SWIPE_THRESHOLD_PX = 50
+
 export function GallerySection() {
   const gallery = content.gallery
 
-  // Guard SSR-safe — section opcional
   if (!gallery || !gallery.items || gallery.items.length === 0) {
     return null
   }
@@ -29,6 +32,12 @@ export function GallerySection() {
 
   const [activeIndex, setActiveIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+
+  // Refs de swipe
+  const touchStartX = useRef<number | null>(null)
+  const touchDeltaX = useRef<number>(0)
+  const isDragging = useRef<boolean>(false)
 
   const total = items.length
 
@@ -43,7 +52,30 @@ export function GallerySection() {
   const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo])
   const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo])
 
-  // Teclado: navegação + fechar lightbox
+  // ──────────────────────────────────────────────────────────
+  // Autoplay
+  // ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    // Respeita preferência de acessibilidade
+    if (typeof window !== 'undefined') {
+      const prefersReduced = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+      if (prefersReduced) return
+    }
+
+    if (isPaused || lightboxOpen || total <= 1) return
+
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % total)
+    }, AUTOPLAY_INTERVAL_MS)
+
+    return () => clearInterval(timer)
+  }, [isPaused, lightboxOpen, total, activeIndex])
+
+  // ──────────────────────────────────────────────────────────
+  // Teclado (lightbox)
+  // ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!lightboxOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -55,7 +87,9 @@ export function GallerySection() {
     return () => window.removeEventListener('keydown', onKey)
   }, [lightboxOpen, goPrev, goNext])
 
-  // Lock scroll quando lightbox aberto
+  // ──────────────────────────────────────────────────────────
+  // Lock scroll lightbox
+  // ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (lightboxOpen) {
       document.body.style.overflow = 'hidden'
@@ -66,6 +100,41 @@ export function GallerySection() {
       document.body.style.overflow = ''
     }
   }, [lightboxOpen])
+
+  // ──────────────────────────────────────────────────────────
+  // Swipe touch handlers
+  // ──────────────────────────────────────────────────────────
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null
+    touchDeltaX.current = 0
+    isDragging.current = true
+    setIsPaused(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const currentX = e.touches[0]?.clientX ?? 0
+    touchDeltaX.current = currentX - touchStartX.current
+  }
+
+  const handleTouchEnd = () => {
+    if (!isDragging.current) return
+    const delta = touchDeltaX.current
+
+    if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+      if (delta < 0) {
+        goNext()
+      } else {
+        goPrev()
+      }
+    }
+
+    touchStartX.current = null
+    touchDeltaX.current = 0
+    isDragging.current = false
+    // Retoma autoplay após pequeno delay (UX)
+    setTimeout(() => setIsPaused(false), 300)
+  }
 
   return (
     <section id="galeria" className="ruah-gallery">
@@ -78,7 +147,12 @@ export function GallerySection() {
         </div>
 
         {/* Carrossel */}
-        <div ref={carouselRef} className="ruah-gallery__carousel reveal-stroke">
+        <div
+          ref={carouselRef}
+          className="ruah-gallery__carousel reveal-stroke"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
           <button
             type="button"
             className="ruah-gallery__nav ruah-gallery__nav--prev"
@@ -88,7 +162,12 @@ export function GallerySection() {
             <ChevronLeft size={24} strokeWidth={1.5} />
           </button>
 
-          <div className="ruah-gallery__track">
+          <div
+            className="ruah-gallery__track"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             {items.map((item, index) => {
               const offset = index - activeIndex
               const isActive = offset === 0
@@ -120,6 +199,19 @@ export function GallerySection() {
           >
             <ChevronRight size={24} strokeWidth={1.5} />
           </button>
+        </div>
+
+        {/* Progress bar — sincronizada com autoplay */}
+        <div className="ruah-gallery__progress" aria-hidden="true">
+          <span
+            key={`${activeIndex}-${isPaused}-${lightboxOpen}`}
+            className="ruah-gallery__progress-bar"
+            style={{
+              animationDuration: `${AUTOPLAY_INTERVAL_MS}ms`,
+              animationPlayState:
+                isPaused || lightboxOpen ? 'paused' : 'running',
+            }}
+          />
         </div>
 
         {/* Dots */}
@@ -155,9 +247,9 @@ export function GallerySection() {
   )
 }
 
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 // Slide individual
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 interface GallerySlideProps {
   item: GalleryMedia
   offset: number
@@ -169,23 +261,19 @@ interface GallerySlideProps {
 function GallerySlide({ item, offset, isActive, onClick }: GallerySlideProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
-  // Autoplay/pause condicional ao slide ativo (economia de CPU)
   useEffect(() => {
     if (item.type !== 'video') return
     const video = videoRef.current
     if (!video) return
 
     if (isActive) {
-      video.play().catch(() => {
-        // Autoplay bloqueado por política do browser — silencioso
-      })
+      video.play().catch(() => {})
     } else {
       video.pause()
       video.currentTime = 0
     }
   }, [isActive, item.type])
 
-  // Slides fora da janela visível (|offset| > 2) ficam ocultos
   const isVisible = Math.abs(offset) <= 2
 
   return (
@@ -212,6 +300,7 @@ function GallerySlide({ item, offset, isActive, onClick }: GallerySlideProps) {
             className="ruah-gallery__media"
             loading="lazy"
             decoding="async"
+            draggable={false}
           />
         ) : (
           <>
@@ -238,9 +327,9 @@ function GallerySlide({ item, offset, isActive, onClick }: GallerySlideProps) {
   )
 }
 
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 // Lightbox modal
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 interface GalleryLightboxProps {
   item: GalleryMedia
   onClose: () => void

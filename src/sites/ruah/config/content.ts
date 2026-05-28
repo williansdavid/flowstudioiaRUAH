@@ -138,7 +138,7 @@ export const content: StudioContent = {
         src: '/ruah/images/gallery/img2.webp',
         alt: 'Detalhe do acabamento clássico',
       },
-      {
+      /*{
         type: 'image',
         src: '/ruah/images/gallery/img3.webp',
         alt: 'Ambiente lounge da barbearia',
@@ -147,7 +147,7 @@ export const content: StudioContent = {
         type: 'image',
         src: '/ruah/images/hero/showreel-poster.webp',
         alt: 'Acabamento de barba com navalha',
-      },
+      },*/
       // Exemplo de vídeo (descomente quando tiver o arquivo):
        {
          type: 'video',
