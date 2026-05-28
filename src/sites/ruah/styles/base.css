@@ -477,3 +477,301 @@
   letter-spacing: 0.25em;
   text-transform: uppercase;
 }
+/* ============================================================
+ * 10. Header — Glassmorphism com scroll behavior
+ * ------------------------------------------------------------
+ * Estados:
+ *   .ruah-header              → transparente (topo da página)
+ *   .ruah-header--scrolled    → glass + borda dourada sutil
+ *
+ * Layout:
+ *   Logo (esquerda) | Nav (centro/direita) | CTA + Mobile toggle
+ * ============================================================ */
+
+.theme-dark .ruah-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  width: 100%;
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    backdrop-filter 0.35s ease,
+    padding 0.35s ease;
+  padding-block: 1.25rem;
+}
+
+.theme-dark .ruah-header--scrolled {
+  background-color: rgba(15, 32, 32, 0.25);
+  border-bottom-color: rgba(212, 165, 116, 0.18);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  padding-block: 0.875rem;
+}
+
+.theme-dark .ruah-header__inner {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .theme-dark .ruah-header__inner {
+    padding-inline: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-header__inner {
+    padding-inline: 3rem;
+  }
+}
+
+/* Logo */
+.theme-dark .ruah-header__logo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--color-text-heading);
+  transition: opacity 0.2s ease;
+}
+
+/* Logo Wrapper — Glass premium */
+.theme-dark .ruah-header__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.35s ease;
+}
+
+.theme-dark .ruah-header__logo:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow:
+    0 6px 28px rgba(212, 175, 55, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+  opacity: 1;
+}
+
+/* Logo Image */
+.theme-dark .ruah-header__logo-img {
+  height: 56px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  /* Funde fundo claro do .jpeg com o verde militar do header */
+  mix-blend-mode: screen;
+  filter:
+    contrast(1.05)
+    brightness(1.02)
+    drop-shadow(0 2px 8px rgba(212, 175, 55, 0.25));
+  transition: filter 0.35s ease;
+}
+
+.theme-dark .ruah-header__logo:hover .ruah-header__logo-img {
+  filter:
+    contrast(1.05)
+    brightness(1.02)
+    drop-shadow(0 2px 12px rgba(212, 175, 55, 0.45));
+}
+
+@media (min-width: 768px) {
+  .theme-dark .ruah-header__logo-img {
+    height: 64px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-header__logo-img {
+    height: 72px;
+  }
+}
+
+
+.theme-dark .ruah-header__logo-mark {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-heading);
+}
+
+.theme-dark .ruah-header__logo-sub {
+  font-family: var(--font-heading);
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-top: 0.125rem;
+}
+
+@media (min-width: 768px) {
+  .theme-dark .ruah-header__logo-mark {
+    font-size: 1.75rem;
+  }
+  .theme-dark .ruah-header__logo-sub {
+    font-size: 0.625rem;
+  }
+}
+
+/* Nav Desktop */
+.theme-dark .ruah-header__nav {
+  display: none;
+  align-items: center;
+  gap: 2.25rem;
+  flex: 1;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-header__nav {
+    display: flex;
+  }
+}
+
+.theme-dark .ruah-header__nav-link {
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-on-dark);
+  text-decoration: none;
+  position: relative;
+  padding-block: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.theme-dark .ruah-header__nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background-color: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s ease;
+}
+
+.theme-dark .ruah-header__nav-link:hover {
+  color: var(--color-accent);
+}
+
+.theme-dark .ruah-header__nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* CTA Desktop */
+.theme-dark .ruah-header__cta {
+  display: none;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.85rem;
+  padding: 0.65rem 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-header__cta {
+    display: inline-flex;
+  }
+}
+
+/* Toggle Mobile */
+.theme-dark .ruah-header__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  border-radius: var(--radius-button);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-dark .ruah-header__toggle:hover {
+  background-color: rgba(212, 165, 116, 0.1);
+  border-color: var(--color-accent);
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-header__toggle {
+    display: none;
+  }
+}
+
+/* ============================================================
+ * 11. Mobile Menu (Drawer Fullscreen)
+ * ============================================================ */
+
+.theme-dark .ruah-mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background-color: rgba(15, 32, 32, 0.97);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 1.5rem 2rem;
+}
+
+.theme-dark .ruah-mobile-menu__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.theme-dark .ruah-mobile-menu__link {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease;
+}
+
+.theme-dark .ruah-mobile-menu__link:hover {
+  color: var(--color-accent);
+}
+
+.theme-dark .ruah-mobile-menu__cta {
+  margin-top: 1.5rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  padding: 1rem 2.5rem;
+  font-size: 1rem;
+}

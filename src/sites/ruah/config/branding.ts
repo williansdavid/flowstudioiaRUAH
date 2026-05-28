@@ -75,9 +75,9 @@ export const branding: BrandIdentity = {
   },
 
   logo: {
-    dark:  '/ruah/images/logo/logo.jpg',
-    light: '/ruah/images/logo/logo.jpg',
-    gold:  '/ruah/images/logo/logo.jpg',
+    dark:  '/ruah/images/logo/logo.jpeg',
+    light: '/ruah/images/logo/logo.jpeg',
+    gold:  '/ruah/images/logo/logo.jpeg',
     alt:   'Ruah Barber Lounge',
   },
 

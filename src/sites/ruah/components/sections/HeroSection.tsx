@@ -57,24 +57,32 @@ export function HeroSection() {
           {hero.subheadline}
         </motion.p>
 
-        <motion.div
-          className="ruah-hero__ctas"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-        >
-          <a href={hero.primaryCta.href} className="ruah-btn ruah-btn--primary">
-            {hero.primaryCta.label}
-          </a>
-          {hero.secondaryCta && (
-            <a
-              href={hero.secondaryCta.href}
-              className="ruah-btn ruah-btn--ghost"
-            >
-              {hero.secondaryCta.label}
-            </a>
-          )}
-        </motion.div>
+<motion.div
+  className="ruah-hero__ctas"
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+>
+  {/* CTA primário → WhatsApp (nova aba) */}
+  <a
+    href={hero.primaryCta.href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="ruah-btn ruah-btn--primary"
+  >
+    {hero.primaryCta.label}
+  </a>
+
+  {/* CTA secundário → âncora interna (mesma aba) */}
+  {hero.secondaryCta && (
+    <a
+      href={hero.secondaryCta.href}
+      className="ruah-btn ruah-btn--ghost"
+    >
+      {hero.secondaryCta.label}
+    </a>
+  )}
+</motion.div>
       </div>
 
       {/* Scroll indicator */}

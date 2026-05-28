@@ -1,4 +1,6 @@
 import type { StudioContent } from '../types'
+import type { StudioContent } from '../types'
+import { buildWhatsAppUrl } from '../lib/whatsapp'
 
 /**
  * ============================================================
@@ -47,11 +49,14 @@ export const content: StudioContent = {
     headlineLine1: 'Ruah',
     headlineLine2: 'Barber Lounge',
     subheadline:
-      'Onde a sofisticação encontra a precisão. Descubra a experiência premium de barbearia que define novos padrões de elegância masculina.',
+      'Onde a sofisticação encontra a precisão.' ,
     backgroundImage: '/ruah/hero-barber-premium.webp',
+/*	backgroundImage: '/ruah/images/hero/img1.jpeg',*/
     primaryCta: {
       label: 'Agendar Horário',
-      href: '#contato',
+      href: buildWhatsAppUrl(
+        'Olá! Vim pelo site da Ruah Barber Lounge e quero agendar um horário.',
+      ),
     },
     secondaryCta: {
       label: 'Conheça a Barbearia',
