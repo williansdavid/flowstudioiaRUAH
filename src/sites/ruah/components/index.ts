@@ -2,7 +2,15 @@
  * Barrel export — Componentes visuais do studio Ruah
  * ----------------------------------------------------------------
  * Mantém imports limpos:
- *   import { HeroSection, AboutSection, ServicesSection, GallerySection, TestimonialsSection, Header } from '@/sites/ruah/components'
+ *   import {
+ *     HeroSection,
+ *     AboutSection,
+ *     ServicesSection,
+ *     GallerySection,
+ *     TestimonialsSection,
+ *     Header,
+ *     WhatsAppFloating,
+ *   } from '@/sites/ruah/components'
  * ----------------------------------------------------------------
  */
 
@@ -15,6 +23,9 @@ export { TestimonialsSection } from './sections/TestimonialsSection'
 
 // Layout
 export { Header } from './layout/Header'
+
+// Floating
+export { WhatsAppFloating } from './floating/WhatsAppFloating'
 
 // Motion
 export { LazyMotionProvider } from './motion/LazyMotionProvider'

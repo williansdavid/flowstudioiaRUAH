@@ -39,6 +39,18 @@ import { buildWhatsAppUrl } from '../lib/whatsapp'
  * ============================================================
  */
 export const content: StudioContent = {
+
+// ─────────────────────────────────────────────────────────────
+// EXTERNAL LINKS — URLs públicas centralizadas
+// ─────────────────────────────────────────────────────────────
+externalLinks: {
+  booksy:
+    'https://booksy.com/pt-br/339118_ruah-barber-lounge_barbearias_887298_botucatu',
+  googleReviews: 'https://maps.app.goo.gl/Q1VCCNVrbmSPSVpRA',
+  googleMaps: 'https://maps.app.goo.gl/Q1VCCNVrbmSPSVpRA',
+},
+
+
   // ─────────────────────────────────────────────────────────
   // HERO — Primeira dobra da landing
   // ─────────────────────────────────────────────────────────
@@ -65,12 +77,10 @@ export const content: StudioContent = {
       '/ruah/images/hero/ca2.webp',
 	  '/ruah/images/hero/ca3.webp',
     ],
-    primaryCta: {
-      label: 'Agendar Horário',
-      href: buildWhatsAppUrl(
-        'Olá! Vim pelo site da Ruah Barber Lounge e quero agendar um horário.',
-      ),
-    },
+	primaryCta: {
+	  label: 'Agendar Horário',
+	  href: 'https://booksy.com/pt-br/339118_ruah-barber-lounge_barbearias_887298_botucatu',
+	},
     secondaryCta: {
       label: 'Conheça a Barbearia',
       href: '#sobre',

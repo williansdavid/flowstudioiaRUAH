@@ -1,0 +1,221 @@
+/* ===============================================================
+   WhatsApp Floating Button — Ruah Barber Lounge
+   ---------------------------------------------------------------
+   Duas variantes:
+     .ruah-wa-float--a → Clássico Premium (verde + pulse dourado)
+     .ruah-wa-float--b → Dark Luxury (preto + dourado)
+   =============================================================== */
+
+.ruah-wa-float {
+  /* Posicionamento */
+  position: fixed;
+  right: clamp(1rem, 3vw, 1.75rem);
+  bottom: clamp(1rem, 3vw, 1.75rem);
+  /* Safe area iOS (notch / home indicator) */
+  bottom: max(clamp(1rem, 3vw, 1.75rem), env(safe-area-inset-bottom, 1rem));
+
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+
+  /* Reset link */
+  text-decoration: none;
+  cursor: pointer;
+  z-index: 9999;
+
+  /* Animação de entrada/saída */
+  opacity: 0;
+  transform: translateY(20px) scale(0.85);
+  pointer-events: none;
+  transition:
+    opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
+
+  /* Performance */
+  will-change: transform, opacity;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ruah-wa-float--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.ruah-wa-float__icon {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ruah-wa-float:hover .ruah-wa-float__icon {
+  transform: scale(1.08);
+}
+
+.ruah-wa-float:active .ruah-wa-float__icon {
+  transform: scale(0.95);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Pulse rings (decorativos)
+   ─────────────────────────────────────────────────────────────── */
+.ruah-wa-float__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  animation: ruah-wa-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.ruah-wa-float__pulse--delayed {
+  animation-delay: 1.2s;
+}
+
+@keyframes ruah-wa-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Tooltip (desktop)
+   ─────────────────────────────────────────────────────────────── */
+.ruah-wa-float__tooltip {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(8px);
+  white-space: nowrap;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ruah-wa-float:hover .ruah-wa-float__tooltip,
+.ruah-wa-float:focus-visible .ruah-wa-float__tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Esconder tooltip em mobile/touch */
+@media (hover: none) {
+  .ruah-wa-float__tooltip {
+    display: none;
+  }
+}
+
+/* ===============================================================
+   VARIANTE A — Clássico Premium (verde WhatsApp + pulse dourado)
+   =============================================================== */
+.ruah-wa-float--a {
+  background: linear-gradient(135deg, #25d366 0%, #20bd5a 100%);
+  color: #ffffff;
+  box-shadow:
+    0 8px 24px rgba(37, 211, 102, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.ruah-wa-float--a:hover {
+  box-shadow:
+    0 12px 32px rgba(37, 211, 102, 0.5),
+    0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.ruah-wa-float--a .ruah-wa-float__pulse {
+  /* Pulse dourado por cima do verde — toque Ruah */
+  background: rgba(212, 175, 55, 0.55);
+}
+
+.ruah-wa-float--a .ruah-wa-float__tooltip {
+  background: rgba(20, 20, 20, 0.92);
+  color: #ffffff;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+/* ===============================================================
+   VARIANTE B — Dark Luxury Ruah (preto + dourado)
+   =============================================================== */
+.ruah-wa-float--b {
+  background: radial-gradient(circle at 30% 30%, #1a1a1a 0%, #0a0a0a 100%);
+  color: #d4af37; /* dourado Ruah */
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.55),
+    0 0 0 0 rgba(212, 175, 55, 0),
+    inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+}
+
+.ruah-wa-float--b:hover {
+  border-color: rgba(212, 175, 55, 0.75);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.65),
+    0 0 28px rgba(212, 175, 55, 0.35),
+    inset 0 0 0 1px rgba(212, 175, 55, 0.2);
+}
+
+.ruah-wa-float--b .ruah-wa-float__pulse {
+  background: rgba(212, 175, 55, 0.4);
+}
+
+.ruah-wa-float--b .ruah-wa-float__tooltip {
+  background: rgba(10, 10, 10, 0.88);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* ===============================================================
+   Acessibilidade — foco visível
+   =============================================================== */
+.ruah-wa-float:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 4px;
+}
+
+/* ===============================================================
+   Reduced motion — desabilita pulse e suaviza entrada
+   =============================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .ruah-wa-float,
+  .ruah-wa-float__icon,
+  .ruah-wa-float__tooltip {
+    transition-duration: 0.15s;
+  }
+  .ruah-wa-float__pulse {
+    animation: none;
+    display: none;
+  }
+}
+
+/* ===============================================================
+   Responsivo — botão um pouco menor em telas muito pequenas
+   =============================================================== */
+@media (max-width: 380px) {
+  .ruah-wa-float {
+    width: 54px;
+    height: 54px;
+  }
+}

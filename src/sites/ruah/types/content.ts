@@ -386,6 +386,21 @@ export interface SEOContent {
   canonicalUrl?: string
 }
 
+
+/**
+ * Links externos do studio (redes sociais, plataformas de agendamento, reviews).
+ * Centraliza URLs pra evitar hardcode em componentes.
+ */
+export interface ExternalLinks {
+  /** URL pública do perfil Booksy do studio (agendamento online) */
+  booksy?: string
+  /** URL pública do Google Reviews / Google Business */
+  googleReviews?: string
+  /** URL do Google Maps (ficha do estabelecimento) */
+  googleMaps?: string
+}
+
+
 // ════════════════════════════════════════════════════════════════
 // CONTAINER PRINCIPAL — agrega tudo
 // ════════════════════════════════════════════════════════════════
@@ -404,7 +419,7 @@ export interface StudioContent {
   services: ServicesContent
   contact: ContactContent
   footer: FooterContent
-
+  externalLinks?: ExternalLinks
   // ── Opcionais ──────────────────────────────────────────────
   about?: AboutContent
   team?: TeamContent

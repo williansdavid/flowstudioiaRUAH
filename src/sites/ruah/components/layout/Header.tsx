@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Star } from 'lucide-react'
 import { useScrolled } from '@/sites/ruah/utils'
 import { identity } from '@/sites/ruah/config/identity'
+import { content } from '@/sites/ruah/config/content'
 
 /**
  * Header — Ruah Barber Lounge
@@ -15,15 +16,16 @@ import { identity } from '@/sites/ruah/config/identity'
  *   - Desktop: nav inline + CTA dourado
  *   - Mobile:  logo + hambúrguer → drawer fullscreen
  *
- * CTAs apontam para /login (porta única do sistema interno).
- * Links de nav usam anchors (#sobre, #servicos, etc).
+ * Links internos: anchors (#sobre, #servicos, etc).
+ * Link externo (Google Reviews): item dedicado no drawer mobile.
+ * CTA "Agendar Horário": Booksy (nova aba).
  * ----------------------------------------------------------------
  */
 
 const navLinks = [
   { label: 'Início', href: '#inicio' },
   { label: 'Sobre', href: '#sobre' },
-  { label: 'Serviços', href: '#servicos' }, 
+  { label: 'Serviços', href: '#servicos' },
   { label: 'Galeria', href: '#galeria' },
   { label: 'Depoimentos', href: '#testimonials' },
 ]
@@ -36,6 +38,9 @@ export function Header() {
     setMobileOpen(false)
   }
 
+  const booksyUrl = content.externalLinks?.booksy
+  const googleReviewsUrl = content.externalLinks?.googleReviews
+
   return (
     <>
       <header
@@ -43,24 +48,28 @@ export function Header() {
         aria-label="Navegação principal"
       >
         <div className="ruah-header__inner">
-		{/* Logo */}
-		<a href="#inicio" className="ruah-header__logo" aria-label={identity.name}>
-		  <img
-			src="/ruah/images/logo/logo.jpeg"
-			alt={identity.name}
-			className="ruah-header__logo-img"
-			onError={(e) => {
-			  const img = e.currentTarget
-			  img.style.display = 'none'
-			  const fallback = img.nextElementSibling as HTMLElement | null
-			  if (fallback) fallback.style.display = 'flex'
-			}}
-		  />
-		  <span className="ruah-header__logo-fallback" style={{ display: 'none', flexDirection: 'column' }}>
-			<span className="ruah-header__logo-mark">RUAH</span>
-			<span className="ruah-header__logo-sub">Barber Lounge</span>
-		  </span>
-		</a>
+          {/* Logo */}
+          <a href="#inicio" className="ruah-header__logo" aria-label={identity.name}>
+            <img
+              src="/ruah/images/logo/logo.jpeg"
+              alt={identity.name}
+              className="ruah-header__logo-img"
+              onError={(e) => {
+                const img = e.currentTarget
+                img.style.display = 'none'
+                const fallback = img.nextElementSibling as HTMLElement | null
+                if (fallback) fallback.style.display = 'flex'
+              }}
+            />
+            <span
+              className="ruah-header__logo-fallback"
+              style={{ display: 'none', flexDirection: 'column' }}
+            >
+              <span className="ruah-header__logo-mark">RUAH</span>
+              <span className="ruah-header__logo-sub">Barber Lounge</span>
+            </span>
+          </a>
+
           {/* Nav Desktop */}
           <nav className="ruah-header__nav" aria-label="Links principais">
             {navLinks.map((link) => (
@@ -69,9 +78,6 @@ export function Header() {
               </a>
             ))}
           </nav>
-
-          {/* CTA Desktop */}
-
 
           {/* Toggle Mobile */}
           <button
@@ -100,6 +106,7 @@ export function Header() {
             aria-label="Menu de navegação"
           >
             <nav className="ruah-mobile-menu__nav">
+              {/* Links internos (anchors) */}
               {navLinks.map((link, idx) => (
                 <motion.a
                   key={link.href}
@@ -113,16 +120,40 @@ export function Header() {
                   {link.label}
                 </motion.a>
               ))}
-              <motion.a
-                href="/login"
-                className="ruah-btn ruah-btn--primary ruah-mobile-menu__cta"
-                onClick={handleNavClick}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.05 * navLinks.length }}
-              >
-                Agendar Horário
-              </motion.a>
+
+              {/* Link externo — Google Reviews */}
+              {googleReviewsUrl && (
+                <motion.a
+                  href={googleReviewsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ruah-mobile-menu__link"
+                  onClick={handleNavClick}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.03 * navLinks.length }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Star size={18} aria-hidden="true" />
+                  Avaliações Google
+                </motion.a>
+              )}
+
+              {/* CTA Agendar — Booksy */}
+              {booksyUrl && (
+                <motion.a
+                  href={booksyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ruah-btn ruah-btn--primary ruah-mobile-menu__cta"
+                  onClick={handleNavClick}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.05 * (navLinks.length + 1) }}
+                >
+                  Agendar Horário
+                </motion.a>
+              )}
             </nav>
           </motion.div>
         )}

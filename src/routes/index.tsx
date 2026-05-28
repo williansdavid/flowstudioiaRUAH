@@ -5,12 +5,6 @@
  *
  * Fonte da verdade: src/sites/ruah/**
  *
- * Estado atual: Header ✅ + Hero ✅ + About ✅ + Services ✅ + Gallery ✅ + Testimonials ✅
- * Próximas fases:
- *   - TeamSection
- *   - ContactSection
- *   - Footer
- *
  * SSR:
  *   - `loader` busca services ativos via fetchPublicServices (server fn).
  *   - Dados injetados em <ServicesSection services={...} />.
@@ -27,6 +21,7 @@ import {
   ServicesSection,
   GallerySection,
   TestimonialsSection,
+  WhatsAppFloating,
 } from '@/sites/ruah/components'
 import { fetchPublicServices } from '@/lib/sections/fetchServices'
 
@@ -48,6 +43,7 @@ function LandingRuah() {
         <GallerySection />
         <TestimonialsSection />
       </main>
+      <WhatsAppFloating />
     </>
   )
 }

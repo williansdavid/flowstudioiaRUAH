@@ -9,14 +9,11 @@ import type { Testimonial } from '@/sites/ruah/types'
  * - Avatar: inicial em gradiente accent
  * - Badge de origem (Booksy / Google) + data no rodapé do card
  * - Prova social agregada: ★ 5.0 · 61 avaliações · 100% recomendam
- * - Link externo Booksy no rodapé
+ * - Link externo → Google Reviews (fonte: content.externalLinks)
  * - Zero JS — SSR puro, hydration-safe
  * - Guard pattern: se content.testimonials ausente → não renderiza
  * ----------------------------------------------------------------
  */
-
-const BOOKSY_URL =
-  'https://booksy.com/pt-br/339118_ruah-barber-lounge_barbearias_887298_botucatu'
 
 const TOTAL_REVIEWS = 61
 const AVERAGE_RATING = '5.0'
@@ -85,18 +82,20 @@ export function TestimonialsSection() {
           ))}
         </div>
 
-        <div ref={footerRef} className="testimonials-footer">
-          <a
-            href={BOOKSY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="testimonials-booksy-link"
-            aria-label="Ver todas as avaliações no Booksy (abre em nova aba)"
-          >
-            Ver todas as avaliações
-            <ArrowUpRight aria-hidden="true" />
-          </a>
-        </div>
+<div ref={footerRef} className="testimonials-footer">
+  {content.externalLinks?.googleReviews && (
+    <a
+      href={content.externalLinks.googleReviews}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="testimonials-booksy-link"
+      aria-label="Ver avaliações no Google (abre em nova aba)"
+    >
+      Ver avaliações no Google
+      <ArrowUpRight aria-hidden="true" />
+    </a>
+  )}
+</div>
       </div>
     </section>
   )
