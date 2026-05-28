@@ -44,7 +44,7 @@
  * ============================================================ */
 .theme-dark .ruah-section {
   position: relative;
-  padding-block: 4rem;
+  padding-block: 3rem;
   background-color: var(--color-bg);
 }
 
@@ -838,7 +838,7 @@
 
 .theme-dark .ruah-about {
   position: relative;
-  padding-block: 5rem;
+  padding-block: 3.5rem;
   background-color: var(--color-surface-dark);
   background-image: linear-gradient(
     180deg,
@@ -1199,7 +1199,7 @@
 
 .theme-dark .ruah-services {
   position: relative;
-  padding-block: 5rem;
+  padding-block: 3.5rem;
   background-color: var(--color-surface-dark);
   overflow: hidden;
 }
@@ -1239,8 +1239,8 @@
 .theme-dark .ruah-services__header {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   gap: 1rem;
   margin-bottom: 3rem;
 }

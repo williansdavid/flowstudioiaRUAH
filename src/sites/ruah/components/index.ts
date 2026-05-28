@@ -2,7 +2,7 @@
  * Barrel export — Componentes visuais do studio Ruah
  * ----------------------------------------------------------------
  * Mantém imports limpos:
- *   import { HeroSection, AboutSection, ServicesSection, GallerySection, Header } from '@/sites/ruah/components'
+ *   import { HeroSection, AboutSection, ServicesSection, GallerySection, TestimonialsSection, Header } from '@/sites/ruah/components'
  * ----------------------------------------------------------------
  */
 
@@ -11,6 +11,7 @@ export { HeroSection } from './sections/HeroSection'
 export { AboutSection } from './sections/AboutSection'
 export { ServicesSection } from './sections/ServicesSection'
 export { GallerySection } from './sections/GallerySection'
+export { TestimonialsSection } from './sections/TestimonialsSection'
 
 // Layout
 export { Header } from './layout/Header'

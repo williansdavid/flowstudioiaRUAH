@@ -208,4 +208,47 @@ export const content: StudioContent = {
     copyright: '© 2026 Barbearia Ruah. Todos os direitos reservados.',
     credits: 'Powered by FlowStudio AI',
   },
+  // ════════════════════════════════════════════════════════════════
+  // TESTIMONIALS — Depoimentos reais (Booksy ★ 5.0 · 61 avaliações)
+  // Fonte: https://booksy.com/pt-br/339118_ruah-barber-lounge_barbearias_887298_botucatu
+  // ════════════════════════════════════════════════════════════════
+  testimonials: {
+    eyebrow: 'Depoimentos',
+    title: 'O que dizem nossos clientes',
+    subtitle:
+      'Avaliações reais e verificadas no Booksy — 100% recomendam o Ruah.',
+    items: [
+      {
+        id: 'andre-2026-03',
+        name: 'André',
+        quote: 'Atendimento excepcional! Renatão é fera demais!',
+        rating: 5,
+        context: 'Combo Barba e Cabelo · com Renato Soares',
+      },
+      {
+        id: 'alexandre-2026-04',
+        name: 'Alexandre',
+        quote: 'Como sempre, excelente! 👊🏻',
+        rating: 5,
+        context: 'Cliente recorrente · com Renato Soares',
+      },
+      {
+        id: 'caio-2026-04',
+        name: 'Caio',
+        quote: 'Sensacional 🙌🏻',
+        rating: 5,
+        context: 'Cabelo · com Renato Soares',
+      },
+      {
+        id: 'joaopaulo-2026-03',
+        name: 'João Paulo',
+        quote:
+          'Renatão o que ele não tem de cabelo, tem de qualidade kkkk Tmj irmão',
+        rating: 5,
+        context: 'Cabelo · com Renato Soares',
+      },
+    ],
+  },
+  
 }
+

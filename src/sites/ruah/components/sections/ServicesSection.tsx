@@ -1,21 +1,21 @@
-/**
- * ServicesSection — Ruah Barber Lounge
+﻿/**
+ * ServicesSection â€” Ruah Barber Lounge
  * ----------------------------------------------------------------
- * Section "Serviços" da landing pública.
+ * Section "ServiÃ§os" da landing pÃºblica.
  *
  * Layout:
- *   - Header: eyebrow + título + subtítulo (centralizado)
- *   - Grid:   1 col (mobile) → 2 (md) → 3 (lg)
+ *   - Header: eyebrow + tÃ­tulo + subtÃ­tulo (centralizado)
+ *   - Grid:   1 col (mobile) â†’ 2 (md) â†’ 3 (lg)
  *
  * Dados:
- *   - Header textual: content.services (estático, /config/content.ts)
- *   - Catálogo:       prop `services` (SSR loader → Supabase)
+ *   - Header textual: content.services (estÃ¡tico, /config/content.ts)
+ *   - CatÃ¡logo:       prop `services` (SSR loader â†’ Supabase)
  *
  * Estados:
- *   - Lista vazia / undefined → empty state discreto
- *   - Sem flicker: SSR já entrega HTML com os cards renderizados
+ *   - Lista vazia / undefined â†’ empty state discreto
+ *   - Sem flicker: SSR jÃ¡ entrega HTML com os cards renderizados
  *
- * Animação:
+ * AnimaÃ§Ã£o:
  *   - useReveal() no header + grid com stagger via .ruah-delay-*
  *
  * SSR-safe:
@@ -28,7 +28,7 @@ import { formatPrice, formatDuration } from '@/sites/ruah/utils'
 import type { PublicServiceItem } from '@/lib/sections/types'
 
 interface ServicesSectionProps {
-  /** Lista de serviços ativos vinda do SSR loader da rota. */
+  /** Lista de serviÃ§os ativos vinda do SSR loader da rota. */
   services: PublicServiceItem[]
 }
 
@@ -58,7 +58,6 @@ export function ServicesSection({ services }: ServicesSectionProps) {
             >
               <span className="ruah-services__eyebrow-line" aria-hidden="true" />
               <span className="ruah-services__eyebrow-text">{cfg.eyebrow}</span>
-              <span className="ruah-services__eyebrow-line" aria-hidden="true" />
             </div>
           )}
 
@@ -93,7 +92,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
         ) : (
           <div className="ruah-services__empty" role="status">
             <Scissors size={24} strokeWidth={1.5} aria-hidden="true" />
-            <p>Em breve, nosso menu completo de serviços.</p>
+            <p>Em breve, nosso menu completo de serviÃ§os.</p>
           </div>
         )}
       </div>
@@ -101,9 +100,9 @@ export function ServicesSection({ services }: ServicesSectionProps) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────
-// ServiceCard — card individual do grid
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ServiceCard â€” card individual do grid
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ServiceCard({ service }: { service: PublicServiceItem }) {
   return (

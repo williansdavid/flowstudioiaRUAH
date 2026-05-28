@@ -32,6 +32,7 @@ import themeCss from '@/sites/ruah/styles/theme.css?url'
 import baseCss from '@/sites/ruah/styles/base.css?url'
 import animationsCss from '@/sites/ruah/styles/animations.css?url'
 import galleryCss from '@/sites/ruah/styles/gallery.css?url'
+import testimonialsCss from '@/sites/ruah/styles/testimonials.css?url'
 import { buildBrandingCss, buildSeo } from '@/sites/ruah/utils'
 
 // ============================================================
@@ -90,6 +91,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: 'stylesheet', href: baseCss },
       { rel: 'stylesheet', href: animationsCss },
 	  { rel: 'stylesheet', href: galleryCss },
+	  { rel: 'stylesheet', href: testimonialsCss },
     ],
   }),
   component: RootComponent,

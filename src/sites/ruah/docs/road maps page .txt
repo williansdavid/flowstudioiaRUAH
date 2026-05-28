@@ -1,6 +1,6 @@
 ================================================================================
 PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
-Última atualização: 28/05/2026
+Última atualização: 28/05/2026 — pós Fase 14
 ================================================================================
 
 | #  | Fase                    | Status | Entregáveis                                                                                                      | Arquivos  |
@@ -17,13 +17,13 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 | 10 | Seção Hero              | ✅     | Hero full-screen com carrossel + progress bar dourada + CTAs + overlay quente Art Deco                           | 1 + 1 CSS |
 | 11 | Seção About             | ✅     | Sobre + highlights cards Art Deco + media frame com accents SVG animados (stroke-dashoffset reveal)              | 1 + 1 CSS |
 | 12 | Seção Services          | ✅     | Grid de serviços com cards premium (white border refinada) + categoria + duração + preço                         | 2 + 1 CSS |
-| 13 | Seção Team              | ⏳     | Profissionais com fotos e especialidades                                                                         | ~2        |
-| 14 | Seção Gallery           | ⏳     | Galeria de fotos com lightbox simples                                                                            | ~2        |
+| 13 | Seção Team              | ✅     | Profissionais com fotos, role, especialidades, hover refinado + reveal stagger                                   | 2         |
+| 14 | Seção Gallery           | ✅     | Carrossel spotlight (foto+vídeo) + swipe touch + autoplay 5s + progress bar + lightbox + teclado                 | 1 + 1 CSS |
 | 15 | Seção Testimonials      | ⏳     | Depoimentos em carrossel ou grid                                                                                 | ~2        |
 | 16 | Seção Hours             | ⏳     | Tabela de horários + status "aberto agora"                                                                       | ~1        |
 | 17 | Seção Contact + Map     | ⏳     | Formulário/CTA + mapa estático                                                                                   | ~1        |
 | 18 | Footer                  | ⏳     | CTA final WhatsApp + colunas (contato/horários/redes) + copyright                                                | ~1        |
-| 19 | Página / montada        | 🟡     | routes/index.tsx — atualmente Header + Hero + About + Services                                                   | 1         |
+| 19 | Página / montada        | 🟡     | routes/index.tsx — atualmente Header + Hero + About + Services + Team + Gallery                                  | 1         |
 | 20 | SEO + Metadata          | ⏳     | Open Graph, Twitter Cards, schema.org JSON-LD                                                                    | 1         |
 | 21 | WhatsApp Float          | ⏳     | Botão flutuante + deep link                                                                                      | ~1        |
 | 22 | Performance audit       | ⏳     | Lighthouse, lazy loading, preload críticos                                                                       | —         |
@@ -31,93 +31,42 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 
 
 ================================================================================
-FASE 10 — SEÇÃO HERO  ✅ CONCLUÍDA
+FASE 14 — SEÇÃO GALLERY  ✅ CONCLUÍDA
 ================================================================================
 
 | #     | Passo                              | Tipo | Ação                                                                                  | Status |
 |-------|------------------------------------|------|---------------------------------------------------------------------------------------|--------|
-| 10.0  | Inspeção arquivos existentes       | 🔍   | HeroSection.tsx + HeroSection.legacy.tsx localizados                                  | ✅     |
-| 10.1  | Análise comparativa vs referência  | 🔬   | Diff entre manus.space e build local                                                  | ✅     |
-| 10.2  | Ajuste de content.ts               | ✏️   | Eyebrow + headlines + subheadline + CTAs alinhados à referência                       | ✅     |
-| 10.3  | Fix classe __actions → __ctas      | 🐛   | Bug de classe sem CSS aplicado                                                        | ✅     |
-| 10.4  | Headline uppercase + maior         | 🎨   | clamp(3.5rem, 10vw, 7.5rem) + uppercase + line-height 0.95                            | ✅     |
-| 10.5  | Overlay frio → quente              | 🎨   | rgba(15,32,32) → rgba(8,6,4) / rgba(20,14,8) com matiz âmbar                          | ✅     |
-| 10.6  | CTAs case normal no hero           | 🎨   | Override text-transform: none em .ruah-hero__ctas .ruah-btn                           | ✅     |
-| 10.7  | CTA primário → WhatsApp            | 🔗   | href dinâmico via content.hero.primaryCta + target _blank                             | ✅     |
-| 10.8  | Carrossel de slides background     | 🎠   | Múltiplos slides com fade opacity 1.2s + prefers-reduced-motion                       | ✅     |
-| 10.9  | Progress bar dourada sincronizada  | ✨   | Barra inferior 1px com glow #d4af37 + scaleX animado sync com slides                  | ✅     |
-| 10.10 | Fade Hero → About                  | 🎨   | ::after gradient pra dissolver base do hero em var(--color-surface-dark)              | ✅     |
-| 10.11 | Validação visual final             | 👁️   | Comparado localhost vs manus.space                                                    | ✅     |
+| 14.0  | Inspeção                           | 🔍   | GallerySection.tsx + content.gallery validados                                        | ✅     |
+| 14.1  | Estrutura HTML semântica           | ✏️   | <section id="galeria"> com header (eyebrow + título + subtítulo)                      | ✅     |
+| 14.2  | Carrossel spotlight                | 🎠   | Slide central destacado + laterais reduzidas (desktop) | slide único (mobile)         | ✅     |
+| 14.3  | Suporte foto + vídeo               | 🎬   | Tipo GalleryMedia ('image' | 'video') + autoplay/muted/loop em slide ativo           | ✅     |
+| 14.4  | Setas + dots de navegação          | ⏯️   | ChevronLeft/Right + dots clicáveis com aria-selected                                  | ✅     |
+| 14.5  | Lightbox modal                     | 🔍   | Click no slide ativo abre modal + close (X) + setas + counter (n/total)               | ✅     |
+| 14.6  | Navegação por teclado              | ⌨️   | ←/→/Esc no lightbox + body scroll lock                                                | ✅     |
+| 14.7  | Swipe touch nativo                 | 📱   | onTouchStart/Move/End com threshold 50px + pausa autoplay durante drag                | ✅     |
+| 14.8  | Autoplay 5s sincronizado           | ⏱️   | setInterval com pausa em hover/lightbox/swipe + respeita prefers-reduced-motion       | ✅     |
+| 14.9  | Progress bar dourada               | ✨   | Barra centralizada (280px desktop / 180px mobile) + animação CSS sync com autoplay    | ✅     |
+| 14.10 | Setas escondidas mobile            | 🎨   | display: none em <1024px (swipe assume função de navegação)                           | ✅     |
+| 14.11 | Constante única AUTOPLAY_INTERVAL  | 🧠   | Single source of truth — sincroniza setInterval + animationDuration                   | ✅     |
+| 14.12 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + testado desktop + mobile DevTools                               | ✅     |
 
 
 ================================================================================
-FASE 9 — LAYOUT: HEADER  ✅ CONCLUÍDA
-================================================================================
-
-| #   | Passo                            | Tipo | Ação                                                                              | Status |
-|-----|----------------------------------|------|-----------------------------------------------------------------------------------|--------|
-| 9.0 | Inspeção                         | 🔍   | Listado src/sites/ruah/components/layout/                                         | ✅     |
-| 9.1 | Decisão arquitetural             | 🧠   | Header fixo scroll-aware (transparent topo → glassmorphism em 50px)               | ✅     |
-| 9.2 | Header.tsx                       | ✏️   | Logo + nav (Início, Sobre, Serviços, Equipe, Galeria, Contato) + toggle mobile    | ✅     |
-| 9.3 | Mobile Menu integrado            | ✏️   | Drawer fullscreen com framer-motion (AnimatePresence + cascata)                   | ✅     |
-| 9.4 | CSS Header                       | 🎨   | .ruah-header, .ruah-header--scrolled, .ruah-mobile-menu, .ruah-mobile-menu__link  | ✅     |
-| 9.5 | Hook useScrolled                 | 🪝   | Detecção de scroll com threshold configurável                                     | ✅     |
-| 9.6 | Logo com fallback                | 🖼️   | <img /ruah/images/logo/logo.jpeg> + fallback textual em caso de erro              | ✅     |
-| 9.7 | CTAs Header → WhatsApp           | 🔗   | Header desktop + mobile usando content.hero.primaryCta com target _blank          | ✅     |
-| 9.8 | Otimização animações mobile      | ⚡   | Drawer 0.15s | links 0.2s | cascata 0.02s × idx (≈55% mais rápido)                 | ✅     |
-| 9.9 | Validação TS + visual            | 🔬   | npx tsc --noEmit ok + testado em mobile e desktop                                 | ✅     |
-
-
-================================================================================
-FASE 11 — SEÇÃO ABOUT  ✅ CONCLUÍDA
-================================================================================
-
-| #    | Passo                              | Tipo | Ação                                                                       | Status |
-|------|------------------------------------|------|----------------------------------------------------------------------------|--------|
-| 11.0 | Inspeção                           | 🔍   | AboutSection.tsx + content/about.ts validados                              | ✅     |
-| 11.1 | Layout 2 colunas (texto + mídia)   | 🎨   | Grid 1.1fr / 1fr responsivo (stack mobile → split desktop)                 | ✅     |
-| 11.2 | Eyebrow + título + parágrafos      | ✏️   | Padrão visual idêntico ao hero (eyebrow dourado + headline display)        | ✅     |
-| 11.3 | Highlights cards Art Deco          | 🎨   | 3 cards com ícone quadrado dourado + linha decorativa topo + hover lift    | ✅     |
-| 11.4 | Media frame com aspect 4/5         | 🖼️   | Imagem com box-shadow profundo + scale on hover                            | ✅     |
-| 11.5 | Accents douradas SVG animadas      | ✨   | 2 retângulos SVG espelhados com stroke-dashoffset reveal on scroll         | ✅     |
-| 11.6 | Animações de entrada               | ⚡   | useReveal nos blocos + .ruah-reveal-stroke nos SVGs                        | ✅     |
-| 11.7 | CSS dedicado                       | 🎨   | .ruah-about__* completo com variáveis CSS                                  | ✅     |
-| 11.8 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + comparado vs manus.space                             | ✅     |
-
-
-================================================================================
-FASE 12 — SEÇÃO SERVICES  ✅ CONCLUÍDA
-================================================================================
-
-| #    | Passo                              | Tipo | Ação                                                                       | Status |
-|------|------------------------------------|------|----------------------------------------------------------------------------|--------|
-| 12.0 | Inspeção                           | 🔍   | ServicesSection.tsx + content/services.ts validados                        | ✅     |
-| 12.1 | Header centralizado                | ✏️   | Eyebrow + título + subtítulo padrão Art Deco                               | ✅     |
-| 12.2 | Grid responsivo                    | 🎨   | 1 col mobile → 2 col tablet → 3 col desktop                                | ✅     |
-| 12.3 | Card v1 (borda dourada)            | 🎨   | Primeira iteração com border dourada — descartada                          | ⚠️     |
-| 12.4 | Card v2 (white border premium)     | 🎨   | Refatorado para borda branca sutil + linha dourada decorativa no topo      | ✅     |
-| 12.5 | Refinamento espessura borda        | 🎨   | 1px/0.12 → 1.5px/0.22 (normal) e 0.35 → 0.50 (hover) + glow reforçado      | ✅     |
-| 12.6 | Estrutura card                     | ✏️   | Categoria + nome + descrição + footer (duração + preço)                    | ✅     |
-| 12.7 | Empty state                        | 🛡️   | Fallback quando services array vazio                                       | ✅     |
-| 12.8 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + ajustes finos validados                              | ✅     |
-
-
-================================================================================
-FASE 13 — SEÇÃO TEAM  ⏳ PRÓXIMA
+FASE 15 — SEÇÃO TESTIMONIALS  ⏳ PRÓXIMA
 ================================================================================
 
 | #    | Passo                              | Tipo | Ação                                                                       | Risco |
 |------|------------------------------------|------|----------------------------------------------------------------------------|-------|
-| 13.0 | Inspeção                           | 🔍   | Verificar TeamSection.tsx + content/team.ts                                | 🟢    |
-| 13.1 | Validar conteúdo                   | 📝   | Garantir array de profissionais (nome, foto, role, especialidades, social)| 🟢    |
-| 13.2 | Estrutura HTML semântica           | ✏️   | <section id="equipe"> com .ruah-section + .ruah-container                  | 🟢    |
-| 13.3 | Grid responsivo                    | 🎨   | 1 col mobile → 2 col tablet → 3-4 col desktop                              | 🟢    |
-| 13.4 | Card de profissional               | 🎨   | Foto retrato + nome + role + especialidades + link social (opcional)       | 🟡    |
-| 13.5 | Hover refinado                     | ✨   | Lift + overlay sutil + reveal de info adicional                            | 🟡    |
-| 13.6 | Animações de entrada               | ⚡   | useReveal com stagger entre cards                                          | 🟢    |
-| 13.7 | CSS dedicado                       | 🎨   | .ruah-team, .ruah-team__grid, .ruah-team__card                             | 🟢    |
-| 13.8 | Integração em routes/index.tsx     | 🔗   | Adicionar <TeamSection /> após <ServicesSection />                         | 🟢    |
-| 13.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit + comparar com manus.space                                | 🟡    |
+| 15.0 | Inspeção                           | 🔍   | Verificar TestimonialsSection.tsx + content.testimonials                   | 🟢    |
+| 15.1 | Validar conteúdo                   | 📝   | Array de depoimentos (autor, role, texto, rating, avatar opcional)         | 🟢    |
+| 15.2 | Decisão de layout                  | 🧠   | Carrossel único vs grid 3 colunas vs slider com autoplay                   | 🟡    |
+| 15.3 | Estrutura HTML semântica           | ✏️   | <section id="depoimentos"> + header padrão eyebrow/título/subtítulo        | 🟢    |
+| 15.4 | Card de depoimento                 | 🎨   | Aspas decorativas + texto + autor + role + rating (estrelas Lucide)        | 🟡    |
+| 15.5 | Hover refinado                     | ✨   | Lift + glow dourado sutil + border accent                                  | 🟢    |
+| 15.6 | Animações de entrada               | ⚡   | useReveal com stagger                                                      | 🟢    |
+| 15.7 | CSS dedicado                       | 🎨   | .ruah-testimonials__* com variáveis CSS                                    | 🟢    |
+| 15.8 | Integração em routes/index.tsx     | 🔗   | <TestimonialsSection /> após <GallerySection />                            | 🟢    |
+| 15.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit + comparar vs manus.space                                 | 🟡    |
 
 
 ================================================================================
@@ -134,18 +83,22 @@ NOTAS ARQUITETURAIS
 - Padrão de header de seção: eyebrow + título display + subtítulo opcional
 - Cards premium: white border sutil + linha dourada decorativa + hover lift
 - Borda padrão de card: 1.5px solid rgba(255,255,255,0.22) → hover 0.50
+- Carrosséis: autoplay com constante única (AUTOPLAY_INTERVAL_MS) + progress bar sync
+- Acessibilidade: respeitar prefers-reduced-motion em todas as animações automáticas
+- Mobile: swipe touch como navegação primária | setas escondidas <1024px
 
 ⚠️ DÉBITOS TÉCNICOS:
 - Fase 8 (componentes UI base) postergada para quando iniciar admin
 - Footer ainda não implementado (Fase 18)
 - WhatsApp Float pendente (Fase 21)
-- routes/index.tsx ainda monta apenas Hero + About + Services
-- Falta loader Supabase real para services (atualmente content estático)
+- routes/index.tsx monta Hero + About + Services + Team + Gallery
+- Falta loader Supabase real para services + team + gallery (atualmente content estático)
+- Lightbox da galeria não tem swipe touch (apenas teclado + setas) — revisitar se necessário
 
 🎯 PRÓXIMO PASSO:
-→ Iniciar Fase 13 — Seção Team
+→ Iniciar Fase 15 — Seção Testimonials
 → Comando inicial:
-   Get-ChildItem -Path ".\src\sites\ruah\components\sections\" -Filter "Team*"
-   Get-Content ".\src\sites\ruah\content\team.ts" -ErrorAction SilentlyContinue
+   Get-ChildItem -Path ".\src\sites\ruah\components\sections\" -Filter "Testimonials*"
+   Get-Content ".\src\sites\ruah\config\content.ts" | Select-String -Pattern "testimonials" -Context 0,30
 
 ================================================================================

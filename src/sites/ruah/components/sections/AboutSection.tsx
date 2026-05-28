@@ -1,16 +1,16 @@
-/**
- * AboutSection — Ruah Barber Lounge
+﻿/**
+ * AboutSection â€” Ruah Barber Lounge
  * ----------------------------------------------------------------
- * Section "Sobre" da landing pública.
+ * Section "Sobre" da landing pÃºblica.
  *
  * Layout:
  *   - Desktop: 2 colunas (texto + highlights | imagem)
- *   - Mobile : stack vertical (texto → imagem → highlights)
+ *   - Mobile : stack vertical (texto â†’ imagem â†’ highlights)
  *
  * Dados:
- *   - Consome content.about (opcional → guard early-return)
+ *   - Consome content.about (opcional â†’ guard early-return)
  *
- * Animação:
+ * AnimaÃ§Ã£o:
  *   - useReveal() em blocos-chave com stagger via .ruah-delay-*
  *   - Accents douradas: desenho progressivo via SVG stroke-dashoffset
  *
@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import { content, useReveal } from '@/sites/ruah'
 
-// Map de ícones disponíveis pra highlights
+// Map de Ã­cones disponÃ­veis pra highlights
 const HIGHLIGHT_ICONS: Record<string, LucideIcon> = {
   wifi: Wifi,
   award: Award,
@@ -42,7 +42,7 @@ const HIGHLIGHT_ICONS: Record<string, LucideIcon> = {
 export function AboutSection() {
   const { about } = content
 
-  // Guard: section opcional — não renderiza se ausente
+  // Guard: section opcional â€” nÃ£o renderiza se ausente
   if (!about) return null
 
   const eyebrowRef = useReveal<HTMLDivElement>()
@@ -135,7 +135,7 @@ export function AboutSection() {
               />
             </div>
 
-            {/* Accent 1 — moldura inferior-direita (desenho progressivo) */}
+            {/* Accent 1 â€” moldura inferior-direita (desenho progressivo) */}
             <div
               ref={accent1Ref}
               className="ruah-about__media-accent ruah-about__media-accent--svg ruah-reveal-stroke ruah-delay-400"
@@ -160,7 +160,7 @@ export function AboutSection() {
               </svg>
             </div>
 
-            {/* Accent 2 — moldura superior-esquerda espelhada (desenho progressivo) */}
+            {/* Accent 2 â€” moldura superior-esquerda espelhada (desenho progressivo) */}
             <div
               ref={accent2Ref}
               className="ruah-about__media-accent ruah-about__media-accent--svg ruah-about__media-accent--2 ruah-reveal-stroke ruah-delay-500"

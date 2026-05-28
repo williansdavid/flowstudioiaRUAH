@@ -1,15 +1,15 @@
-/* ============================================================
- * Ruah Barber Lounge — Animations
+﻿/* ============================================================
+ * Ruah Barber Lounge â€” Animations
  * ------------------------------------------------------------
  * Keyframes + classes de reveal-on-scroll.
  *
  * Funcionamento:
  *   1. Elemento renderiza SSR com classe `.ruah-reveal` (estado inicial)
  *   2. Hook useReveal() observa via IntersectionObserver
- *   3. Quando entra na viewport, adiciona `.is-visible` → anima
+ *   3. Quando entra na viewport, adiciona `.is-visible` â†’ anima
  *
  * Acessibilidade:
- *   - Respeita prefers-reduced-motion → desliga animações
+ *   - Respeita prefers-reduced-motion â†’ desliga animaÃ§Ãµes
  *
  * Importado em: src/routes/__root.tsx (via ?url import)
  * ============================================================ */
@@ -82,7 +82,7 @@
 }
 
 /* ============================================================
- * 2. Reveal base — estado inicial (antes de entrar na viewport)
+ * 2. Reveal base â€” estado inicial (antes de entrar na viewport)
  * ============================================================ */
 .theme-dark .ruah-reveal {
   opacity: 0;
@@ -91,7 +91,7 @@
 }
 
 /* ============================================================
- * 3. Variantes de reveal — estado inicial por direção
+ * 3. Variantes de reveal â€” estado inicial por direÃ§Ã£o
  * ============================================================ */
 .theme-dark .ruah-reveal--up {
   transform: translateY(2rem);
@@ -114,7 +114,7 @@
 }
 
 /* ============================================================
- * 4. Estado visível — disparado via JS (.is-visible)
+ * 4. Estado visÃ­vel â€” disparado via JS (.is-visible)
  * ============================================================ */
 .theme-dark .ruah-reveal.is-visible {
   opacity: 1;
@@ -122,7 +122,7 @@
 }
 
 /* ============================================================
- * 5. Delays utilitários (stagger)
+ * 5. Delays utilitÃ¡rios (stagger)
  * ============================================================ */
 .theme-dark .ruah-delay-100 {
   transition-delay: 100ms;
@@ -168,7 +168,7 @@
 }
 
 /* ============================================================
- * 7. Acessibilidade — respeita prefers-reduced-motion
+ * 7. Acessibilidade â€” respeita prefers-reduced-motion
  * ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .theme-dark .ruah-reveal,
@@ -192,18 +192,18 @@
   }
 }
 /* ============================================================
- * 8. Stroke Reveal — desenho progressivo de SVG
+ * 8. Stroke Reveal â€” desenho progressivo de SVG
  * ------------------------------------------------------------
  * Usado pelas accents douradas do AboutSection.
  *
  * Comportamento:
- *   - Estado inicial: stroke "escondido" (dashoffset = perímetro)
- *   - .is-visible    : stroke desenha do início ao fim (offset → 0)
+ *   - Estado inicial: stroke "escondido" (dashoffset = perÃ­metro)
+ *   - .is-visible    : stroke desenha do inÃ­cio ao fim (offset â†’ 0)
  *
- * O perímetro do <rect> é 4 × 100 = 400 (viewBox 100×100).
- * Usamos 420 como pathLength fictício pra garantir folga visual.
+ * O perÃ­metro do <rect> Ã© 4 Ã— 100 = 400 (viewBox 100Ã—100).
+ * Usamos 420 como pathLength fictÃ­cio pra garantir folga visual.
  *
- * Compatível com .ruah-delay-* (herda transition-delay).
+ * CompatÃ­vel com .ruah-delay-* (herda transition-delay).
  * ============================================================ */
 .theme-dark .ruah-reveal-stroke {
   opacity: 0;
@@ -218,16 +218,18 @@
   will-change: stroke-dashoffset;
 }
 
-/* Estado visível — aparece o wrapper e desenha o stroke */
+/* Estado visÃ­vel â€” aparece o wrapper e desenha o stroke */
 .theme-dark .ruah-reveal-stroke.is-visible {
   opacity: 1;
 }
 
 .theme-dark .ruah-reveal-stroke.is-visible .ruah-about__media-accent-rect {
   stroke-dashoffset: 0;
+  /* Após o desenho inicial (1.6s + 0.2s buffer), entra em loop contínuo */
+  animation: ruah-stroke-loop 8s linear 1.8s infinite;
 }
 
-/* Acessibilidade — respeita prefers-reduced-motion */
+/* Acessibilidade â€” respeita prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .theme-dark .ruah-reveal-stroke {
     opacity: 1 !important;
@@ -238,4 +240,18 @@
     stroke-dashoffset: 0 !important;
     transition: none !important;
   }
+}
+
+
+
+/* ============================================================
+ * Loop contínuo da accent dourada
+ * ------------------------------------------------------------
+ * Após o desenho inicial (1.6s), o stroke continua percorrendo
+ * a borda em loop infinito sem reset visível.
+ * Perímetro do rect (viewBox 100×100) ≈ 400 unidades.
+ * ============================================================ */
+@keyframes ruah-stroke-loop {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -400; }
 }
