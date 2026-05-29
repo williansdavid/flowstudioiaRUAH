@@ -893,23 +893,22 @@
 
 /* Mobile: ajuste fino — foto um pouco mais discreta + posição melhor */
 @media (max-width: 767px) {
-  .theme-dark .ruah-about::before {
-    filter: blur(1.5px) grayscale(0);
-    opacity: 0.85; /* ⬆ foto bem visível */
-    background-position: center top;
-    background-size: cover;
-    transform: scale(1.1);
-  }
+  /* Escurece MAIS o overlay somente no mobile */
   .theme-dark .ruah-about::after {
     background: linear-gradient(
-      180deg,
-      rgba(15, 22, 25, 0.55) 0%,
-      rgba(15, 22, 25, 0.35) 35%,
-      rgba(15, 22, 25, 0.55) 65%,
-      rgba(15, 22, 25, 0.75) 100%
+      135deg,
+      rgba(15, 22, 25, 0.92) 0%,
+      rgba(15, 22, 25, 0.80) 50%,
+      rgba(15, 22, 25, 0.95) 100%
     );
   }
+
+  /* (opcional) deixa a foto um pouco mais apagada também */
+  .theme-dark .ruah-about::before {
+    opacity: 0.55;
+  }
 }
+
 
 
 @media (prefers-reduced-transparency: reduce) {
