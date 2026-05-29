@@ -1,6 +1,6 @@
 ================================================================================
 PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
-Última atualização: 28/05/2026 — pós Fase 15 + loop stroke About
+Última atualização: 28/05/2026 — pós Fase 21 (WhatsApp Float antecipado)
 ================================================================================
 
 | #  | Fase                    | Status | Entregáveis                                                                                                      | Arquivos  |
@@ -23,40 +23,29 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 | 16 | Seção Hours             | ⏳     | Tabela de horários + status "aberto agora"                                                                       | ~1        |
 | 17 | Seção Contact + Map     | ⏳     | Formulário/CTA + mapa estático                                                                                   | ~1        |
 | 18 | Footer                  | ⏳     | CTA final WhatsApp + colunas (contato/horários/redes) + copyright                                                | ~1        |
-| 19 | Página / montada        | 🟡     | routes/index.tsx — atualmente Header + Hero + About + Services + Team + Gallery + Testimonials                   | 1         |
+| 19 | Página / montada        | 🟡     | routes/index.tsx — Header + Hero + About + Services + Team + Gallery + Testimonials + WhatsAppFloating           | 1         |
 | 20 | SEO + Metadata          | ⏳     | Open Graph, Twitter Cards, schema.org JSON-LD                                                                    | 1         |
-| 21 | WhatsApp Float          | ⏳     | Botão flutuante + deep link                                                                                      | ~1        |
+| 21 | WhatsApp Float          | ✅     | Botão flutuante Dark Luxury (variant B) + scroll threshold 400px + SSR-safe + deep link via buildWhatsAppUrl     | 2 + 1 CSS |
 | 22 | Performance audit       | ⏳     | Lighthouse, lazy loading, preload críticos                                                                       | —         |
 | 23 | Deploy Netlify          | ⏳     | Build, env vars, domínio custom                                                                                  | —         |
 
 
 ================================================================================
-FASE 15 — SEÇÃO TESTIMONIALS  ✅ CONCLUÍDA
+FASE 21 — WHATSAPP FLOAT  ✅ CONCLUÍDA (antecipada)
 ================================================================================
 
 | #    | Passo                              | Tipo | Ação                                                                       | Status |
 |------|------------------------------------|------|----------------------------------------------------------------------------|--------|
-| 15.0 | Inspeção                           | 🔍   | TestimonialsSection.tsx + content.testimonials validados                   | ✅     |
-| 15.1 | Validação de conteúdo              | 📝   | Array de depoimentos (autor, role, texto, rating)                          | ✅     |
-| 15.2 | Layout definido                    | 🧠   | Layout premium escolhido e aplicado                                        | ✅     |
-| 15.3 | Estrutura HTML semântica           | ✏️   | <section id="depoimentos"> + header padrão eyebrow/título/subtítulo        | ✅     |
-| 15.4 | Card de depoimento                 | 🎨   | Aspas decorativas + texto + autor + role + rating (estrelas Lucide)        | ✅     |
-| 15.5 | Hover refinado                     | ✨   | Lift + glow dourado sutil + border accent                                  | ✅     |
-| 15.6 | Animações de entrada               | ⚡   | useReveal com stagger                                                      | ✅     |
-| 15.7 | CSS dedicado                       | 🎨   | .ruah-testimonials__* com variáveis CSS                                    | ✅     |
-| 15.8 | Integração em routes/index.tsx     | 🔗   | <TestimonialsSection /> após <GallerySection />                            | ✅     |
-| 15.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + visual aprovado                                      | ✅     |
-
-
-================================================================================
-BÔNUS — REFINAMENTO ABOUT (pós Fase 11)  ✅ CONCLUÍDO
-================================================================================
-
-| #    | Passo                              | Tipo | Ação                                                                              | Status |
-|------|------------------------------------|------|-----------------------------------------------------------------------------------|--------|
-| B1   | Stroke das accents douradas        | 🔄   | Após desenho inicial (1.6s), traço entra em LOOP infinito (8s linear)             | ✅     |
-| B2   | Técnica sem pisco                  | 🧠   | @keyframes ruah-stroke-loop: dashoffset 0 → -400 (perímetro do rect)              | ✅     |
-| B3   | Acessibilidade                     | ♿   | Respeita prefers-reduced-motion (loop desativado)                                 | ✅     |
+| 21.0 | Estrutura de pasta                 | 📁   | src/sites/ruah/components/floating/ + barrel index.ts                      | ✅     |
+| 21.1 | Componente WhatsAppFloating.tsx    | ✏️   | SSR-safe + scroll listener + fade/slide + 2 variantes (A/B)                | ✅     |
+| 21.2 | Helper buildWhatsAppUrl            | 🔧   | src/sites/ruah/lib/whatsapp.ts (deep link com mensagem pré-preenchida)     | ✅     |
+| 21.3 | CSS dedicado                       | 🎨   | whatsapp-floating.css (variantes A clássico + B dark luxury)               | ✅     |
+| 21.4 | Variante escolhida                 | 🎨   | B — Dark Luxury Ruah (preto + dourado, casa com identidade)                | ✅     |
+| 21.5 | Scroll threshold                   | ⚙️   | 400px (configurável via const SCROLL_THRESHOLD)                            | ✅     |
+| 21.6 | Import CSS no componente           | 🔗   | import '@/sites/ruah/styles/whatsapp-floating.css' (padrão Vite)           | ✅     |
+| 21.7 | Barrel + integração na rota        | 🔗   | Exportado em components/index.ts + montado em routes/index.tsx             | ✅     |
+| 21.8 | Acessibilidade                     | ♿   | aria-label + role + foco visível + safe-area iOS                           | ✅     |
+| 21.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + visual aprovado                                      | ✅     |
 
 
 ================================================================================
@@ -84,6 +73,7 @@ NOTAS ARQUITETURAIS
 
 ✅ PADRÕES CONSOLIDADOS:
 - CTAs principais (WhatsApp) → single source: content.hero.primaryCta
+- Helper de deep link WhatsApp → src/sites/ruah/lib/whatsapp.ts (buildWhatsAppUrl)
 - Animações UI mobile: duration 0.15s–0.25s | cascata 0.015–0.025s × idx
 - Classes CSS escopadas com prefixo .ruah-* (evita conflito futuro com admin)
 - Imagens em /ruah/images/ (servidas via public/)
@@ -97,15 +87,20 @@ NOTAS ARQUITETURAIS
 - Mobile: swipe touch como navegação primária | setas escondidas <1024px
 - Animações decorativas em loop: usar dashoffset crescente (sem reset visível) →
   ver About accents (@keyframes ruah-stroke-loop, dashoffset 0 → -perímetro)
+- Imports de CSS dedicado: SEMPRE via import no .tsx do componente (padrão Vite),
+  NUNCA via @import no final de outro CSS (quebra a regra "imports no topo")
+- Componentes flutuantes/SSR-safe: gate de render com useState(mounted) +
+  useEffect para evitar hydration mismatch
 
 ⚠️ DÉBITOS TÉCNICOS:
 - Fase 8 (componentes UI base) postergada para quando iniciar admin
 - Footer ainda não implementado (Fase 18)
-- WhatsApp Float pendente (Fase 21)
-- routes/index.tsx monta Hero + About + Services + Team + Gallery + Testimonials
+- routes/index.tsx monta Hero + About + Services + Team + Gallery + Testimonials + WhatsAppFloating
 - Falta loader Supabase real para services + team + gallery + testimonials (atualmente content estático)
 - Lightbox da galeria não tem swipe touch (apenas teclado + setas) — revisitar se necessário
 - Helper getCurrentStatus para "aberto agora" precisa ser SSR-safe (calcular no client)
+- Config do WhatsAppFloating (VARIANT, SCROLL_THRESHOLD, mensagem) ainda hardcoded
+  no componente — mover para studio.config.ts quando for white-label de fato
 
 🎯 PRÓXIMO PASSO:
 → Iniciar Fase 16 — Seção Hours
