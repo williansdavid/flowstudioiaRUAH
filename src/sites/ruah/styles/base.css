@@ -918,7 +918,7 @@
     filter: none; /* remove blur pra economizar GPU quando user pediu menos efeito */
   }
   .theme-dark .ruah-about::after {
-    background: rgba(15, 22, 25, 0.85);
+    background: rgba(15, 22, 25, 0.90);
   }
 }
 
