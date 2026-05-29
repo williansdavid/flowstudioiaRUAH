@@ -25,9 +25,9 @@ export const identity: StudioIdentity = {
     phone: '+5514981893908',
     whatsapp: '5514981893908',
     email: 'contato@ruahbarber.com.br',
-    instagram: '@ruahbarber',
-    instagramUrl: 'https://instagram.com/ruahbarber',
-    facebookUrl: 'https://facebook.com/ruahbarber',
+    instagram: '@ruahbarbeariar',
+    instagramUrl: 'https://instagram.com/ruahbarbearia',
+    facebookUrl: 'https://facebook.com/renatosoaresbarber',
     googleBusinessUrl: 'https://g.page/ruahbarber',
   },
 

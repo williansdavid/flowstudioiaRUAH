@@ -14,7 +14,7 @@ import type { BusinessHours } from '../types'
 
 export const businessHours: BusinessHours = {
   sunday:    { open: false },
-  monday:    { open: true,  opensAt: '09:00', closesAt: '19:00' },
+  monday:    { open: false },
   tuesday:   { open: true,  opensAt: '09:00', closesAt: '19:00' },
   wednesday: { open: true,  opensAt: '09:00', closesAt: '19:00' },
   thursday:  { open: true,  opensAt: '09:00', closesAt: '20:00' },

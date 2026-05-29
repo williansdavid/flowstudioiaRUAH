@@ -168,25 +168,36 @@ export interface ContactContent {
 // FOOTER — rodapé + CTA final embutido (sempre presente)
 // ════════════════════════════════════════════════════════════════
 
-export interface FooterContent {
-  /**
-   * CTA final embutido no topo do footer.
-   * Ex.: { title: "Pronto pra renovar o visual?",
-   *        ctaLabel: "Agende agora", ctaHref: "#contact" }
-   */
-  finalCta: {
-    title: string
-    subtitle?: string
-    ctaLabel: string
-    ctaHref: string
+  // ════════════════════════════════════════════════════════════════════════
+  // FOOTER — rodapé institucional (sem CTA duplicado, WhatsApp Float cuida)
+  // ════════════════════════════════════════════════════════════════════════
+
+  export interface FooterContent {
+    /**
+     * Frase-manifesto do studio (aparece sob o logo no rodapé).
+     * Ex.: "Cada corte, uma experiência. Cada cliente, uma história."
+     */
+    manifesto: string
+
+    /**
+     * Nome do detentor dos direitos autorais.
+     * Ex.: "Barbearia Ruah"
+     * ⚠️ NÃO inclui o ano — é injetado dinamicamente no componente.
+     */
+    copyrightOwner: string
+
+    /**
+     * Sufixo do copyright (texto após o nome).
+     * Ex.: "Todos os direitos reservados."
+     */
+    copyrightSuffix: string
+
+    /**
+     * Linha de crédito da plataforma.
+     * Ex.: "Powered by FlowStudio AI"
+     */
+    credits: string
   }
-
-  /** Texto de copyright (ano é injetado dinamicamente) */
-  copyright: string
-
-  /** Linha de crédito opcional (ex.: "Powered by FlowStudio AI") */
-  credits?: string
-}
 
 // ════════════════════════════════════════════════════════════════
 // ABOUT — história do studio (OPCIONAL)

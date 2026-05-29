@@ -1,0 +1,396 @@
+/* ============================================================================
+   FOOTER — Ruah Barber Lounge
+   ----------------------------------------------------------------------------
+   Rodapé institucional Art Deco minimalista.
+   Escopo: .ruah-footer__*
+   Animação reveal: usa data-reveal + .ruah-delay-* (padrão do projeto)
+   ============================================================================ */
+
+.ruah-footer {
+  position: relative;
+  background: linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+  color: var(--ruah-color-text-muted, #b8b8b8);
+  padding: clamp(3rem, 8vw, 5rem) 1.25rem 2rem;
+  overflow: hidden;
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+/* Linha dourada sutil no topo */
+.ruah-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(600px, 80%);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.6) 50%,
+    transparent 100%
+  );
+}
+
+.ruah-footer__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 3rem);
+}
+
+/* ───────── ORNAMENTOS ART DECO ───────── */
+
+.ruah-footer__ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  user-select: none;
+}
+
+.ruah-footer__ornament-line {
+  width: clamp(40px, 10vw, 80px);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.5) 50%,
+    transparent 100%
+  );
+}
+
+.ruah-footer__ornament-diamond {
+  color: #d4af37;
+  font-size: 0.75rem;
+  text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+/* ───────── BRAND ───────── */
+
+.ruah-footer__brand {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ruah-footer__logo {
+  font-family: var(--ruah-font-display, 'Playfair Display', serif);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #f5f5f5;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.ruah-footer__logo-accent {
+  color: #d4af37;
+}
+
+.ruah-footer__manifesto {
+  font-family: var(--ruah-font-display, 'Playfair Display', serif);
+  font-style: italic;
+  font-size: clamp(0.95rem, 2vw, 1.125rem);
+  color: rgba(245, 245, 245, 0.75);
+  max-width: 480px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ───────── GRID 3 COLUNAS ───────── */
+
+.ruah-footer__grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .ruah-footer__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3rem;
+    text-align: left;
+  }
+}
+
+.ruah-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .ruah-footer__col {
+    align-items: flex-start;
+  }
+}
+
+.ruah-footer__col-title {
+  font-family: var(--ruah-font-display, 'Playfair Display', serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #d4af37;
+  margin: 0 0 0.5rem;
+}
+
+.ruah-footer__item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: rgba(245, 245, 245, 0.78);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.ruah-footer__item:hover,
+.ruah-footer__item:focus-visible {
+  color: #d4af37;
+  outline: none;
+}
+
+.ruah-footer__item-icon {
+  flex-shrink: 0;
+  color: rgba(212, 175, 55, 0.7);
+}
+
+.ruah-footer__item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.ruah-footer__item-sub {
+  font-size: 0.8125rem;
+  color: rgba(245, 245, 245, 0.5);
+}
+
+.ruah-footer__maplink {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: #d4af37;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  padding-bottom: 1px;
+  transition: border-color 200ms ease;
+  align-self: center;
+}
+
+@media (min-width: 768px) {
+  .ruah-footer__maplink {
+    align-self: flex-start;
+  }
+}
+
+.ruah-footer__maplink:hover,
+.ruah-footer__maplink:focus-visible {
+  border-bottom-color: #d4af37;
+  outline: none;
+}
+
+/* ───────── REDES SOCIAIS ───────── */
+
+.ruah-footer__socials {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.ruah-footer__social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: rgba(245, 245, 245, 0.85);
+  text-decoration: none;
+  transition:
+    transform 250ms ease,
+    background 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    box-shadow 250ms ease;
+}
+
+.ruah-footer__social-btn:hover,
+.ruah-footer__social-btn:focus-visible {
+  transform: translateY(-3px);
+  background: rgba(212, 175, 55, 0.18);
+  border-color: rgba(212, 175, 55, 0.6);
+  color: #d4af37;
+  box-shadow: 0 8px 20px -8px rgba(212, 175, 55, 0.4);
+  outline: none;
+}
+
+.ruah-footer__socials-handle {
+  font-size: 0.8125rem;
+  color: rgba(245, 245, 245, 0.55);
+  margin-top: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+/* ───────── BOTTOM ───────── */
+
+.ruah-footer__bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 1.5rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(212, 175, 55, 0.1);
+  text-align: center;
+}
+
+.ruah-footer__copyright {
+  font-size: 0.8125rem;
+  color: rgba(245, 245, 245, 0.5);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.ruah-footer__credits {
+  font-size: 0.6875rem;
+  color: rgba(245, 245, 245, 0.3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* ───────── REDUCED MOTION ───────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .ruah-footer__social-btn,
+  .ruah-footer__item {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+/* ════════════════════════════════════════════════════════════
+   LAYOUT COMPACTO HORIZONTAL — versão enxuta
+   ════════════════════════════════════════════════════════════ */
+
+/* Container compacto — padding mínimo */
+.ruah-footer__container--compact {
+  padding-top: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+/* Linha principal — mobile first (empilhado e centralizado) */
+.ruah-footer__row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  text-align: center;
+  padding: 0.5rem 0 1rem;
+}
+
+/* Brand inline */
+.ruah-footer__brand--inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* Wrapper de redes sociais */
+.ruah-footer__socials-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* Botão social desabilitado */
+.ruah-footer__social-btn--disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.ruah-footer__social-btn--disabled:hover {
+  transform: none;
+}
+
+/* ─────────── DESKTOP (≥ 768px) — extremidades do container ─────────── */
+@media (min-width: 768px) {
+  .ruah-footer__container--compact {
+    padding-top: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .ruah-footer__row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    text-align: left;
+    padding: 0.5rem 0;
+  }
+
+  /* Brand colado na esquerda */
+  .ruah-footer__brand--inline {
+    align-items: flex-start;
+    text-align: left;
+    flex: 0 0 auto;
+  }
+
+  /* Social colado na direita */
+  .ruah-footer__socials-wrap {
+    align-items: flex-end;
+    text-align: right;
+    flex: 0 0 auto;
+  }
+}
+
+/* Reduz espaço do bottom */
+.ruah-footer__container--compact .ruah-footer__bottom {
+  padding-top: 1rem;
+  padding-bottom: 0;
+  margin-top: 0;
+}
+
+/* Reduz espaço do ornamento inferior */
+.ruah-footer__container--compact .ruah-footer__ornament {
+  margin: 0.75rem 0;
+}
+/* ════════════════════════════════════════════════════════════
+   OVERRIDE DE SEGURANÇA — força padding mínimo
+   ════════════════════════════════════════════════════════════ */
+.ruah-footer {
+  padding: 0 !important;
+}
+
+.ruah-footer__container--compact {
+  padding-left: 2rem;
+  padding-right: 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .ruah-footer__container--compact {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}

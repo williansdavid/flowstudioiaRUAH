@@ -1,6 +1,6 @@
 ================================================================================
 PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
-Última atualização: 28/05/2026 — pós Fase 21 (WhatsApp Float antecipado)
+Última atualização: 29/05/2026 — pós Fase 16 (Hours concluída)
 ================================================================================
 
 | #  | Fase                    | Status | Entregáveis                                                                                                      | Arquivos  |
@@ -20,10 +20,10 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 | 13 | Seção Team              | ✅     | Profissionais com fotos, role, especialidades, hover refinado + reveal stagger                                   | 2         |
 | 14 | Seção Gallery           | ✅     | Carrossel spotlight (foto+vídeo) + swipe touch + autoplay 5s + progress bar + lightbox + teclado                 | 1 + 1 CSS |
 | 15 | Seção Testimonials      | ✅     | Depoimentos com layout premium + reveal stagger + estrelas Lucide                                                | 2         |
-| 16 | Seção Hours             | ⏳     | Tabela de horários + status "aberto agora"                                                                       | ~1        |
+| 16 | Seção Hours             | ✅     | Tabela de horários + badge "aberto agora" SSR-safe + reveal stagger por linha + destaque dia atual               | 2 + 1 CSS |
 | 17 | Seção Contact + Map     | ⏳     | Formulário/CTA + mapa estático                                                                                   | ~1        |
 | 18 | Footer                  | ⏳     | CTA final WhatsApp + colunas (contato/horários/redes) + copyright                                                | ~1        |
-| 19 | Página / montada        | 🟡     | routes/index.tsx — Header + Hero + About + Services + Team + Gallery + Testimonials + WhatsAppFloating           | 1         |
+| 19 | Página / montada        | 🟡     | routes/index.tsx — Header + Hero + About + Services + Team + Gallery + Testimonials + Hours + WhatsAppFloating   | 1         |
 | 20 | SEO + Metadata          | ⏳     | Open Graph, Twitter Cards, schema.org JSON-LD                                                                    | 1         |
 | 21 | WhatsApp Float          | ✅     | Botão flutuante Dark Luxury (variant B) + scroll threshold 400px + SSR-safe + deep link via buildWhatsAppUrl     | 2 + 1 CSS |
 | 22 | Performance audit       | ⏳     | Lighthouse, lazy loading, preload críticos                                                                       | —         |
@@ -31,40 +31,42 @@ PLANO DE FASES — PAGE PÚBLICA RUAH BARBER LOUNGE
 
 
 ================================================================================
-FASE 21 — WHATSAPP FLOAT  ✅ CONCLUÍDA (antecipada)
+FASE 16 — SEÇÃO HOURS  ✅ CONCLUÍDA
 ================================================================================
 
 | #    | Passo                              | Tipo | Ação                                                                       | Status |
 |------|------------------------------------|------|----------------------------------------------------------------------------|--------|
-| 21.0 | Estrutura de pasta                 | 📁   | src/sites/ruah/components/floating/ + barrel index.ts                      | ✅     |
-| 21.1 | Componente WhatsAppFloating.tsx    | ✏️   | SSR-safe + scroll listener + fade/slide + 2 variantes (A/B)                | ✅     |
-| 21.2 | Helper buildWhatsAppUrl            | 🔧   | src/sites/ruah/lib/whatsapp.ts (deep link com mensagem pré-preenchida)     | ✅     |
-| 21.3 | CSS dedicado                       | 🎨   | whatsapp-floating.css (variantes A clássico + B dark luxury)               | ✅     |
-| 21.4 | Variante escolhida                 | 🎨   | B — Dark Luxury Ruah (preto + dourado, casa com identidade)                | ✅     |
-| 21.5 | Scroll threshold                   | ⚙️   | 400px (configurável via const SCROLL_THRESHOLD)                            | ✅     |
-| 21.6 | Import CSS no componente           | 🔗   | import '@/sites/ruah/styles/whatsapp-floating.css' (padrão Vite)           | ✅     |
-| 21.7 | Barrel + integração na rota        | 🔗   | Exportado em components/index.ts + montado em routes/index.tsx             | ✅     |
-| 21.8 | Acessibilidade                     | ♿   | aria-label + role + foco visível + safe-area iOS                           | ✅     |
-| 21.9 | Validação TS + visual              | 🔬   | npx tsc --noEmit ok + visual aprovado                                      | ✅     |
+| 16.0 | Inspeção                           | 🔍   | Verificar HoursSection.tsx (se existe) + content.businessHours             | ✅     |
+| 16.1 | Estrutura de dados                 | 📝   | Validar shape: dias da semana + open/close + closed flag                   | ✅     |
+| 16.2 | Helper "aberto agora"              | 🧠   | util getCurrentStatus(hours, now) → { isOpen, nextChange, label }          | ✅     |
+| 16.3 | Estrutura HTML semântica           | ✏️   | <section id="horarios"> + header padrão eyebrow/título/subtítulo           | ✅     |
+| 16.4 | Tabela de horários                 | 🎨   | Grid responsivo: dia | horário (destaque no dia atual)                     | ✅     |
+| 16.5 | Badge "Aberto agora"               | ✨   | Pill com dot verde pulsante + texto dinâmico (SSR-safe!)                   | ✅     |
+| 16.6 | Cuidado SSR                        | ⚠️   | Hidratação: status calculado no client via useEffect (evita mismatch)      | ✅     |
+| 16.7 | Animações de entrada               | ⚡   | useReveal stagger por linha                                                | ✅     |
+| 16.8 | CSS dedicado                       | 🎨   | .ruah-hours__* com variáveis                                               | ✅     |
+| 16.9 | Integração em routes/index.tsx     | 🔗   | <HoursSection /> após <TestimonialsSection />                              | ✅     |
+| 16.10| Validação TS + visual              | 🔬   | npx tsc --noEmit + testar virada de dia/horário                            | ✅     |
 
 
 ================================================================================
-FASE 16 — SEÇÃO HOURS  ⏳ PRÓXIMA
+FASE 17 — SEÇÃO CONTACT + MAP  ⏳ PRÓXIMA
 ================================================================================
 
 | #    | Passo                              | Tipo | Ação                                                                       | Risco |
 |------|------------------------------------|------|----------------------------------------------------------------------------|-------|
-| 16.0 | Inspeção                           | 🔍   | Verificar HoursSection.tsx (se existe) + content.businessHours             | 🟢    |
-| 16.1 | Estrutura de dados                 | 📝   | Validar shape: dias da semana + open/close + closed flag                   | 🟢    |
-| 16.2 | Helper "aberto agora"              | 🧠   | util getCurrentStatus(hours, now) → { isOpen, nextChange, label }          | 🟡    |
-| 16.3 | Estrutura HTML semântica           | ✏️   | <section id="horarios"> + header padrão eyebrow/título/subtítulo           | 🟢    |
-| 16.4 | Tabela de horários                 | 🎨   | Grid responsivo: dia | horário (destaque no dia atual)                     | 🟡    |
-| 16.5 | Badge "Aberto agora"               | ✨   | Pill com dot verde pulsante + texto dinâmico (SSR-safe!)                   | 🟡    |
-| 16.6 | Cuidado SSR                        | ⚠️   | Hidratação: status calculado no client via useEffect (evita mismatch)      | 🔴    |
-| 16.7 | Animações de entrada               | ⚡   | useReveal stagger por linha                                                | 🟢    |
-| 16.8 | CSS dedicado                       | 🎨   | .ruah-hours__* com variáveis                                               | 🟢    |
-| 16.9 | Integração em routes/index.tsx     | 🔗   | <HoursSection /> após <TestimonialsSection />                              | 🟢    |
-| 16.10| Validação TS + visual              | 🔬   | npx tsc --noEmit + testar virada de dia/horário                            | 🟡    |
+| 17.0 | Inspeção                           | 🔍   | Verificar ContactSection.tsx + content.contact + identity.address          | 🟢    |
+| 17.1 | Estrutura de dados                 | 📝   | Validar: endereço, coordenadas (lat/lng), telefone, email, WhatsApp        | 🟢    |
+| 17.2 | Decisão: mapa estático vs iframe   | ⚖️   | Recomendado: iframe Google Maps (zero API key + zero custo)                | 🟡    |
+| 17.3 | Estrutura HTML semântica           | ✏️   | <section id="contato"> + grid 2 colunas (info + mapa) responsivo           | 🟢    |
+| 17.4 | Cards de contato                   | 🎨   | Telefone, WhatsApp, email, endereço — cada um com ícone Lucide + ação      | 🟢    |
+| 17.5 | CTAs: copy phone + open maps       | ⚡   | navigator.clipboard + link "Como chegar" (Google Maps deep link)           | 🟡    |
+| 17.6 | Mapa embed                         | 🗺️   | iframe lazy loaded + aspect-ratio + border refinada Art Deco               | 🟡    |
+| 17.7 | Decisão: form ou só CTA?           | ⚖️   | Recomendado: SÓ CTA WhatsApp (form exige backend → fora do MVP atual)      | 🟡    |
+| 17.8 | Animações de entrada               | ⚡   | useReveal stagger nos cards + fade no mapa                                 | 🟢    |
+| 17.9 | CSS dedicado                       | 🎨   | .ruah-contact__* com variáveis + responsive breakpoints                    | 🟢    |
+| 17.10| Integração em routes/index.tsx     | 🔗   | <ContactSection /> após <HoursSection />                                   | 🟢    |
+| 17.11| Validação TS + visual              | 🔬   | npx tsc --noEmit + testar links de ação (tel:, mailto:, maps)              | 🟢    |
 
 
 ================================================================================
@@ -91,21 +93,15 @@ NOTAS ARQUITETURAIS
   NUNCA via @import no final de outro CSS (quebra a regra "imports no topo")
 - Componentes flutuantes/SSR-safe: gate de render com useState(mounted) +
   useEffect para evitar hydration mismatch
+- Status dinâmico baseado em data/hora (ex: "aberto agora") → SEMPRE calcular no
+  client via useEffect + estado mounted (evita hydration mismatch SSR)
 
 ⚠️ DÉBITOS TÉCNICOS:
 - Fase 8 (componentes UI base) postergada para quando iniciar admin
 - Footer ainda não implementado (Fase 18)
-- routes/index.tsx monta Hero + About + Services + Team + Gallery + Testimonials + WhatsAppFloating
-- Falta loader Supabase real para services + team + gallery + testimonials (atualmente content estático)
+- routes/index.tsx monta Hero + About + Services + Team + Gallery + Testimonials + Hours + WhatsAppFloating
+- Falta loader Supabase real para services + team + gallery + testimonials + hours (atualmente content estático)
 - Lightbox da galeria não tem swipe touch (apenas teclado + setas) — revisitar se necessário
-- Helper getCurrentStatus para "aberto agora" precisa ser SSR-safe (calcular no client)
 - Config do WhatsAppFloating (VARIANT, SCROLL_THRESHOLD, mensagem) ainda hardcoded
   no componente — mover para studio.config.ts quando for white-label de fato
-
-🎯 PRÓXIMO PASSO:
-→ Iniciar Fase 16 — Seção Hours
-→ Comando inicial:
-   Get-ChildItem -Path ".\src\sites\ruah\components\sections\" -Filter "Hours*"
-   Get-Content ".\src\sites\ruah\config\content.ts" | Select-String -Pattern "businessHours|hours" -Context 0,30
-
-================================================================================
+- Helper getCurrentStatus (Hours) é puro

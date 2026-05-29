@@ -1,4 +1,4 @@
-import type { StudioContent } from '../types'
+﻿import type { StudioContent } from '../types'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
 /**
  * ============================================================
@@ -205,19 +205,6 @@ externalLinks: {
     ogImage: '/ruah/images/logo/logo.jpg',
   },
 
-  // ─────────────────────────────────────────────────────────
-  // FOOTER — CTA final + rodapé
-  // ─────────────────────────────────────────────────────────
-  footer: {
-    finalCta: {
-      title: 'Pronto pra renovar o visual?',
-      subtitle: 'Agende seu horário e venha viver a experiência Ruah.',
-      ctaLabel: 'Agendar agora',
-      ctaHref: '#contato',
-    },
-    copyright: '© 2026 Barbearia Ruah. Todos os direitos reservados.',
-    credits: 'Powered by FlowStudio AI',
-  },
   // ════════════════════════════════════════════════════════════════
   // TESTIMONIALS — Depoimentos reais (Booksy ★ 5.0 · 61 avaliações)
   // Fonte: https://booksy.com/pt-br/339118_ruah-barber-lounge_barbearias_887298_botucatu
@@ -270,6 +257,15 @@ items: [
 ],
 
   },
-  
-}
 
+  // ════════════════════════════════════════════════════════════════════════
+  // FOOTER — Rodapé institucional (sem CTA duplicado, WhatsApp Float cuida)
+  // ════════════════════════════════════════════════════════════════════════
+  footer: {
+    manifesto: 'Cada corte, uma experiência. Cada cliente, uma história.',
+    // ⚠️ NÃO incluir ano aqui — é injetado dinamicamente no componente Footer
+    copyrightOwner: 'Barbearia Ruah',
+    copyrightSuffix: 'Todos os direitos reservados.',
+    credits: 'Powered by NanoSolusoft',
+  },
+}

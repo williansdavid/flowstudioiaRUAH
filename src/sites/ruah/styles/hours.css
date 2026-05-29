@@ -1,0 +1,190 @@
+/**
+ * Hours Section — Ruah Barber Lounge
+ * ----------------------------------------------------------------
+ * Estilos da seção "Horário de Funcionamento".
+ * Mobile-first, premium, segue padrão visual do studio.
+ * ----------------------------------------------------------------
+ */
+
+.hours-section {
+  position: relative;
+  padding: 5rem 1.5rem;
+  background: linear-gradient(180deg, #1a3a3a 0%, #15302f 100%);
+  color: #f5f1ea;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .hours-section {
+    padding: 6rem 2rem;
+  }
+}
+
+.hours-container {
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Cabeçalho ─────────────────────────────────────────────── */
+.hours-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.hours-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #d4a574;
+  margin-bottom: 1rem;
+}
+
+.hours-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+  color: #f5f1ea;
+}
+
+.hours-subtitle {
+  font-size: 1rem;
+  color: rgba(245, 241, 234, 0.7);
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+/* ── Badge "Aberto agora" ──────────────────────────────────── */
+.hours-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  transition: all 0.3s ease;
+}
+
+.hours-status-badge.is-closed {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.hours-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+.hours-status-badge:not(.is-closed) .hours-status-dot {
+  animation: hours-pulse 2s ease-out infinite;
+}
+
+@keyframes hours-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+/* ── Tabela de horários ────────────────────────────────────── */
+.hours-table {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 165, 116, 0.15);
+  border-radius: 1rem;
+  padding: 0.5rem;
+  backdrop-filter: blur(8px);
+}
+
+.hours-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.hours-row + .hours-row {
+  border-top: 1px solid rgba(212, 165, 116, 0.08);
+}
+
+.hours-row.is-today {
+  background: rgba(212, 165, 116, 0.1);
+  border: 1px solid rgba(212, 165, 116, 0.25);
+}
+
+.hours-row.is-today + .hours-row,
+.hours-row + .hours-row.is-today {
+  border-top-color: transparent;
+}
+
+.hours-day {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(245, 241, 234, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hours-row.is-today .hours-day {
+  color: #d4a574;
+  font-weight: 600;
+}
+
+.hours-today-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(212, 165, 116, 0.2);
+  color: #d4a574;
+}
+
+.hours-time {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(245, 241, 234, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+.hours-time.is-closed-day {
+  color: rgba(245, 241, 234, 0.4);
+  font-style: italic;
+}
+
+.hours-row.is-today .hours-time {
+  color: #f5f1ea;
+  font-weight: 600;
+}
+
+/* ── Mobile fine-tuning ────────────────────────────────────── */
+@media (max-width: 480px) {
+  .hours-row {
+    padding: 0.875rem 1rem;
+  }
+
+  .hours-day,
+  .hours-time {
+    font-size: 0.875rem;
+  }
+
+  .hours-today-label {
+    font-size: 0.625rem;
+    padding: 0.1rem 0.4rem;
+  }
+}

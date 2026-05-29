@@ -1,4 +1,4 @@
-/**
+﻿/**
  * / — Landing Pública do Ruah Barber Lounge
  * ----------------------------------------------------------------
  * Esta rota renderiza a landing pública do studio Ruah.
@@ -16,11 +16,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   Header,
+  Footer,
   HeroSection,
   AboutSection,
   ServicesSection,
   GallerySection,
   TestimonialsSection,
+  HoursSection,
   WhatsAppFloating,
 } from '@/sites/ruah/components'
 import { fetchPublicServices } from '@/lib/sections/fetchServices'
@@ -42,7 +44,9 @@ function LandingRuah() {
         <ServicesSection services={services} />
         <GallerySection />
         <TestimonialsSection />
+        <HoursSection />
       </main>
+      <Footer />
       <WhatsAppFloating />
     </>
   )
