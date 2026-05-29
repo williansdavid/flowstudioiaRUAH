@@ -418,7 +418,7 @@
 @media (max-width: 767px) {
   .ruah-footer {
     /* Espaço extra para o FAB do WhatsApp (~56px botão + 16px margem + folga) */
-    padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
@@ -426,7 +426,7 @@
 @supports (padding: env(safe-area-inset-bottom)) {
   @media (max-width: 767px) {
     .ruah-footer {
-      padding-bottom: calc(26px + env(safe-area-inset-bottom))!important;
+      padding-bottom: calc(96px + env(safe-area-inset-bottom))!important;
     }
   }
 }
