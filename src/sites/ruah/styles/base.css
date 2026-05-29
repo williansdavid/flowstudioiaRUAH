@@ -897,9 +897,9 @@
   .theme-dark .ruah-about::after {
     background: linear-gradient(
       135deg,
-      rgba(15, 22, 25, 0.87) 0%,
-      rgba(15, 22, 25, 0.75) 50%,
-      rgba(15, 22, 25, 0.90) 100%
+      rgba(15, 22, 25, 0.78) 0%,
+      rgba(15, 22, 25, 0.55) 50%,
+      rgba(15, 22, 25, 0.82) 100%
     );
   }
 
