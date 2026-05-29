@@ -803,14 +803,17 @@
  * ------------------------------------------------------------
  * Layout 2 colunas (texto + mídia) com accents dourados
  * espelhados criando efeito de profundidade 3D layered.
+ *
+ * Background:
+ *   - Desktop (≥1024px): foto do Renato à ESQUERDA com fade pra direita
+ *   - Mobile  (<1024px): foto do Renato no TOPO da section (atrás do texto)
  * ============================================================ */
+
 /* ============================================
  * Fade de transição: Hero → About
- * Dissolve a base do hero na cor do about
- * para suavizar a quebra entre seções.
  * ============================================ */
 .theme-dark .ruah-hero {
-  position: relative; /* garante referência pro ::after */
+  position: relative;
 }
 
 .theme-dark .ruah-hero::after {
@@ -827,102 +830,24 @@
     var(--color-surface-dark) 100%
   );
   pointer-events: none;
-  z-index: 2; /* acima dos slides e overlays, abaixo do conteúdo (.ruah-hero__content) */
+  z-index: 2;
 }
 
 @media (max-width: 768px) {
   .theme-dark .ruah-hero::after {
-    height: 120px; /* fade menor no mobile */
+    height: 120px;
   }
 }
 
+/* ============================================
+ * About Section — base
+ * ============================================ */
 .theme-dark .ruah-about {
   position: relative;
   padding-block: 3.5rem;
-  background-color: var(--color-surface-dark); /* fallback se a foto falhar */
+  background-color: var(--color-surface-dark);
   overflow: hidden;
 }
-
-
-/* ============================================================
-   BACKGROUND PROPRIETÁRIO — Foto do Renato + Overlay
-   ------------------------------------------------------------
-   ::before → foto de fundo (atrás de tudo, levemente borrada)
-   ::after  → overlay escuro pra garantir contraste do texto
-   Container interno usa z-index pra ficar acima dos pseudos.
-   ============================================================ */
-
-/* ============================================================
-   BACKGROUND PROPRIETÁRIO — Foto do Renato + Overlay
-   ============================================================ */
-
-.theme-dark .ruah-about::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url('/ruah/images/team/renato.jpg');
-  background-size: cover;
-  background-position: center 30%;
-  background-repeat: no-repeat;
-  filter: blur(2px) grayscale(0.1);
-  opacity: 0.75; /* ⬆ subiu de 0.35 pra 0.65 */
-  z-index: 0;
-  pointer-events: none;
-  transform: scale(1.05);
-}
-
-.theme-dark .ruah-about::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(15, 22, 25, 0.78) 0%,  /* ⬇ baixou de 0.88 pra 0.78 */
-    rgba(15, 22, 25, 0.55) 50%, /* ⬇ baixou de 0.72 pra 0.55 */
-    rgba(15, 22, 25, 0.82) 100% /* ⬇ baixou de 0.92 pra 0.82 */
-  );
-  z-index: 1;
-  pointer-events: none;
-}
-
-.theme-dark .ruah-about .ruah-about__container {
-  position: relative;
-  z-index: 2;
-}
-
-
-/* Mobile: ajuste fino — foto um pouco mais discreta + posição melhor */
-@media (max-width: 767px) {
-  .theme-dark .ruah-about::before {
-    filter: blur(1.5px) grayscale(0);
-    opacity: 0.85; /* ⬆ foto bem visível */
-    background-position: center top;
-    background-size: cover;
-    transform: scale(1.1);
-  }
-  .theme-dark .ruah-about::after {
-    background: linear-gradient(
-      180deg,
-      rgba(15, 22, 25, 0.55) 0%,
-      rgba(15, 22, 25, 0.35) 35%,
-      rgba(15, 22, 25, 0.55) 65%,
-      rgba(15, 22, 25, 0.75) 100%
-    );
-  }
-}
-
-
-@media (prefers-reduced-transparency: reduce) {
-  .theme-dark .ruah-about::before {
-    opacity: 1;
-    filter: none; /* remove blur pra economizar GPU quando user pediu menos efeito */
-  }
-  .theme-dark .ruah-about::after {
-    background: rgba(15, 22, 25, 0.85);
-  }
-}
-
-
 
 @media (min-width: 768px) {
   .theme-dark .ruah-about {
@@ -936,6 +861,97 @@
   }
 }
 
+/* ============================================================
+ * MOBILE (<1024px) — Foto do Renato no TOPO atrás do texto
+ * ::before → imagem topo
+ * ::after  → gradient vertical pra leitura
+ * ============================================================ */
+.theme-dark .ruah-about::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 65%;
+  background-image: url('/ruah/images/team/renato.jpg');
+  background-size: cover;
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  filter: blur(0.5px) grayscale(0);
+  opacity: 0.9;
+  z-index: 0;
+  pointer-events: none;
+}
+
+
+.theme-dark .ruah-about::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 22, 25, 0.15) 0%,
+    rgba(15, 22, 25, 0.35) 40%,
+    rgba(15, 22, 25, 0.85) 75%,
+    rgba(15, 22, 25, 0.95) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+
+/* ============================================================
+ * DESKTOP (≥1024px) — Foto do Renato à ESQUERDA com fade
+ * ::before → imagem na metade esquerda
+ * ::after  → gradient horizontal pra fade no meio
+ * ============================================================ */
+@media (min-width: 1024px) {
+  .theme-dark .ruah-about::before {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 50%;
+    height: 100%;
+    background-position: center 25%;
+    background-size: cover;
+    opacity: 1;
+    filter: brightness(1.5) contrast(1.1);
+  }
+
+  .theme-dark .ruah-about::after {
+    background: linear-gradient(
+      90deg,
+      rgba(15, 22, 25, 0) 0%,
+      rgba(15, 22, 25, 0) 30%,
+      rgba(15, 22, 25, 0.6) 50%,
+      rgba(15, 22, 25, 0.95) 60%,
+      var(--color-surface-dark) 70%
+    );
+  }
+}
+
+
+
+/* Garante que o conteúdo fique acima dos pseudo-elementos */
+.theme-dark .ruah-about .ruah-about__container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Acessibilidade — reduz transparência */
+@media (prefers-reduced-transparency: reduce) {
+  .theme-dark .ruah-about::before {
+    opacity: 0.25;
+  }
+  .theme-dark .ruah-about::after {
+    background: rgba(15, 22, 25, 0.92);
+  }
+}
+
+/* ============================================================
+ * Container interno do About
+ * ============================================================ */
 .theme-dark .ruah-about__container {
   position: relative;
   max-width: 1200px;
@@ -968,7 +984,7 @@
   gap: 1.5rem;
 }
 
-/* Eyebrow (padrão idêntico ao hero) */
+/* Eyebrow */
 .theme-dark .ruah-about__eyebrow {
   display: flex;
   align-items: center;
@@ -1027,7 +1043,7 @@
   }
 }
 
-/* ---------- Highlights — Cards Premium Art Deco ---------- */
+/* ---------- Highlights ---------- */
 .theme-dark .ruah-about__highlights {
   list-style: none;
   margin: 2rem 0 0;
@@ -1070,7 +1086,6 @@
   overflow: hidden;
 }
 
-/* Detalhe Art Deco: linha dourada no topo */
 .theme-dark .ruah-about__highlight::before {
   content: '';
   position: absolute;
@@ -1107,7 +1122,6 @@
   opacity: 1;
 }
 
-/* Wrapper do ícone — quadrado dourado Art Deco */
 .theme-dark .ruah-about__highlight-icon-wrap {
   flex-shrink: 0;
   display: inline-flex;
@@ -1163,7 +1177,6 @@
   }
 }
 
-/* Frame principal — fica POR CIMA dos accents */
 .theme-dark .ruah-about__media-frame {
   position: relative;
   z-index: 3;
@@ -1189,35 +1202,19 @@
 }
 
 /* ============================================================
- * Accents douradas — SVG com stroke-dashoffset animado
- * ------------------------------------------------------------
- * Mantém o visual original (2 molduras espelhadas com profundidade
- * 3D), mas a borda agora é um <rect> SVG que é DESENHADO
- * progressivamente quando entra na viewport via .is-visible.
- *
- * Estrutura no JSX:
- *   <div class="ruah-about__media-accent ruah-about__media-accent--svg">
- *     <svg><rect /></svg>
- *   </div>
- *
- * Animação real em: animations.css (.ruah-reveal-stroke)
+ * Accents douradas — SVG animado
  * ============================================================ */
-
-/* Wrapper das duas accents — posicionamento (mantido do design original) */
 .theme-dark .ruah-about__media-accent {
   position: absolute;
   inset: 1.5rem -1.5rem -1.5rem 1.5rem;
   z-index: 2;
   pointer-events: none;
   border-radius: 4px;
-  /* sombra externa do "card" dourado — sem border, agora é SVG */
   box-shadow:
     0 20px 40px -12px rgba(0, 0, 0, 0.55),
     inset 0 0 0 1px rgba(212, 175, 55, 0.04);
-  /* opacidade controlada pelo reveal — começa 0, vira 1 */
 }
 
-/* Accent 2 — espelhada, mais sutil/distante */
 .theme-dark .ruah-about__media-accent--2 {
   inset: -1.5rem 1.5rem 1.5rem -1.5rem;
   z-index: 1;
@@ -1236,7 +1233,6 @@
   }
 }
 
-/* SVG ocupa 100% do wrapper, sem preservar aspecto (acompanha o retângulo) */
 .theme-dark .ruah-about__media-accent-svg {
   display: block;
   width: 100%;
@@ -1244,29 +1240,17 @@
   overflow: visible;
 }
 
-/* Rect base — estado final (visível) */
 .theme-dark .ruah-about__media-accent-rect {
   fill: none;
   stroke: var(--color-accent);
   stroke-width: 1;
-  /* opacidade final da linha — match com o design antigo */
   opacity: 0.85;
 }
 
-/* Accent 2 — linha um pouco mais sutil (profundidade) */
 .theme-dark .ruah-about__media-accent--2 .ruah-about__media-accent-rect {
   opacity: 0.55;
 }
 
-@media (min-width: 1024px) {
-  .theme-dark .ruah-about__media-accent {
-    inset: 2rem -2rem -2rem 2rem;
-  }
-
-  .theme-dark .ruah-about__media-accent--2 {
-    inset: -2rem 2rem 2rem -2rem;
-  }
-}
 /* ================================================================
  * RUAH SERVICES SECTION
  * ================================================================ */
