@@ -877,9 +877,9 @@
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(15, 22, 25, 0.78) 0%,  /* ⬇ baixou de 0.88 pra 0.78 */
-    rgba(15, 22, 25, 0.55) 50%, /* ⬇ baixou de 0.72 pra 0.55 */
-    rgba(15, 22, 25, 0.82) 100% /* ⬇ baixou de 0.92 pra 0.82 */
+    rgba(15, 22, 25, 0.98) 0%,  /* ⬇ baixou de 0.88 pra 0.78 */
+    rgba(15, 22, 25, 0.75) 50%, /* ⬇ baixou de 0.72 pra 0.55 */
+    rgba(15, 22, 25, 0.92) 100% /* ⬇ baixou de 0.92 pra 0.82 */
   );
   z-index: 1;
   pointer-events: none;
