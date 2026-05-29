@@ -3,10 +3,12 @@
  * ----------------------------------------------------------------
  * Hero acima da dobra. Animações SNAPPY (premium ≠ lento).
  *
- * BACKGROUND: vídeo único em loop (autoplay/muted/playsInline).
- *   • Poster (.webp) como fallback até o vídeo carregar (LCP-safe).
- *   • Respeita prefers-reduced-motion (pausa o vídeo, mostra poster).
- *   • Mobile-first: playsInline obrigatório (iOS).
+ * NOVO nesta versão: carrossel de fundo com crossfade.
+ *
+ *   • Ativa automaticamente se hero.backgroundImage for array com 2+ itens.
+ *   • 7s por slide, crossfade de 1.2s (controlado por CSS).
+ *   • Respeita prefers-reduced-motion (pausa o ciclo).
+ *   • LCP-safe: 1ª img eager + high priority, demais lazy + low.
  *
  * Timing das animações de entrada (total ≈ 750ms até CTAs visíveis):
  *   eyebrow      → 0ms    + 500ms
@@ -18,7 +20,7 @@
  * Easing: cubic-bezier(0.22, 1, 0.36, 1) — easeOutExpo customizado.
  * ----------------------------------------------------------------
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { content } from "@/sites/ruah";
@@ -26,13 +28,21 @@ import { content } from "@/sites/ruah";
 // Easing premium reutilizável (easeOutExpo customizado)
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// Fontes do background — vídeo + poster fallback
-const HERO_VIDEO_SRC = "/ruah/videos/v1.mp4";
-const HERO_POSTER_SRC = "/ruah/images/gallery/showreel-poster.webp";
+// Tempo que cada slide do carrossel permanece visível
+const SLIDE_INTERVAL_MS = 7000;
 
 export function HeroSection() {
   const { hero } = content;
-  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Normaliza backgroundImage (string | string[]) para sempre array
+  const images = useMemo<string[]>(() => {
+    return Array.isArray(hero.backgroundImage)
+      ? hero.backgroundImage
+      : [hero.backgroundImage];
+  }, [hero.backgroundImage]);
+
+  const hasCarousel = images.length > 1;
+  const [activeIndex, setActiveIndex] = useState(0);
 
   // Detecta prefers-reduced-motion (SSR-safe)
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -45,43 +55,53 @@ export function HeroSection() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Pausa o vídeo se o usuário preferir menos movimento
+  // Ciclo do carrossel — só roda se houver 2+ imagens e o user não pediu reduzir movimento
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (reducedMotion) {
-      video.pause();
-    } else {
-      video.play().catch(() => {
-        /* autoplay bloqueado em alguns browsers — poster cobre */
-      });
-    }
-  }, [reducedMotion]);
+    if (!hasCarousel || reducedMotion) return;
+
+    const id = window.setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % images.length);
+    }, SLIDE_INTERVAL_MS);
+
+    return () => window.clearInterval(id);
+  }, [hasCarousel, reducedMotion, images.length]);
 
   return (
     <section id="inicio" className="ruah-hero" aria-label="Apresentação">
-      {/* Background — vídeo único em loop */}
+      {/* Background — 1 imagem ou carrossel crossfade */}
       <div className="ruah-hero__bg" aria-hidden="true">
-        <video
-          ref={videoRef}
-          className="ruah-hero__video"
-          src={HERO_VIDEO_SRC}
-          poster={HERO_POSTER_SRC}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          disablePictureInPicture
-          // @ts-expect-error — atributo nativo HTML, não tipado no React
-          disableRemotePlayback="true"
-        />
+        {images.map((src, idx) => (
+          <div
+            key={src}
+            className={`ruah-hero__slide${
+              idx === activeIndex ? " ruah-hero__slide--active" : ""
+            }`}
+          >
+            <img
+              src={src}
+              alt=""
+			  loading={idx === 0 ? 'eager' : 'lazy'}
+			  decoding="async"
+			  {...({ fetchpriority: idx === 0 ? 'high' : 'low' } as any)}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Overlays */}
       <div className="ruah-hero__overlay" aria-hidden="true" />
       <div className="ruah-hero__vignette" aria-hidden="true" />
-
+		{/* Progress bar dourada — sincronizada com SLIDE_INTERVAL_MS */}
+		{hasCarousel && !reducedMotion && (
+		  <div className="ruah-hero__progress" aria-hidden="true">
+			<span
+			  key={activeIndex}
+			  className="ruah-hero__progress-bar"
+			  style={{ animationDuration: `${SLIDE_INTERVAL_MS}ms` }}
+			/>
+		  </div>
+		)}
+	
       {/* Conteúdo */}
       <div className="ruah-hero__content">
         <motion.div

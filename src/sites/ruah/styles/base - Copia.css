@@ -306,8 +306,14 @@
   z-index: 2;
 }
 
-/* Background header*/
-/* Background wrapper — container do vídeo de fundo */
+/* Background image wrapper */
+.theme-dark .ruah-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+/* Background image wrapper — container do carrossel */
 .theme-dark .ruah-hero__bg {
   position: absolute;
   inset: 0;
@@ -315,24 +321,19 @@
   overflow: hidden;
 }
 
-/* Vídeo de fundo — full cover */
-.theme-dark .ruah-hero__video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  /* Suaviza primeiro frame após poster */
-  background-color: #080604;
+/* Cada slide do carrossel — sobreposto com opacity 0 */
+.theme-dark .ruah-hero__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+  will-change: opacity;
 }
 
-/* Acessibilidade — se o user preferir menos movimento, mostra só o poster */
-@media (prefers-reduced-motion: reduce) {
-  .theme-dark .ruah-hero__video {
-    /* O JS já pausa; poster fica visível naturalmente */
-    opacity: 1;
-  }
+/* Slide ativo no momento — visível */
+.theme-dark .ruah-hero__slide--active {
+  opacity: 1;
 }
-
 
 /* Imagem dentro do slide */
 .theme-dark .ruah-hero__slide img {
@@ -1590,3 +1591,54 @@
   color: var(--color-accent);
   opacity: 0.7;
 }
+/* ============================================================
+   HERO — PROGRESS BAR (sincronizada com carrossel)
+   ============================================================ */
+.ruah-hero__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ruah-hero__progress-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  box-shadow:
+    0 0 14px #d4af37,
+    0 0 6px #d4af37,
+    0 0 2px #d4af37;
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation-name: ruah-hero-progress;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  will-change: transform;
+}
+
+.ruah-hero__progress { height: 1px; }
+@keyframes ruah-hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Acessibilidade — se usuário pediu reduzir movimento, esconde */
+@media (prefers-reduced-motion: reduce) {
+  .ruah-hero__progress {
+    display: none;
+  }
+}
+
