@@ -962,47 +962,11 @@
 }
 
 /* ---------- Texto ---------- */
-/* ---------- Texto ---------- */
 .theme-dark .ruah-about__text {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 2rem 1.75rem;
-  border-radius: 4px;
-
-  /* Sem fundo — texto direto sobre a foto */
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none;
 }
-
-@media (min-width: 768px) {
-  .theme-dark .ruah-about__text {
-    padding: 2.5rem 2.25rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .theme-dark .ruah-about__text {
-    padding: 3rem 2.75rem;
-  }
-}
-/* Reforço de legibilidade sobre a foto de fundo */
-.theme-dark .ruah-about__title {
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
-}
-
-.theme-dark .ruah-about__paragraph {
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
-}
-
-.theme-dark .ruah-about__eyebrow {
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-/* --------fimTexto ---------- */
 
 /* Eyebrow (padrão idêntico ao hero) */
 .theme-dark .ruah-about__eyebrow {
