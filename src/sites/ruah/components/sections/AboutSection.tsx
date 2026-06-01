@@ -170,35 +170,6 @@ export function AboutSection() {
               ))}
             </div>
           )}
-
-          {/* Highlights */}
-          {about.highlights && about.highlights.length > 0 && (
-            <ul
-              ref={highlightsRef}
-              className="ruah-about__highlights ruah-reveal ruah-reveal--up ruah-delay-500"
-            >
-              {about.highlights.map((h, i) => {
-                const Icon = HIGHLIGHT_ICONS[h.icon] ?? Sparkles
-                return (
-                  <li key={i} className="ruah-about__highlight">
-                    <span
-                      className="ruah-about__highlight-icon-wrap"
-                      aria-hidden="true"
-                    >
-                      <Icon
-                        className="ruah-about__highlight-icon"
-                        size={18}
-                        strokeWidth={1.75}
-                      />
-                    </span>
-                    <span className="ruah-about__highlight-label">
-                      {h.label}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
         </div>
 
         {/* Coluna imagem */}
@@ -266,6 +237,37 @@ export function AboutSection() {
           </div>
         )}
       </div>
+
+      {/* Highlights — Faixa full-width abaixo do grid */}
+      {about.highlights && about.highlights.length > 0 && (
+        <div className="ruah-about__highlights-wrap">
+          <ul
+            ref={highlightsRef}
+            className="ruah-about__highlights ruah-reveal ruah-reveal--up ruah-delay-500"
+          >
+            {about.highlights.map((h, i) => {
+              const Icon = HIGHLIGHT_ICONS[h.icon] ?? Sparkles
+              return (
+                <li key={i} className="ruah-about__highlight">
+                  <span
+                    className="ruah-about__highlight-icon-wrap"
+                    aria-hidden="true"
+                  >
+                    <Icon
+                      className="ruah-about__highlight-icon"
+                      size={20}
+                      strokeWidth={1.75}
+                    />
+                  </span>
+                  <span className="ruah-about__highlight-label">
+                    {h.label}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}	  
     </section>
   )
 }

@@ -1207,9 +1207,24 @@
 
 
 /* ---------- Highlights — Cards Premium Art Deco ---------- */
+/* ============================================================
+ * Highlights — Wrapper full-width abaixo do grid principal
+ * ------------------------------------------------------------
+ * No mobile: continua dentro do fluxo, 1 coluna empilhada.
+ * No desktop: faixa horizontal larga, 3 cards confortáveis,
+ * fora do grid texto|imagem (que limitava o espaço).
+ * ============================================================ */
+.theme-dark .ruah-about__highlights-wrap {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 2.5rem auto 0;
+  padding-inline: 1.25rem;
+}
+
 .theme-dark .ruah-about__highlights {
   list-style: none;
-  margin: 2rem 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: 1fr;
@@ -1222,6 +1237,72 @@
     gap: 0.875rem;
   }
 }
+
+@media (min-width: 768px) {
+  .theme-dark .ruah-about__highlights-wrap {
+    padding-inline: 2rem;
+    margin-top: 3.5rem;
+  }
+
+  .theme-dark .ruah-about__highlights {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-about__highlights-wrap {
+    padding-inline: 3rem;
+    margin-top: 4.5rem;
+  }
+
+  .theme-dark .ruah-about__highlights {
+    gap: 1.25rem;
+  }
+
+  .theme-dark .ruah-about__highlight {
+    padding: 1.5rem 1.75rem;
+    gap: 1rem;
+    font-size: 1rem;
+    line-height: 1.4;
+    align-items: center;
+  }
+
+  .theme-dark .ruah-about__highlight-icon-wrap {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .theme-dark .ruah-about__highlight-label {
+    min-width: 0;
+    flex: 1;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .theme-dark .ruah-about__highlights-wrap {
+    margin-top: 5rem;
+  }
+
+  .theme-dark .ruah-about__highlights {
+    gap: 1.5rem;
+  }
+
+  .theme-dark .ruah-about__highlight {
+    padding: 1.75rem 2rem;
+    font-size: 1.0625rem;
+  }
+
+  .theme-dark .ruah-about__highlight-icon-wrap {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+
 
 .theme-dark .ruah-about__highlight {
   position: relative;
