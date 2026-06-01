@@ -202,36 +202,59 @@ export interface ContactContent {
 // ════════════════════════════════════════════════════════════════
 // ABOUT — história do studio (OPCIONAL)
 // ════════════════════════════════════════════════════════════════
-
 /**
- * Ícone disponível para um highlight do About.
- * Mapeado em AboutSection.tsx → HIGHLIGHT_ICONS.
+ * Bloco de etimologia destacado — explica origem do nome do studio.
+ * Opcional: se ausente, AboutSection pula o bloco.
  */
-export type AboutHighlightIcon =
-  | 'wifi'
-  | 'award'
-  | 'sparkles'
-  | 'scissors'
-  | 'heart'
-  | 'shield'
+   /**
+   * Ícone disponível para um highlight do About.
+   * Mapeado em AboutSection.tsx → HIGHLIGHT_ICONS.
+   */
+  export type AboutHighlightIcon =
+    | 'wifi'
+    | 'award'
+    | 'sparkles'
+    | 'scissors'
+    | 'heart'
+    | 'shield'
 
-/**
- * Diferencial do studio (1 ícone + 1 label curto).
- */
-export interface AboutHighlight {
-  icon: AboutHighlightIcon
-  label: string
+  /**
+   * Diferencial do studio (1 ícone + 1 label curto).
+   */
+  export interface AboutHighlight {
+    icon: AboutHighlightIcon
+    label: string
+  }
+
+
+export interface AboutEtymology {
+  /** Símbolo/grafia original (ex.: "רוּחַ" em hebraico) */
+  symbol: string
+  /** Transliteração latina (ex.: "ruach") */
+  transliteration: string
+  /** Idioma de origem (ex.: "hebraico") */
+  language: string
+  /** Significados curtos separados por vírgula (ex.: "vento, sopro, espírito") */
+  meaning: string
+  /** Descrição contextual (1-2 linhas) */
+  description: string
 }
 
 export interface AboutContent {
   eyebrow?: string
   title: string
 
-  /** Texto principal (1-3 parágrafos). Array = um item por parágrafo */
+  /** Texto principal (1-5 parágrafos). Array = um item por parágrafo */
   paragraphs: string[]
 
   /** Imagem ilustrativa (interna do studio) */
   image?: string
+
+  /** Bloco destacado com origem/significado do nome (OPCIONAL) */
+  etymology?: AboutEtymology
+
+  /** Linhas curtas de manifesto/closing em destaque dourado (OPCIONAL) */
+  manifesto?: string[]
 
   /** Lista curta de diferenciais com ícone + label */
   highlights?: AboutHighlight[]

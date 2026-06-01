@@ -1,21 +1,23 @@
-﻿/**
- * AboutSection â€” Ruah Barber Lounge
+/**
+ * AboutSection — Ruah Barber Lounge
  * ----------------------------------------------------------------
- * Section "Sobre" da landing pÃºblica.
+ * Section "Sobre" da landing pública.
  *
- * Layout:
- *   - Desktop: 2 colunas (texto + highlights | imagem)
- *   - Mobile : stack vertical (texto â†’ imagem â†’ highlights)
+ * Estrutura v2:
+ *   1. Eyebrow + Title
+ *   2. Parágrafos introdutórios
+ *   3. Bloco de Etimologia (opcional) — destaque dourado
+ *   4. Parágrafos finais
+ *   5. Manifesto (opcional) — linhas douradas em destaque
+ *   6. Highlights (ícones)
+ *   7. Coluna mídia com molduras SVG
  *
- * Dados:
- *   - Consome content.about (opcional â†’ guard early-return)
+ * Lógica de split de parágrafos:
+ *   - 1º parágrafo SEMPRE antes do bloco etymology
+ *   - Demais parágrafos DEPOIS do etymology
+ *   - Se não houver etymology, todos parágrafos ficam juntos
  *
- * AnimaÃ§Ã£o:
- *   - useReveal() em blocos-chave com stagger via .ruah-delay-*
- *   - Accents douradas: desenho progressivo via SVG stroke-dashoffset
- *
- * SSR-safe:
- *   - Markup inicial neutro; .is-visible aplicado client-side.
+ * SSR-safe: markup inicial neutro; .is-visible aplicado client-side.
  * ----------------------------------------------------------------
  */
 import {
@@ -29,7 +31,6 @@ import {
 } from 'lucide-react'
 import { content, useReveal } from '@/sites/ruah'
 
-// Map de Ã­cones disponÃ­veis pra highlights
 const HIGHLIGHT_ICONS: Record<string, LucideIcon> = {
   wifi: Wifi,
   award: Award,
@@ -41,17 +42,25 @@ const HIGHLIGHT_ICONS: Record<string, LucideIcon> = {
 
 export function AboutSection() {
   const { about } = content
-
-  // Guard: section opcional â€” nÃ£o renderiza se ausente
   if (!about) return null
 
   const eyebrowRef = useReveal<HTMLDivElement>()
   const titleRef = useReveal<HTMLHeadingElement>()
-  const textRef = useReveal<HTMLDivElement>()
+  const introRef = useReveal<HTMLDivElement>()
+  const etymologyRef = useReveal<HTMLDivElement>()
+  const restRef = useReveal<HTMLDivElement>()
+  const manifestoRef = useReveal<HTMLDivElement>()
   const imageRef = useReveal<HTMLDivElement>()
   const highlightsRef = useReveal<HTMLUListElement>()
   const accent1Ref = useReveal<HTMLDivElement>()
   const accent2Ref = useReveal<HTMLDivElement>()
+
+  // Split: se há etymology, 1º parágrafo fica acima, resto abaixo
+  const hasEtymology = Boolean(about.etymology)
+  const introParagraphs = hasEtymology
+    ? about.paragraphs.slice(0, 1)
+    : about.paragraphs
+  const restParagraphs = hasEtymology ? about.paragraphs.slice(1) : []
 
   return (
     <section
@@ -80,21 +89,93 @@ export function AboutSection() {
             {about.title}
           </h2>
 
-          <div
-            ref={textRef}
-            className="ruah-about__paragraphs ruah-reveal ruah-reveal--up ruah-delay-200"
-          >
-            {about.paragraphs.map((p, i) => (
-              <p key={i} className="ruah-about__paragraph">
-                {p}
-              </p>
-            ))}
-          </div>
+          {/* Parágrafos introdutórios */}
+          {introParagraphs.length > 0 && (
+            <div
+              ref={introRef}
+              className="ruah-about__paragraphs ruah-reveal ruah-reveal--up ruah-delay-200"
+            >
+              {introParagraphs.map((p, i) => (
+                <p key={`intro-${i}`} className="ruah-about__paragraph">
+                  {p}
+                </p>
+              ))}
+            </div>
+          )}
 
+          {/* Bloco de etimologia destacado */}
+          {about.etymology && (
+            <div
+              ref={etymologyRef}
+              className="ruah-about__etymology ruah-reveal ruah-reveal--up ruah-delay-300"
+            >
+              <div className="ruah-about__etymology-header">
+                <span
+                  className="ruah-about__etymology-symbol"
+                  lang="he"
+                  dir="rtl"
+                  aria-label={`${about.etymology.transliteration} em ${about.etymology.language}`}
+                >
+                  {about.etymology.symbol}
+                </span>
+                <div className="ruah-about__etymology-meta">
+                  <span className="ruah-about__etymology-translit">
+                    {about.etymology.transliteration}
+                  </span>
+                  <span className="ruah-about__etymology-lang">
+                    {about.etymology.language}
+                  </span>
+                </div>
+              </div>
+              <p className="ruah-about__etymology-meaning">
+                {about.etymology.meaning}
+              </p>
+              <p className="ruah-about__etymology-description">
+                {about.etymology.description}
+              </p>
+            </div>
+          )}
+
+          {/* Parágrafos restantes */}
+          {restParagraphs.length > 0 && (
+            <div
+              ref={restRef}
+              className="ruah-about__paragraphs ruah-reveal ruah-reveal--up ruah-delay-400"
+            >
+              {restParagraphs.map((p, i) => (
+                <p key={`rest-${i}`} className="ruah-about__paragraph">
+                  {p}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Manifesto — linhas douradas */}
+          {about.manifesto && about.manifesto.length > 0 && (
+            <div
+              ref={manifestoRef}
+              className="ruah-about__manifesto ruah-reveal ruah-reveal--up ruah-delay-500"
+            >
+              {about.manifesto.map((line, i) => (
+                <p
+                  key={`manifesto-${i}`}
+                  className={`ruah-about__manifesto-line${
+                    i === about.manifesto!.length - 1
+                      ? ' ruah-about__manifesto-line--final'
+                      : ''
+                  }`}
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Highlights */}
           {about.highlights && about.highlights.length > 0 && (
             <ul
               ref={highlightsRef}
-              className="ruah-about__highlights ruah-reveal ruah-reveal--up ruah-delay-300"
+              className="ruah-about__highlights ruah-reveal ruah-reveal--up ruah-delay-500"
             >
               {about.highlights.map((h, i) => {
                 const Icon = HIGHLIGHT_ICONS[h.icon] ?? Sparkles
@@ -135,7 +216,6 @@ export function AboutSection() {
               />
             </div>
 
-            {/* Accent 1 â€” moldura inferior-direita (desenho progressivo) */}
             <div
               ref={accent1Ref}
               className="ruah-about__media-accent ruah-about__media-accent--svg ruah-reveal-stroke ruah-delay-400"
@@ -160,7 +240,6 @@ export function AboutSection() {
               </svg>
             </div>
 
-            {/* Accent 2 â€” moldura superior-esquerda espelhada (desenho progressivo) */}
             <div
               ref={accent2Ref}
               className="ruah-about__media-accent ruah-about__media-accent--svg ruah-about__media-accent--2 ruah-reveal-stroke ruah-delay-500"

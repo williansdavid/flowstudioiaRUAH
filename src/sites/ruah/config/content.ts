@@ -90,21 +90,36 @@ externalLinks: {
   // ─────────────────────────────────────────────────────────
   // ABOUT — Sobre o studio
   // ─────────────────────────────────────────────────────────
-  about: {
-    eyebrow: 'Quem somos',
-    title: 'Sobre a Ruah',
-    paragraphs: [
-      'Localizada no coração de Botucatu, a Barbearia Ruah nasceu com o propósito de elevar o padrão da barbearia tradicional.',
-      'Combinamos técnicas clássicas com as tendências mais modernas do mercado, em um espaço planejado para oferecer conforto, com Wi-Fi, ambiente climatizado e profissionais altamente qualificados.',
-    ],
-    image:
-	'/ruah/images/hero/imgabout.jpg',
-	highlights: [
-	  { icon: 'wifi',     label: 'Ambiente climatizado e Wi-Fi grátis' },
-	  { icon: 'award',    label: 'Profissionais altamente qualificados' },
-	  { icon: 'sparkles', label: 'Atendimento personalizado' },
-	],
-  },
+    about: {
+      eyebrow: 'Quem somos',
+      title: 'Sobre a Ruah',
+      paragraphs: [
+        'A Barbearia Ruah nasceu do desejo de criar mais do que uma barbearia. A ideia sempre foi construir um ambiente com identidade, propósito e presença.',
+        'Foi a partir do significado do nome que a barbearia foi construída: um lugar onde cada pessoa pudesse viver uma experiência de renovação, cuidado e autoestima.',
+        'Fundada em 2025, a Barbearia Ruah une tradição e modernidade em um ambiente pensado nos detalhes. Mais do que estética, acreditamos que aparência também comunica identidade, confiança e presença.',
+        'Cada corte, cada atendimento e cada conversa fazem parte daquilo que queremos transmitir: excelência, autenticidade e respeito por quem senta na cadeira.',
+      ],
+      image: '/ruah/images/hero/imgabout.jpg',
+      etymology: {
+        symbol: 'רוּחַ',
+        transliteration: 'ruach',
+        language: 'hebraico',
+        meaning: 'vento, sopro, espírito',
+        description:
+          'Encontrada diversas vezes nas Escrituras, Ruah representa o fôlego de vida, movimento e transformação.',
+      },
+      manifesto: [
+        'Porque para nós, estilo não é apenas aparência.',
+        'É expressão. É presença. É identidade.',
+        'Bem-vindo à Ruah.',
+      ],
+      highlights: [
+        { icon: 'wifi',     label: 'Ambiente climatizado e Wi-Fi grátis' },
+        { icon: 'award',    label: 'Profissionais altamente qualificados' },
+        { icon: 'sparkles', label: 'Atendimento personalizado' },
+      ],
+    },
+
 
   // ─────────────────────────────────────────────────────────
   // SERVICES — Intro da section (items vêm do Supabase)
