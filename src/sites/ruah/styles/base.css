@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
  * Ruah Barber Lounge — Base UI Styles
  * ------------------------------------------------------------
  * Estilos reutilizáveis de layout, container, botões e seções.
@@ -859,7 +859,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('/ruah/images/team/renato.jpg');
+  background-image: url('/ruah/images/team/renato.webp');
   background-size: cover;
   background-position: center 30%;
   background-repeat: no-repeat;
