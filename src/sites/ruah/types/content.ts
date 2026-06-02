@@ -1,24 +1,24 @@
-/**
+﻿/**
  * Studio Content Contracts — Ruah Barber Lounge
  * ----------------------------------------------------------------
- * Contratos TypeScript de TODAS as sections da landing pública.
+ * Contratos TypeScript de TODAS as sections da landing publica.
  *
  * Filosofia:
- *   - Sections OBRIGATÓRIAS: Hero, Services, Contact, Footer
+ *   - Sections OBRIGATORIAS: Hero, Services, Contact, Footer
  *   - Sections OPCIONAIS:    About, Team, Gallery, Testimonials, SEO
  *
  * Como funciona em runtime:
  *   1. content.ts (em /config) implementa este contrato.
- *   2. Sections opcionais não populadas = section não renderiza.
+ *   2. Sections opcionais nao populadas = section nao renderiza.
  *   3. Componentes fazem: `if (!content.team) return null`.
  *
  * Por que sections opcionais?
- *   - Permite lançar o MVP enxuto sem refatorar contratos depois.
+ *   - Permite lancar o MVP enxuto sem refatorar contratos depois.
  *   - Conforme Willians gerar fotos/depoimentos, basta popular.
  *   - Tipagem cresce sem quebrar nada.
  *
  * Regras de modelagem:
- *   - Todos os preços em centavos (number), não string.
+ *   - Todos os precos em centavos (number), nao string.
  *     Ex.: R$ 65,00 = 6500
  *   - URLs de imagem sempre absolutas a partir de /public.
  *     Ex.: '/ruah/images/team/joao.jpg'
@@ -27,19 +27,23 @@
  * ----------------------------------------------------------------
  */
 
+// SEO vive no NUCLEO — re-exportamos pra manter API publica do studio.
+import type { SEOContent } from '@/lib/core/types/seo'
+export type { SEOContent }
+
 // ════════════════════════════════════════════════════════════════
 // HERO — section principal (sempre presente)
 // ════════════════════════════════════════════════════════════════
 
 export interface HeroContent {
-  /** Linha pequena acima do título (ex.: "Barber Lounge") */
+  /** Linha pequena acima do titulo (ex.: "Barber Lounge") */
   eyebrow?: string
 
   /**
    * Headline single-line (modo legado/fallback).
    *
-   * Use APENAS se NÃO precisar de quebra com ênfase visual.
-   * Para o padrão atual da landing Ruah, use `headlineLine1`
+   * Use APENAS se NAO precisar de quebra com enfase visual.
+   * Para o padrao atual da landing Ruah, use `headlineLine1`
    * + `headlineLine2`, que renderizam a segunda linha com cor
    * de destaque (accent dourado).
    *
@@ -50,7 +54,7 @@ export interface HeroContent {
   headline?: string
 
   /**
-   * Headline em 2 linhas — modo destaque (PADRÃO RUAH).
+   * Headline em 2 linhas — modo destaque (PADRAO RUAH).
    *
    * headlineLine1 = linha neutra (branca, peso normal).
    * headlineLine2 = linha de destaque (dourada / accent).
@@ -61,31 +65,31 @@ export interface HeroContent {
   headlineLine1?: string
   headlineLine2?: string
 
-  /** Subtítulo de apoio (1-2 linhas curtas) */
+  /** Subtitulo de apoio (1-2 linhas curtas) */
   subheadline?: string
 
   /**
    * Imagem(ns) de fundo do hero (path absoluto desde /public).
    *
    * Aceita 2 formatos:
-   *   • string    → 1 imagem estática (modo legado)
-   *   • string[]  → carrossel crossfade automático (7s/slide)
+   *   • string    -> 1 imagem estatica (modo legado)
+   *   • string[]  -> carrossel crossfade automatico (7s/slide)
    *
    * Comportamento em runtime (HeroSection):
-   *   • string                 → 1 imagem (sem timer)
-   *   • string[] com 1 item    → 1 imagem (sem timer)
-   *   • string[] com 2+ itens  → carrossel ativo
+   *   • string                 -> 1 imagem (sem timer)
+   *   • string[] com 1 item    -> 1 imagem (sem timer)
+   *   • string[] com 2+ itens  -> carrossel ativo
    */
   backgroundImage: string | string[]
 
-  /** Botão primário (geralmente "Agende seu horário") */
+  /** Botao primario (geralmente "Agende seu horario") */
   primaryCta: {
     label: string
-    /** Destino: link interno, âncora (#contact) ou wa.me */
+    /** Destino: link interno, ancora (#contact) ou wa.me */
     href: string
   }
 
-  /** Botão secundário opcional (ex.: "Ver serviços") */
+  /** Botao secundario opcional (ex.: "Ver servicos") */
   secondaryCta?: {
     label: string
     href: string
@@ -93,23 +97,23 @@ export interface HeroContent {
 }
 
 // ════════════════════════════════════════════════════════════════
-// SERVICES — catálogo de serviços (sempre presente)
+// SERVICES — catalogo de servicos (sempre presente)
 // ════════════════════════════════════════════════════════════════
 
 export interface ServiceItem {
-  /** Identificador estável (ex.: 'corte-classico') */
+  /** Identificador estavel (ex.: 'corte-classico') */
   id: string
 
-  /** Nome do serviço (ex.: "Corte Clássico") */
+  /** Nome do servico (ex.: "Corte Classico") */
   name: string
 
-  /** Descrição curta (1-2 linhas) */
+  /** Descricao curta (1-2 linhas) */
   description: string
 
-  /** Preço em CENTAVOS. Ex.: R$ 65,00 = 6500 */
+  /** Preco em CENTAVOS. Ex.: R$ 65,00 = 6500 */
   priceCents: number
 
-  /** Duração estimada em minutos */
+  /** Duracao estimada em minutos */
   durationMin: number
 
   /** Marca este card como destaque visual no grid */
@@ -117,37 +121,36 @@ export interface ServiceItem {
 }
 
 export interface ServicesContent {
-  /** Eyebrow do bloco (ex.: "Serviços") */
+  /** Eyebrow do bloco (ex.: "Servicos") */
   eyebrow?: string
 
-  /** Título da section (ex.: "Nosso menu") */
+  /** Titulo da section (ex.: "Nosso menu") */
   title: string
 
-  /** Subtítulo opcional */
+  /** Subtitulo opcional */
   subtitle?: string
 
   /**
-   * Lista de serviços (OPCIONAL).
+   * Lista de servicos (OPCIONAL).
    *
    * Comportamento de runtime:
-   *   - Se PRESENTE: componente usa esta lista (modo estático/demo).
+   *   - Se PRESENTE: componente usa esta lista (modo estatico/demo).
    *   - Se AUSENTE:  componente busca via SSR loader do Supabase
    *                  (src/lib/public/services.ts).
-
    *
    * Casos de uso pra hardcodar items aqui:
    *   - Preview/demo sem banco configurado.
-   *   - Studios com catálogo fixo que não muda.
+   *   - Studios com catalogo fixo que nao muda.
    *   - Testes locais sem Supabase rodando.
    *
    * Caso de uso pra OMITIR items:
-   *   - Produção normal (admin gerencia via /admin/services).
+   *   - Producao normal (admin gerencia via /admin/services).
    */
   items?: ServiceItem[]
 }
 
 // ════════════════════════════════════════════════════════════════
-// CONTACT — bloco de contato + endereço (sempre presente)
+// CONTACT — bloco de contato + endereco (sempre presente)
 // ════════════════════════════════════════════════════════════════
 
 export interface ContactContent {
@@ -155,89 +158,85 @@ export interface ContactContent {
   title: string
   subtitle?: string
 
-  /** Mensagem padrão que abre no WhatsApp quando cliente clica */
+  /** Mensagem padrao que abre no WhatsApp quando cliente clica */
   whatsappMessage?: string
 
   /**
    * URL embed do Google Maps (iframe src).
-   * Opcional — se ausente, componente não renderiza o mapa.
+   * Opcional — se ausente, componente nao renderiza o mapa.
    */
   mapEmbedUrl?: string
 }
 
 // ════════════════════════════════════════════════════════════════
-// FOOTER — rodapé + CTA final embutido (sempre presente)
+// FOOTER — rodape institucional (sempre presente)
 // ════════════════════════════════════════════════════════════════
 
-  // ════════════════════════════════════════════════════════════════════════
-  // FOOTER — rodapé institucional (sem CTA duplicado, WhatsApp Float cuida)
-  // ════════════════════════════════════════════════════════════════════════
+export interface FooterContent {
+  /**
+   * Frase-manifesto do studio (aparece sob o logo no rodape).
+   * Ex.: "Cada corte, uma experiencia. Cada cliente, uma historia."
+   */
+  manifesto: string
 
-  export interface FooterContent {
-    /**
-     * Frase-manifesto do studio (aparece sob o logo no rodapé).
-     * Ex.: "Cada corte, uma experiência. Cada cliente, uma história."
-     */
-    manifesto: string
+  /**
+   * Nome do detentor dos direitos autorais.
+   * Ex.: "Barbearia Ruah"
+   * ATENCAO: NAO inclui o ano — e injetado dinamicamente no componente.
+   */
+  copyrightOwner: string
 
-    /**
-     * Nome do detentor dos direitos autorais.
-     * Ex.: "Barbearia Ruah"
-     * ⚠️ NÃO inclui o ano — é injetado dinamicamente no componente.
-     */
-    copyrightOwner: string
+  /**
+   * Sufixo do copyright (texto apos o nome).
+   * Ex.: "Todos os direitos reservados."
+   */
+  copyrightSuffix: string
 
-    /**
-     * Sufixo do copyright (texto após o nome).
-     * Ex.: "Todos os direitos reservados."
-     */
-    copyrightSuffix: string
-
-    /**
-     * Linha de crédito da plataforma.
-     * Ex.: "Powered by FlowStudio AI"
-     */
-    credits: string
-  }
+  /**
+   * Linha de credito da plataforma.
+   * Ex.: "Powered by FlowStudio AI"
+   */
+  credits: string
+}
 
 // ════════════════════════════════════════════════════════════════
-// ABOUT — história do studio (OPCIONAL)
+// ABOUT — historia do studio (OPCIONAL)
 // ════════════════════════════════════════════════════════════════
+
+/**
+ * Icone disponivel para um highlight do About.
+ * Mapeado em AboutSection.tsx -> HIGHLIGHT_ICONS.
+ */
+export type AboutHighlightIcon =
+  | 'wifi'
+  | 'award'
+  | 'sparkles'
+  | 'scissors'
+  | 'heart'
+  | 'shield'
+
+/**
+ * Diferencial do studio (1 icone + 1 label curto).
+ */
+export interface AboutHighlight {
+  icon: AboutHighlightIcon
+  label: string
+}
+
 /**
  * Bloco de etimologia destacado — explica origem do nome do studio.
  * Opcional: se ausente, AboutSection pula o bloco.
  */
-   /**
-   * Ícone disponível para um highlight do About.
-   * Mapeado em AboutSection.tsx → HIGHLIGHT_ICONS.
-   */
-  export type AboutHighlightIcon =
-    | 'wifi'
-    | 'award'
-    | 'sparkles'
-    | 'scissors'
-    | 'heart'
-    | 'shield'
-
-  /**
-   * Diferencial do studio (1 ícone + 1 label curto).
-   */
-  export interface AboutHighlight {
-    icon: AboutHighlightIcon
-    label: string
-  }
-
-
 export interface AboutEtymology {
-  /** Símbolo/grafia original (ex.: "רוּחַ" em hebraico) */
+  /** Simbolo/grafia original (ex.: "רוּחַ" em hebraico) */
   symbol: string
-  /** Transliteração latina (ex.: "ruach") */
+  /** Transliteracao latina (ex.: "ruach") */
   transliteration: string
   /** Idioma de origem (ex.: "hebraico") */
   language: string
-  /** Significados curtos separados por vírgula (ex.: "vento, sopro, espírito") */
+  /** Significados curtos separados por virgula (ex.: "vento, sopro, espirito") */
   meaning: string
-  /** Descrição contextual (1-2 linhas) */
+  /** Descricao contextual (1-2 linhas) */
   description: string
 }
 
@@ -245,7 +244,7 @@ export interface AboutContent {
   eyebrow?: string
   title: string
 
-  /** Texto principal (1-5 parágrafos). Array = um item por parágrafo */
+  /** Texto principal (1-5 paragrafos). Array = um item por paragrafo */
   paragraphs: string[]
 
   /** Imagem ilustrativa (interna do studio) */
@@ -257,7 +256,7 @@ export interface AboutContent {
   /** Linhas curtas de manifesto/closing em destaque dourado (OPCIONAL) */
   manifesto?: string[]
 
-  /** Lista curta de diferenciais com ícone + label */
+  /** Lista curta de diferenciais com icone + label */
   highlights?: AboutHighlight[]
 }
 
@@ -269,7 +268,7 @@ export interface TeamMember {
   id: string
   name: string
 
-  /** Cargo/função (ex.: "Master Barber") */
+  /** Cargo/funcao (ex.: "Master Barber") */
   role: string
 
   /** Bio curta (1-2 linhas) */
@@ -290,7 +289,7 @@ export interface TeamContent {
 }
 
 // ════════════════════════════════════════════════════════════════
-// GALLERY — grid/carrossel de fotos E vídeos do studio (OPCIONAL)
+// GALLERY — grid/carrossel de fotos E videos do studio (OPCIONAL)
 // ════════════════════════════════════════════════════════════════
 
 /**
@@ -311,13 +310,13 @@ export interface GalleryImage {
 }
 
 /**
- * Item de vídeo da galeria.
+ * Item de video da galeria.
  * Discriminator: type: 'video'
  *
- * Recomendações de produção:
- *   - Formato: mp4 H.264, max 5MB, 720p, sem áudio
- *   - Duração: 5-15s em loop
- *   - Poster: frame estático para fallback antes do play
+ * Recomendacoes de producao:
+ *   - Formato: mp4 H.264, max 5MB, 720p, sem audio
+ *   - Duracao: 5-15s em loop
+ *   - Poster: frame estatico para fallback antes do play
  */
 export interface GalleryVideo {
   type: 'video'
@@ -328,7 +327,7 @@ export interface GalleryVideo {
   /** Texto alt acessibilidade */
   alt: string
 
-  /** Imagem de poster (mostrada antes do vídeo carregar) */
+  /** Imagem de poster (mostrada antes do video carregar) */
   poster?: string
 
   /** Destaca este item */
@@ -336,7 +335,7 @@ export interface GalleryVideo {
 }
 
 /**
- * União discriminada — cada item da galeria pode ser foto ou vídeo.
+ * Uniao discriminada — cada item da galeria pode ser foto ou video.
  * Use o campo `type` para discriminar no render.
  */
 export type GalleryMedia = GalleryImage | GalleryVideo
@@ -347,12 +346,11 @@ export interface GalleryContent {
   subtitle?: string
 
   /**
-   * Lista de mídias da galeria (fotos e/ou vídeos misturados).
+   * Lista de midias da galeria (fotos e/ou videos misturados).
    * Ordem do array = ordem do carrossel.
    */
   items: GalleryMedia[]
 }
-
 
 // ════════════════════════════════════════════════════════════════
 // TESTIMONIALS — depoimentos reais de clientes (OPCIONAL)
@@ -379,7 +377,7 @@ export interface Testimonial {
   /** Origem do depoimento — renderiza badge sutil no card */
   source?: 'booksy' | 'google' | 'instagram' | 'whatsapp'
 
-  /** Data/período do depoimento (ex.: "mar 2026", "mai 2026") */
+  /** Data/periodo do depoimento (ex.: "mar 2026", "mai 2026") */
   date?: string
 }
 
@@ -391,71 +389,42 @@ export interface TestimonialsContent {
 }
 
 // ════════════════════════════════════════════════════════════════
-// SEO — metadados pra SSR <head> (OPCIONAL)
+// EXTERNAL LINKS — redes sociais, plataformas, reviews
 // ════════════════════════════════════════════════════════════════
-
-/**
- * Metadados de SEO da landing pública.
- *
- * Consumido pelo head() do TanStack Router em runtime SSR.
- * Cada studio define seu próprio bloco SEO, mantendo
- * isolamento total e personalização por deploy.
- *
- * Se ausente em content.ts, a rota usa fallback genérico
- * derivado de identity.ts (nome do studio, slogan, etc.).
- */
-export interface SEOContent {
-  /** Title da página (ex.: "Barbearia Ruah | Premium em Botucatu") */
-  title: string
-
-  /** Meta description (até ~155 caracteres pra Google) */
-  description: string
-
-  /** Keywords pra SEO (uso limitado em 2026, mas mantemos) */
-  keywords?: string[]
-
-  /** Imagem Open Graph (1200x630 ideal). Path absoluto desde /public */
-  ogImage?: string
-
-  /** URL canônica da landing (preenchida no deploy) */
-  canonicalUrl?: string
-}
-
 
 /**
  * Links externos do studio (redes sociais, plataformas de agendamento, reviews).
  * Centraliza URLs pra evitar hardcode em componentes.
  */
 export interface ExternalLinks {
-  /** URL pública do perfil Booksy do studio (agendamento online) */
+  /** URL publica do perfil Booksy do studio (agendamento online) */
   booksy?: string
-  /** URL pública do Google Reviews / Google Business */
+  /** URL publica do Google Reviews / Google Business */
   googleReviews?: string
   /** URL do Google Maps (ficha do estabelecimento) */
   googleMaps?: string
 }
-
 
 // ════════════════════════════════════════════════════════════════
 // CONTAINER PRINCIPAL — agrega tudo
 // ════════════════════════════════════════════════════════════════
 
 /**
- * Contrato completo do conteúdo de uma landing Ruah.
+ * Contrato completo do conteudo de uma landing Ruah.
  *
  * Implementado por: src/sites/ruah/config/content.ts.
  *
- * Sections opcionais não populadas resultam em section não
- * renderizada na página — os componentes fazem o guard.
+ * Sections opcionais nao populadas resultam em section nao
+ * renderizada na pagina — os componentes fazem o guard.
  */
 export interface StudioContent {
-  // ── Obrigatórias ───────────────────────────────────────────
+  // ── Obrigatorias ─────────────────────────────────────────────
   hero: HeroContent
   services: ServicesContent
   contact: ContactContent
   footer: FooterContent
   externalLinks?: ExternalLinks
-  // ── Opcionais ──────────────────────────────────────────────
+  // ── Opcionais ────────────────────────────────────────────────
   about?: AboutContent
   team?: TeamContent
   gallery?: GalleryContent

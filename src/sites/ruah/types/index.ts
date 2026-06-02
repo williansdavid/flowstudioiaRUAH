@@ -1,11 +1,17 @@
-/**
- * Types Barrel
+﻿/**
+ * Types Barrel — Ruah
  * ----------------------------------------------------------------
- * Ponto único de exportação dos contratos do site Ruah.
+ * Ponto unico de exportacao dos contratos do site Ruah.
  * Sempre importar via: `@/sites/ruah/types`
+ *
+ * Estrategia:
+ *   - Types de NUCLEO (branding, identity, SEO) vem via fachada
+ *     (sites/ruah/types/{branding,identity}.ts).
+ *   - Types proprios do Ruah (content) ficam locais.
  * ----------------------------------------------------------------
  */
 
+// Identity (fachada -> nucleo)
 export type {
   StudioCategory,
   StudioContact,
@@ -13,19 +19,27 @@ export type {
   StudioIdentity,
 } from './identity'
 
+// Branding (fachada -> nucleo)
 export type {
   BrandColors,
+  BrandSurfaces,
+  BrandText,
+  BrandUI,
   BrandTypography,
   BrandLogo,
+  BrandShape,
+  BrandTheme,
   BrandIdentity,
 } from './branding'
 
+// Business Hours (proprio do Ruah)
 export type {
   WeekDay,
   DayHours,
   BusinessHours,
 } from './businessHours'
 
+// Content (proprio do Ruah, SEOContent vem via re-export do nucleo)
 export type {
   // Hero
   HeroContent,
@@ -38,6 +52,7 @@ export type {
   FooterContent,
   // About
   AboutContent,
+  AboutEtymology,
   AboutHighlight,
   AboutHighlightIcon,
   // Team
@@ -51,9 +66,10 @@ export type {
   // Testimonials
   Testimonial,
   TestimonialsContent,
-  // SEO
+  // External Links
+  ExternalLinks,
+  // SEO (re-exportado do nucleo via content.ts)
   SEOContent,
   // Container
   StudioContent,
 } from './content'
-

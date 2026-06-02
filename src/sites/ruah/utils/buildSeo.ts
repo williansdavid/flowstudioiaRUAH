@@ -1,47 +1,14 @@
-/**
- * buildSeo — Resolução de metadados SEO com fallback
+﻿/**
+ * buildSeo — Ruah (FACHADA)
  * ----------------------------------------------------------------
- * Combina `content.seo` (opcional) com `identity` (sempre presente)
- * pra produzir um objeto SEO 100% definido, consumido pelo
- * head() do TanStack Router no SSR.
+ * Re-exporta a implementacao real do NUCLEO (lib/core).
  *
- * Filosofia:
- *   - content.seo é OPCIONAL no type (sections opcionais)
- *   - identity é OBRIGATÓRIO (fonte única do negócio)
- *   - Esta função garante que sempre haja title/description válidos
+ * Mantemos esta fachada pra preservar imports existentes
+ * (`@/sites/ruah/utils/buildSeo`) sem breaking change.
  *
- * Uso:
- *   const seo = buildSeo(content.seo, identity)
- *   seo.title       // sempre string
- *   seo.description // sempre string
- *   seo.keywords    // sempre string[] (pode ser vazio)
+ * Nunca duplique logica aqui — sempre va ao nucleo.
  * ----------------------------------------------------------------
  */
 
-import type { SEOContent, StudioIdentity } from '../types'
-
-export interface ResolvedSeo {
-  /** Title final (content.seo.title ou identity.name) */
-  title: string
-  /** Description final (content.seo.description ou identity.description) */
-  description: string
-  /** Keywords (content.seo.keywords ou array vazio) */
-  keywords: string[]
-  /** OG image (content.seo.ogImage ou undefined — entra na FASE 19) */
-  ogImage?: string
-  /** Canonical URL (content.seo.canonicalUrl ou undefined) */
-  canonicalUrl?: string
-}
-
-export function buildSeo(
-  seo: SEOContent | undefined,
-  identity: StudioIdentity,
-): ResolvedSeo {
-  return {
-    title: seo?.title ?? identity.name,
-    description: seo?.description ?? identity.description,
-    keywords: seo?.keywords ?? [],
-    ogImage: seo?.ogImage,
-    canonicalUrl: seo?.canonicalUrl,
-  }
-}
+export { buildSeo } from '@/lib/core/utils/buildSeo'
+export type { ResolvedSeo } from '@/lib/core/utils/buildSeo'
