@@ -1,8 +1,7 @@
 # 📍 FlowStudio AI — Checkpoint
 
 > **Atualizado em:** 02/06/2026 (manhã)
-> **Sprint atual:** Sprint 0 — Housekeeping
-> **Próxima sessão:** Iniciar Sprint 1 (Dashboard)
+> **Sprint atual:** ✅ Sprint 0 concluído → 🚀 Iniciando Sprint 1 (Dashboard)
 
 ---
 
@@ -16,6 +15,29 @@
 
 ---
 
+## ✅ Sprint 0 — Housekeeping (CONCLUÍDO em 02/06/2026)
+
+### Removidos com sucesso
+
+- ✅ `src/features/appointments/index.ts.bak`
+- ✅ `src/server/appointments/_shared.ts.bak`
+- ✅ `src/styles/_backup-20260526-122845/`
+- ✅ `tailwind.config.ts.bak-20260526-141139`
+- ✅ `src/data/` (pasta órfã — confirmado zero imports)
+
+### Validações pós-limpeza
+
+- ✅ `npm run typecheck` → zero erros
+- ✅ `npm run build` → client + SSR verdes
+- ✅ Entry SSR Netlify gerado normalmente
+
+### Observações registradas (atacar no Sprint 8)
+
+- ⚠️ Chunk principal de 593 kB — otimizar com `manualChunks` + lazy loading
+- ℹ️ Warnings de unused imports em `node_modules/@tanstack/start-*` → ignorar (não é nosso código)
+
+---
+
 ## 📊 Snapshot do projeto
 
 ### 🟢 Módulos completos
@@ -24,18 +46,18 @@
 |--------|---------|--------|----|----|
 | **Auth** | ✅ | ✅ | ✅ login + 403 | ✅ |
 | **Admin Layout** | — | — | ✅ sidebar + drawer | ✅ |
-| **Clients** | ✅ hooks/queries/types | ✅ create/list/update | ✅ List/Form/Filters/Badge | ✅ |
-| **Services** | ✅ | ✅ create/list/update/toggle | ✅ List/Form/Filters | ✅ |
-| **Team/Staff** | ✅ | ✅ create/list/update/toggle | ✅ List/Form/Filters/TempPwd | ✅ |
-| **Calendar** | ✅ types/slot-mapping | — (usa appointments) | ✅ Grid/Day/Week/Slot/etc | ✅ |
+| **Clients** | ✅ | ✅ create/list/update | ✅ Completo | ✅ |
+| **Services** | ✅ | ✅ create/list/update/toggle | ✅ Completo | ✅ |
+| **Team/Staff** | ✅ | ✅ create/list/update/toggle | ✅ Completo | ✅ |
+| **Calendar** | ✅ | — (usa appointments) | ✅ Completo | ✅ |
 
 ### 🟡 Módulos parciais
 
 | Módulo | Estado | Falta |
 |--------|--------|-------|
-| **Appointments** | Server tem só create + list | update / cancel / reschedule / delete |
+| **Appointments** | Server só create + list | update / cancel / reschedule / delete |
 | **AI Chat** | Apenas index.ts + types.ts | Toda UI + lógica |
-| **Leads** | Pasta existe (sem detalhes) | A investigar |
+| **Leads** | Pasta existe | A investigar |
 
 ### 🔴 Módulos não iniciados
 
@@ -48,21 +70,17 @@
 
 ---
 
-## 🧹 Débito técnico ativo
+## 🧹 Débito técnico restante
 
-### No núcleo (atacar no Sprint 0)
+### Núcleo
 
-- [ ] `src/features/appointments/index.ts.bak`
-- [ ] `src/server/appointments/_shared.ts.bak`
-- [ ] `src/data/` pasta vazia (avaliar)
-- [ ] `src/styles/_backup-20260526-122845/`
-- [ ] `tailwind.config.ts.bak-20260526-141139` (raiz)
+✅ **Limpo** após Sprint 0.
 
-### Fora do núcleo (zona Ruah — adiar)
+### Zona Ruah (`src/sites/ruah/` — adiar)
 
-- Arquivos `.bak` em `src/sites/ruah/` (vários)
+- Arquivos `.bak` em vários components
 - `HeroSection - Copia.tsx`
-- `birdid-sign-plugin.exe` (30 MB em styles!) ⚠️
+- `birdid-sign-plugin.exe` (30 MB em `styles/`!) ⚠️
 - `base.csse`, `base.css.err`
 - Registrado em `src/sites/ruah/docs/techdeb.md`
 
@@ -83,44 +101,28 @@
 
 | Risco | Mitigação |
 |-------|-----------|
-| Sem update/cancel em appointments → calendário fica "read-only" | Sprint 2 |
-| Dashboard placeholder transmite imagem de produto incompleto | Sprint 1 |
+| Sem update/cancel em appointments → calendário "read-only" | Sprint 2 |
+| Dashboard placeholder transmite imagem de produto incompleto | **Sprint 1 (próximo)** |
 | Settings inexistente → admin precisa de deploy pra mudar horário | Sprint 4 |
 | WhatsApp sem provider definido | Decidir antes do Sprint 5 |
 | Finance inexistente → studio não vê faturamento | Sprint 3 |
 
 ---
 
-## 🎯 Próximo passo (executar agora)
+## 🎯 Próximo passo — SPRINT 1: Dashboard funcional
 
-**SPRINT 0 — Housekeeping do núcleo**
+**Objetivo:** Substituir placeholder de `/admin` por dashboard real com KPIs do Supabase.
 
-Comandos PowerShell (executar na raiz do projeto):
+**Entregas:**
+- `src/features/dashboard/` (types, queries, hooks, components)
+- `src/server/dashboard/get-summary.ts`
+- Atualização de `src/routes/admin/index.tsx` com loader SSR + UI real
 
-```powershell
-cd 'C:\FlowStudio AI'
-```
-
-```powershell
-Remove-Item "src\features\appointments\index.ts.bak" -Force
-Remove-Item "src\server\appointments\_shared.ts.bak" -Force
-Remove-Item "src\styles\_backup-20260526-122845" -Recurse -Force
-Remove-Item "tailwind.config.ts.bak-20260526-141139" -Force
-```
-
-```powershell
-# Validar pasta data antes de remover
-Get-ChildItem "src\data" -Recurse
-```
-
-```powershell
-# Após remover, validar
-npm run typecheck
-```
-
-```powershell
-npm run build
-```
+**KPIs alvo:**
+- Agendamentos do dia
+- Receita do mês
+- Novos clientes (mês)
+- Taxa de ocupação
 
 ---
 
@@ -128,7 +130,8 @@ npm run build
 
 | Data | Sprint | Evento |
 |------|--------|--------|
-| 02/06/2026 | Pré-Sprint 0 | Diagnóstico completo + 3 documentos criados |
+| 02/06/2026 (manhã) | Pré-Sprint 0 | Diagnóstico completo + 3 documentos oficiais criados |
+| 02/06/2026 (manhã) | ✅ Sprint 0 | Housekeeping concluído + commit + checkpoint atualizado |
 
 ---
 
