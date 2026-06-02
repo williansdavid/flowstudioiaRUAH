@@ -1,0 +1,41 @@
+🏛️ Arquitetura Real do FlowStudio AI 
+┌─────────────────────────────────────────────────────────────────┐
+│                    DEPLOY DO STUDIO RUAH                        │
+│                  (mesmo padrão pra qualquer outro)              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌────────────────────────┐    ┌────────────────────────────┐   │
+│  │   PARTE 1: ADMIN       │    │   PARTE 2: PAGE PÚBLICA    │   │
+│  │   (núcleo padrão)      │    │   (exclusiva do studio)    │   │
+│  ├────────────────────────┤    ├────────────────────────────┤   │
+│  │ • Dashboard            │    │ • Hero próprio             │   │
+│  │ • Agenda               │    │ • Sections próprias        │   │
+│  │ • Clientes             │    │ • Layout próprio           │   │
+│  │ • Produtos             │    │ • Identidade própria       │   │
+│  │ • Staff                │    │ • Arquitetura própria      │   │
+│  │ • Finance              │    │                            │   │
+│  │ • Settings             │    │                            │   │
+│  │                        │    │                            │   │
+│  │ MESMO CÓDIGO PRA       │    │ EXCLUSIVO POR STUDIO       │   │
+│  │ TODOS OS STUDIOS       │    │ (sites/<slug>/)            │   │
+│  └────────────┬───────────┘    └─────────────┬──────────────┘   │
+│               │                              │                  │
+│               └──────────┬───────────────────┘                  │
+│                          ▼                                      │
+│            ┌──────────────────────────┐                         │
+│            │  studio.config.ts        │                         │
+│            │  (ponte única)           │                         │
+│            │                          │                         │
+│            │  • identidade            │                         │
+│            │  • branding              │                         │
+│            │  • contato               │                         │
+│            │  • features              │                         │
+│            └────────────┬─────────────┘                         │
+│                         │                                       │
+│                         ▼                                       │
+│            ┌──────────────────────────┐                         │
+│            │  Supabase do studio      │                         │
+│            │  (dados próprios)        │                         │
+│            └──────────────────────────┘                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘

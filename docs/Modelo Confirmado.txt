@@ -1,0 +1,10 @@
+╔══════════════════════════════════════════════════════════════╗
+║  REGRA ARQUITETURAL OFICIAL DO FLOWSTUDIO AI                ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║   src/sites/<slug>/   →  EXCLUSIVO do studio                 ║
+║   src/* (resto)       →  COMPARTILHADO entre todos studios   ║
+║                                                              ║
+║   Ponte única:  studio.config.ts                             ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
