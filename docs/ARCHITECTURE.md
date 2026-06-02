@@ -1,310 +1,252 @@
-# 🏛️ FlowStudio AI — Arquitetura
+# FlowStudio AI — Arquitetura
 
-> **Última atualização:** 02/06/2026
-> **Versão:** 1.0
-> **Mantenedor:** Willians + FlowStudio AI Architect
-
----
-
-## 1. Visão geral
-
-O **FlowStudio AI** é uma plataforma **white-label** para studios de beleza, salões e barbearias.
-
-**NÃO** é um SaaS multi-tenant tradicional. A arquitetura é de **implantação isolada por empresa**:
-
-```
-Mesmo código-fonte base
-        +
-Deploy Netlify individual por studio
-        +
-Supabase individual por studio
-        +
-Config + Branding individual por studio
-```
-
-### Objetivos arquiteturais
-
-- ✅ Simplicidade operacional
-- ✅ Isolamento total de dados
-- ✅ Segurança por design (cada studio = ambiente próprio)
-- ✅ Facilidade de implantação
-- ✅ Personalização visual por cliente
-- ✅ Escalabilidade futura sem comprometer o MVP
+Ultima atualizacao: 02/06/2026 (tarde)
+Versao: 1.1 — introducao do White-Label Switch (ADR-001)
 
 ---
 
-## 2. Stack oficial
+## Visao de produto
 
-| Camada | Tecnologia | Versão |
-|--------|-----------|--------|
-| Framework SSR | TanStack React Start | 1.168.9 |
-| Roteamento | TanStack Router | 1.170.6 |
-| Estado servidor | React Query | 5.59+ |
-| UI Framework | React | 18.3.1 |
-| Linguagem | TypeScript | 5.6+ |
-| Backend / DB / Auth | Supabase (SSR) | 0.5.2 |
-| Estilização | Tailwind CSS | 3.4+ |
-| Animação | Framer Motion | 11.18 |
-| Build | Vite | 7.3 |
-| Deploy | Netlify | — |
-| Ícones | Lucide React | 0.453+ |
-| Toast | Sonner | 1.5+ |
-| Validação | Zod | 3.25+ |
+FlowStudio AI e uma plataforma white-label para studios de beleza, saloes
+e barbearias. Cada studio recebe seu proprio deploy Netlify, seu proprio
+projeto Supabase, sua propria landing personalizada e seu proprio admin,
+sempre a partir do mesmo codigo-fonte base.
 
-> ⚠️ **Nunca adicionar dependências fora dessa lista sem justificativa técnica forte.**
+Nao e multi-tenant. Nao existe compartilhamento de dados entre studios.
+Cada cliente e uma instancia autonoma.
 
 ---
 
-## 3. Zonas do projeto (regra de ouro)
+## Stack oficial
 
-O projeto possui **2 zonas distintas** com regras de manutenção próprias:
+- Frontend / SSR: TanStack React Start + TanStack Router
+- Estado servidor: React Query
+- Linguagem: TypeScript
+- Estilo: Tailwind CSS
+- Backend: Supabase (Auth + Postgres + Storage + Realtime)
+- Build: Vite
+- Deploy: Netlify (entry SSR)
+- Icones: Lucide
+- Toasts: Sonner
 
-### 🔵 ZONA NÚCLEO — `src/` (exceto `sites/`)
+---
 
-**O que é:** Core compartilhado do FlowStudio AI. Reutilizado por todos os studios.
+## Estrutura de pastas (alto nivel)
 
-**Diretórios:**
-
-```
 src/
-├── components/    → UI compartilhada (AdminLayout, ui/, shared/, feedback/, auth/)
-├── config/        → Config global (studio.config.ts)
-├── core/          → Núcleo da aplicação
-├── features/      → Lógica de domínio por módulo (CRUDs, hooks, queries)
-├── hooks/         → Hooks globais reutilizáveis
-├── lib/           → Auth, Supabase, branding, utils, date, masks, query
-├── routes/        → Roteamento TanStack (file-based)
-├── server/        → Server functions SSR (por domínio)
-├── styles/        → Temas globais e tokens
-└── types/         → Tipos globais
-```
-
-**Quando alterar:** Sempre que evoluir funcionalidade do admin ou core.
-
-### 🟢 ZONA STUDIO — `src/sites/<studio>/`
-
-**O que é:** Configuração, conteúdo, branding e seções específicas de **um studio**.
-
-**Estrutura padrão:**
-
-```
-src/sites/ruah/
-├── components/    → Sections, layout (Header/Footer), floating, icons, motion
-├── config/        → branding.ts, content.ts, identity.ts, businessHours.ts, seo/
-├── docs/          → Documentação específica do studio
-├── lib/           → Helpers do studio (hours, whatsapp)
-├── styles/        → CSS específico (base, footer, gallery, hours, animations)
-├── types/         → Tipos do studio
-└── utils/         → Utilitários (buildBrandingCss, buildSeo, useReveal)
-```
-
-**Quando alterar:** Customização visual/conteúdo do studio. **NÃO** afeta outros studios.
-
-### 🔒 Regras invioláveis
-
-1. **Núcleo nunca importa de `sites/`** — só o contrário é permitido.
-2. **Sites nunca alteram core diretamente** — extensões via config/props.
-3. **Studio config alimenta o admin** — admin é genérico, lê `studioConfig`.
-4. **Cada studio tem seu Supabase isolado** — zero cross-studio.
+  routes/                       TanStack Router (nucleo universal)
+    index.tsx                   landing publica do studio ativo
+    admin/                      painel administrativo (universal)
+    login.tsx
+  features/                     modulos de negocio (universal)
+    auth/
+    clients/
+    services/
+    team/
+    appointments/
+    calendar/
+    dashboard/                  (a criar — Sprint 1)
+    finance/                    (a criar — Sprint 3)
+    whatsapp/                   (a criar — Sprint 5)
+    settings/                   (a criar — Sprint 4)
+    leads/
+    ai-chat/
+  server/                       server functions por dominio (universal)
+  components/                   UI primitives + compostos (universal)
+  lib/                          utilitarios, supabase client, helpers
+  config/
+    active-studio.ts            SWITCH white-label (ADR-001)
+  sites/
+    ruah/                       studio Ruah (isolado)
+      studio.ts                 export unico consolidado
+      config/                   config detalhada (identidade, hero, etc)
+      components/               componentes especificos da landing Ruah
+      assets/
+      docs/
+    _legacy/                    sites arquivados (nao buildam)
 
 ---
 
-## 4. Roteamento e SSR
+## White-Label Switch (ADR-001)
 
-### Padrão file-based (TanStack Router)
+### Principio
 
-```
-src/routes/
-├── __root.tsx         → Layout raiz (providers globais)
-├── index.tsx          → Landing pública do studio (rota "/")
-├── login.tsx          → Login
-├── 403.tsx            → Forbidden
-└── admin/
-    ├── route.tsx      → Layout admin + guard de role
-    ├── index.tsx      → Dashboard
-    ├── appointments.tsx
-    ├── calendar.tsx
-    ├── clients.tsx
-    ├── services.tsx
-    ├── staff.tsx
-    ├── finance.tsx
-    ├── whatsapp.tsx
-    └── settings.tsx
-```
+O nucleo (routes/, features/, server/, components/, lib/) nunca importa
+diretamente de src/sites/<slug>/. Toda consulta ao studio ativo passa por:
 
-### Padrão de guard SSR
+    import { activeStudio } from "@/config/active-studio";
 
-Toda rota protegida usa `beforeLoad` com checagem de permissão:
+### Como funciona
 
-```ts
-export const Route = createFileRoute('/admin/clients')({
-  beforeLoad: ({ context }) => {
-    requirePermission(context.user, 'clients.view');
-  },
-  component: ClientsRouteComponent,
-});
-```
+src/sites/ruah/studio.ts consolida toda a config do studio em um unico
+export tipado. Exemplo conceitual:
 
-### Padrão de loader SSR (recomendado)
+    import { identity } from "./config/identity";
+    import { hero } from "./config/hero";
+    import { services } from "./config/services";
 
-Dados críticos devem ser carregados via `loader` para hidratação imediata:
+    export const ruahStudio = {
+      slug: "ruah",
+      identity,
+      hero,
+      services,
+    } as const;
 
-```ts
-loader: async ({ context }) => {
-  const services = await listServices();
-  return { services };
-}
-```
+    export type Studio = typeof ruahStudio;
 
----
+src/config/active-studio.ts e o switch unico:
 
-## 5. Sistema de autenticação
+    import { ruahStudio } from "@/sites/ruah/studio";
 
-### Estrutura
+    export const activeStudio = ruahStudio;
+    export type { Studio } from "@/sites/ruah/studio";
 
-```
-src/lib/auth/
-├── session.ts       → requireRole, requirePermission, getSession
-├── types.ts         → SessionUser
-├── roles.ts         → admin, staff, client + labels
-├── permissions.ts   → userHasPermission(user, permission)
-└── logout.ts        → logout flow
-```
+### Trocar de studio
 
-### Roles disponíveis
+Para gerar um deploy para outro studio (ex: bellavista):
 
-| Role | Acesso |
-|------|--------|
-| `admin` | Total |
-| `staff` | Operacional (sem settings/team) |
-| `client` | Área do cliente (futuro) |
+1. Criar src/sites/bellavista/ espelhando a estrutura do Ruah
+2. Criar src/sites/bellavista/studio.ts
+3. Trocar 1 linha em src/config/active-studio.ts
+4. Apontar .env para o Supabase do novo studio
+5. Deploy
 
-### Permissions granulares
+### Beneficios
 
-Exemplos: `dashboard.view`, `appointments.view`, `clients.view`, `services.view`, `team.manage`, `finance.view`, `whatsapp.view`, `settings.manage`.
+- Nucleo permanece reutilizavel
+- Studios isolados (zero risco de vazamento entre instancias)
+- Trocar de cliente = trocar 1 arquivo
+- Permite manter multiplos studios no mesmo monorepo sem acoplamento
+- Facilita testes (mockar activeStudio e trivial)
 
-**Toda nav do AdminLayout é filtrada via `userHasPermission`.**
+Decisao completa: docs/adr/ADR-001-white-label-switch.md
 
 ---
 
-## 6. Padrão Feature-Based
+## Autenticacao e Autorizacao
 
-Cada domínio do admin segue a mesma estrutura:
-
-```
-src/features/<dominio>/
-├── index.ts              → Barrel exports
-├── types.ts              → Tipos do domínio
-├── queries.ts            → React Query keys + fetchers
-├── hooks.ts              → Hooks customizados (useXxxList, useXxxMutation)
-└── components/
-    ├── XxxList.tsx
-    ├── XxxFormDialog.tsx
-    ├── XxxFiltersBar.tsx
-    └── XxxBadge.tsx
-```
-
-### Convenções
-
-- **`queries.ts`** → exporta `xxxQueries` (objeto com `list`, `byId`, etc.) + `xxxKeys`
-- **`hooks.ts`** → exporta hooks de leitura (`useXxxList`) e mutações (`useCreateXxx`)
-- **Components** → usam apenas hooks da própria feature, nunca chamam Supabase direto
+- Auth provider: Supabase Auth
+- Sessao SSR resolvida via beforeLoad no TanStack Router
+- Roles: admin, staff, client
+- Permissions: sistema granular via userHasPermission
+- Guards de rota: beforeLoad em todas as rotas /admin/* valida sessao
+  e role
+- Filtro de navegacao: AdminLayout esconde itens do menu conforme
+  permissoes
 
 ---
 
-## 7. Server Functions
+## Modelo de dados (Supabase por studio)
 
-Lógica de escrita/leitura sensível roda em **server functions** (TanStack Start):
+Cada studio tem seu proprio Postgres. Tabelas principais:
 
-```
-src/server/<dominio>/
-├── _shared.ts                → Validações, helpers, auth checks
-├── list-<dominio>.ts         → SELECT
-├── create-<dominio>.ts       → INSERT
-├── update-<dominio>.ts       → UPDATE
-└── toggle-<dominio>-active.ts → soft-toggle
-```
+- profiles
+- user_roles
+- clients
+- staff
+- services
+- appointments
+- finance_transactions       (Sprint 3)
+- leads
+- whatsapp_messages          (Sprint 5)
+- whatsapp_settings
+- ai_messages
+- studio_settings            (Sprint 4)
 
-### Padrão
-
-- Toda server function valida sessão + permissão
-- Toda entrada validada com **Zod**
-- Erros tipados retornados ao cliente
-
----
-
-## 8. Supabase
-
-### Convenções
-
-- **Um projeto Supabase por studio** (isolamento total)
-- Autenticação via `@supabase/ssr`
-- Types gerados via `npm run db:types`
-
-### Tabelas principais
-
-| Tabela | Descrição |
-|--------|-----------|
-| `profiles` | Perfil do usuário (1:1 com auth.users) |
-| `user_roles` | Role do usuário no studio |
-| `clients` | Clientes do studio |
-| `staff` | Equipe (cabeleireiros, barbeiros, etc.) |
-| `services` | Serviços oferecidos |
-| `appointments` | Agendamentos |
-| `finance_transactions` | Movimentação financeira |
-| `leads` | Leads da landing |
-| `whatsapp_messages` | Mensagens WhatsApp |
-| `whatsapp_settings` | Config WhatsApp |
-| `ai_messages` | Histórico do chat IA |
+RLS habilitada em todas as tabelas. Como cada studio possui seu proprio
+Supabase, as policies sao simples (autenticado + role).
 
 ---
 
-## 9. Studio Config
+## Padroes arquiteturais
 
-Cada studio expõe sua configuração via `src/sites/<studio>/config/`:
+### Feature-based
 
-| Arquivo | Conteúdo |
-|---------|----------|
-| `branding.ts` | Cores, fontes, logos, tema visual |
-| `content.ts` | Textos institucionais, hero, about, gallery |
-| `identity.ts` | Nome, slogan, telefone, endereço, redes |
-| `businessHours.ts` | Horários de funcionamento |
-| `seo/jsonLd.ts` | Schema.org JSON-LD |
+Cada dominio em src/features/<domain>/ segue:
 
-O admin lê `@/config/studio.config` que aponta para o studio ativo (definido em build/env).
+- types.ts          tipos do dominio
+- queries.ts        queryOptions do React Query
+- hooks.ts          hooks customizados
+- components/       UI especifica do dominio
+- index.ts          barrel export
 
----
+### Server functions
 
-## 10. Deploy
+Cada operacao isolada em src/server/<domain>/<action>.ts, usando
+createServerFn do TanStack Start, com validator (zod) e handler tipado.
 
-- **Plataforma:** Netlify
-- **Plugin:** `@netlify/vite-plugin-tanstack-start`
-- **Config:** `netlify.toml` na raiz
-- **Variáveis:** `.env` com keys do Supabase do studio
+### SSR data flow
 
-### Fluxo de deploy de um novo studio
-
-1. Fork/clone do FlowStudio AI base
-2. Criar `src/sites/<novo-studio>/`
-3. Criar projeto Supabase próprio
-4. Configurar `studio.config.ts` apontando pro novo studio
-5. Deploy isolado no Netlify
+1. Rota declara loader (ou beforeLoad)
+2. Loader chama server function ou queryClient.ensureQueryData
+3. Componente consome via useQuery / useSuspenseQuery
+4. Hidratacao automatica client-side
 
 ---
 
-## 11. Regras de ouro permanentes
+## Design System
 
-1. ❌ **Não** introduzir multi-tenant no banco (1 Supabase = 1 studio).
-2. ❌ **Não** misturar lógica entre studios.
-3. ❌ **Não** importar de `sites/` no núcleo.
-4. ❌ **Não** chamar Supabase diretamente em componentes — usar hooks/queries.
-5. ❌ **Não** adicionar tech fora da stack oficial sem aprovação.
-6. ✅ **Sempre** validar entradas com Zod.
-7. ✅ **Sempre** checar permission no `beforeLoad`.
-8. ✅ **Sempre** seguir o padrão feature-based.
-9. ✅ **Sempre** mobile-first.
-10. ✅ **Sempre** preservar o isolamento por studio.
+- Mobile-first obrigatorio
+- Tailwind com tokens definidos por studio (cores primarias via config)
+- Componentes primitivos em src/components/ui/
+- Componentes compostos em src/components/ (admin) e
+  src/sites/<slug>/components/ (landing)
+- Sem libs de UI pesadas — apenas headless quando necessario
 
 ---
 
-**Fim do documento.**
+## Deploy
+
+### Por studio
+
+1. Repositorio unico, branches/tags por release
+2. .env.production especifico (URL Supabase + anon key do studio)
+3. Build Netlify roda vite build e gera entry SSR
+4. Netlify Functions servem o SSR
+
+### Variaveis de ambiente
+
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY    (apenas server functions)
+
+O studio ativo e definido em codigo (active-studio.ts), nao em env.
+Isso garante type-safety e impede deploy acidental do studio errado.
+
+---
+
+## Principios nao-negociaveis
+
+1. Simplicidade operacional acima de elegancia arquitetural
+2. Isolamento total entre studios
+3. SSR-first — toda rota critica funciona com JS desabilitado para
+   conteudo essencial
+4. Type-safety end-to-end (server functions tipadas, queries tipadas)
+5. Mobile-first sem excecoes
+6. Nucleo desacoplado de studios (regra do switch white-label)
+7. Decisoes arquiteturais viram ADR em docs/adr/
+
+---
+
+## O que NAO fazemos (ainda)
+
+- Multi-tenant no banco
+- Microservicos
+- Filas / event sourcing
+- Kubernetes / orquestracao
+- Internacionalizacao
+- Tema dark/light toggle
+- App mobile nativo
+
+---
+
+## Documentos relacionados
+
+- docs/ROADMAP.md                       sprints planejados
+- docs/CHECKPOINT.md                    estado atual do projeto
+- docs/adr/README.md                    indice de decisoes arquiteturais
+- docs/adr/ADR-001-white-label-switch.md   decisao do switch white-label
+
+---
+
+Fim do documento.

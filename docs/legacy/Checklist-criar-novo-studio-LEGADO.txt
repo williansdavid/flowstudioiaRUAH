@@ -1,0 +1,11 @@
+1️⃣  Criar pasta src/sites/{slug}/ (copiar de ruah como base)
+2️⃣  Personalizar: branding, content, identity, imagens, styles
+3️⃣  Apontar studio.config.ts → activeSite: '{slug}'
+4️⃣  Criar projeto Supabase novo (banco isolado)
+5️⃣  Rodar migrations no novo Supabase
+6️⃣  Criar repo Netlify novo (ou branch separada)
+7️⃣  Configurar env vars no Netlify:
+       VITE_SUPABASE_URL
+       VITE_SUPABASE_ANON_KEY
+       SUPABASE_SERVICE_ROLE_KEY
+8️⃣  Deploy

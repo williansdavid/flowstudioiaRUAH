@@ -1,138 +1,149 @@
-# 📍 FlowStudio AI — Checkpoint
+# FlowStudio AI — Checkpoint do Projeto
 
-> **Atualizado em:** 02/06/2026 (manhã)
-> **Sprint atual:** ✅ Sprint 0 concluído → 🚀 Iniciando Sprint 1 (Dashboard)
-
----
-
-## 🎯 Decisão arquitetural desta sessão
-
-✅ **Admin é universal e compartilhado** — vive em `src/routes/admin/` + `src/features/` + `src/server/`. Cada studio consome o mesmo admin, alimentado por sua config + Supabase isolado.
-
-✅ **Foco atual:** evoluir o **núcleo** do projeto. A pasta `src/sites/ruah/` está **congelada** nesta fase.
-
-✅ **3 documentos oficiais criados:** `ARCHITECTURE.md`, `ROADMAP.md`, `CHECKPOINT.md`.
+Ultima atualizacao: 02/06/2026 (tarde)
+Estado: Sprint 0.5 em andamento — Fundacao White-Label
 
 ---
 
-## ✅ Sprint 0 — Housekeeping (CONCLUÍDO em 02/06/2026)
+## Contexto rapido
 
-### Removidos com sucesso
-
-- ✅ `src/features/appointments/index.ts.bak`
-- ✅ `src/server/appointments/_shared.ts.bak`
-- ✅ `src/styles/_backup-20260526-122845/`
-- ✅ `tailwind.config.ts.bak-20260526-141139`
-- ✅ `src/data/` (pasta órfã — confirmado zero imports)
-
-### Validações pós-limpeza
-
-- ✅ `npm run typecheck` → zero erros
-- ✅ `npm run build` → client + SSR verdes
-- ✅ Entry SSR Netlify gerado normalmente
-
-### Observações registradas (atacar no Sprint 8)
-
-- ⚠️ Chunk principal de 593 kB — otimizar com `manualChunks` + lazy loading
-- ℹ️ Warnings de unused imports em `node_modules/@tanstack/start-*` → ignorar (não é nosso código)
+O FlowStudio AI e uma plataforma white-label para studios de beleza.
+Cada studio recebe um deploy isolado (Netlify proprio + Supabase proprio).
+Estamos consolidando a fronteira entre nucleo reutilizavel e configuracao
+especifica do studio antes de evoluir o admin.
 
 ---
 
-## 📊 Snapshot do projeto
+## O que ja esta pronto
 
-### 🟢 Módulos completos
+### Nucleo
 
-| Módulo | Feature | Server | UI | Rota |
-|--------|---------|--------|----|----|
-| **Auth** | ✅ | ✅ | ✅ login + 403 | ✅ |
-| **Admin Layout** | — | — | ✅ sidebar + drawer | ✅ |
-| **Clients** | ✅ | ✅ create/list/update | ✅ Completo | ✅ |
-| **Services** | ✅ | ✅ create/list/update/toggle | ✅ Completo | ✅ |
-| **Team/Staff** | ✅ | ✅ create/list/update/toggle | ✅ Completo | ✅ |
-| **Calendar** | ✅ | — (usa appointments) | ✅ Completo | ✅ |
+- TanStack React Start configurado com SSR
+- TanStack Router com guards de sessao
+- Supabase Auth funcionando (login/logout/sessao SSR)
+- React Query com hidratacao SSR
+- Tailwind configurado com tokens base
+- Estrutura feature-based em src/features/
+- Estrutura server-functions em src/server/
 
-### 🟡 Módulos parciais
+### Modulos universais (admin)
 
-| Módulo | Estado | Falta |
-|--------|--------|-------|
-| **Appointments** | Server só create + list | update / cancel / reschedule / delete |
-| **AI Chat** | Apenas index.ts + types.ts | Toda UI + lógica |
-| **Leads** | Pasta existe | A investigar |
+- Auth (login, guard, roles)
+- Clients (CRUD completo)
+- Services (CRUD completo)
+- Team / Staff (CRUD completo)
+- Appointments (create + list + calendar — falta update/cancel/reschedule/delete)
+- Calendar (visualizacao semanal e diaria)
 
-### 🔴 Módulos não iniciados
+### Studio Ruah
 
-| Módulo | Rota | Feature | Server |
-|--------|------|---------|--------|
-| **Dashboard** | ✅ (placeholder) | ❌ | ❌ |
-| **Finance** | ✅ (vazia) | ❌ | ❌ |
-| **WhatsApp** | ✅ (vazia) | ❌ | ❌ |
-| **Settings** | ✅ (vazia) | ❌ | ❌ |
+- Landing publica funcional em /
+- Identidade visual implementada
+- Hero, servicos, equipe, contato
+- Captura de leads
+- Chat IA inicial (placeholder)
 
----
+### Infra
 
-## 🧹 Débito técnico restante
-
-### Núcleo
-
-✅ **Limpo** após Sprint 0.
-
-### Zona Ruah (`src/sites/ruah/` — adiar)
-
-- Arquivos `.bak` em vários components
-- `HeroSection - Copia.tsx`
-- `birdid-sign-plugin.exe` (30 MB em `styles/`!) ⚠️
-- `base.csse`, `base.css.err`
-- Registrado em `src/sites/ruah/docs/techdeb.md`
+- Deploy Netlify funcionando
+- Supabase Ruah em producao
+- RLS habilitada nas tabelas principais
 
 ---
 
-## ✅ Pontos fortes preservar
+## Sprint 0 — Housekeeping (CONCLUIDA)
 
-1. Sistema de **permissions granular** (`userHasPermission`)
-2. **AdminLayout** filtra navegação por permissão automaticamente
-3. **Feature-based** consistente (hooks, queries, types, components)
-4. **Server functions** isoladas por domínio
-5. **SSR guards** via `beforeLoad` em todas rotas admin
-6. **Studio config** centralizada e bem separada do núcleo
-
----
-
-## 🚨 Riscos ativos
-
-| Risco | Mitigação |
-|-------|-----------|
-| Sem update/cancel em appointments → calendário "read-only" | Sprint 2 |
-| Dashboard placeholder transmite imagem de produto incompleto | **Sprint 1 (próximo)** |
-| Settings inexistente → admin precisa de deploy pra mudar horário | Sprint 4 |
-| WhatsApp sem provider definido | Decidir antes do Sprint 5 |
-| Finance inexistente → studio não vê faturamento | Sprint 3 |
+- Remocao de arquivos .bak no nucleo
+- Remocao de pastas orfas
+- Remocao de backups antigos de styles
+- Build + typecheck verdes
+- Commit oficial aplicado
 
 ---
 
-## 🎯 Próximo passo — SPRINT 1: Dashboard funcional
+## Sprint 0.5 — Fundacao White-Label (EM ANDAMENTO)
 
-**Objetivo:** Substituir placeholder de `/admin` por dashboard real com KPIs do Supabase.
+Objetivo: Estabelecer o switch unico de studio ativo (active-studio.ts)
+e desacoplar o nucleo de src/sites/ruah/.
 
-**Entregas:**
-- `src/features/dashboard/` (types, queries, hooks, components)
-- `src/server/dashboard/get-summary.ts`
-- Atualização de `src/routes/admin/index.tsx` com loader SSR + UI real
+### Ja concluido
 
-**KPIs alvo:**
-- Agendamentos do dia
-- Receita do mês
-- Novos clientes (mês)
-- Taxa de ocupação
+- Criacao da pasta docs/adr/
+- Criacao de docs/adr/README.md (indice de ADRs)
+- Criacao de docs/adr/ADR-001-white-label-switch.md
+- Criacao da pasta src/sites/_legacy/ (placeholder)
+- Validacao de encoding UTF-8 sem BOM nos novos docs
+- Validacao de typecheck e build apos criacao dos arquivos de docs
+
+### Pendente
+
+- Criar src/sites/ruah/studio.ts (export consolidado)
+- Criar src/config/active-studio.ts (switch)
+- Mapear consumidores atuais que importam de src/sites/ruah/config/
+- Migrar imports do nucleo para @/config/active-studio
+- Validar typecheck apos migracao
+- Validar build apos migracao
+- Smoke test landing + admin
+- Atualizar ARCHITECTURE.md com secao White-Label Switch (feito nesta entrega)
+- Atualizar ROADMAP.md com Sprint 0.5 (feito nesta entrega)
+- Commit oficial: feat(core): introduce active-studio switch (ADR-001)
 
 ---
 
-## 📝 Histórico de checkpoints
+## Proximo passo imediato
 
-| Data | Sprint | Evento |
-|------|--------|--------|
-| 02/06/2026 (manhã) | Pré-Sprint 0 | Diagnóstico completo + 3 documentos oficiais criados |
-| 02/06/2026 (manhã) | ✅ Sprint 0 | Housekeeping concluído + commit + checkpoint atualizado |
+Investigar a estrutura atual de src/sites/ruah/config/ para mapear:
+
+- Quais arquivos existem
+- O que cada um exporta
+- Quem no nucleo consome esses exports
+
+Sem essa investigacao nao e possivel consolidar src/sites/ruah/studio.ts
+corretamente.
+
+Apos a investigacao:
+
+1. Criar src/sites/ruah/studio.ts
+2. Criar src/config/active-studio.ts
+3. Migrar imports
+4. Validar e commitar
 
 ---
 
-**Fim do documento.**
+## Arquivos criticos do projeto (referencia rapida)
+
+- src/routes/                       rotas universais (nucleo)
+- src/features/                     modulos de negocio (nucleo)
+- src/server/                       server functions (nucleo)
+- src/components/                   UI compartilhada (nucleo)
+- src/lib/                          utilitarios (nucleo)
+- src/config/active-studio.ts       switch white-label (a criar)
+- src/sites/ruah/                   studio Ruah (isolado)
+- src/sites/_legacy/                sites arquivados
+- docs/ARCHITECTURE.md              arquitetura oficial
+- docs/ROADMAP.md                   sprints planejados
+- docs/CHECKPOINT.md                este documento
+- docs/adr/                         decisoes arquiteturais
+
+---
+
+## Zonas congeladas durante Sprint 0.5
+
+- src/sites/ruah/ nao recebe alteracoes de feature
+- Apenas criacao de studio.ts e permitida
+
+---
+
+## Regras permanentes em vigor
+
+- Nada de plano antes de validar a solucao real
+- Sempre investigar antes de implementar
+- Sempre fornecer comandos PowerShell prontos para Windows
+- Sempre atualizar memoria persistente com decisoes relevantes
+- Sempre validar typecheck + build antes de fechar etapa
+- Sempre manter os 3 documentos principais sincronizados
+  (ARCHITECTURE, ROADMAP, CHECKPOINT)
+
+---
+
+Fim do documento.

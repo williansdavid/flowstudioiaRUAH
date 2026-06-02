@@ -1,275 +1,247 @@
-# 🗺️ FlowStudio AI — Roadmap do Admin
+# FlowStudio AI — Roadmap
 
-> **Última atualização:** 02/06/2026
-> **Foco atual:** Evoluir o core admin universal
-> **Estratégia:** Sprints curtos (1-3 dias cada) com critérios claros de aceitação
-
----
-
-## 🎯 Visão geral
-
-| Sprint | Tema | Status | Duração estimada |
-|--------|------|--------|-------------------|
-| **0** | Housekeeping do núcleo | ⏳ Próximo | 0,5 dia |
-| **1** | Dashboard funcional | 🔜 | 2 dias |
-| **2** | Appointments — fechar CRUD | 🔜 | 2 dias |
-| **3** | Finance — módulo completo | 🔜 | 3 dias |
-| **4** | Settings — config do studio | 🔜 | 2 dias |
-| **5** | WhatsApp integration | 🔜 | 3 dias |
-| **6** | AI Chat admin | 🔜 | 2 dias |
-| **7** | Leads | 🔜 | 1,5 dia |
-| **8** | Polish & hardening | 🔜 | 2 dias |
-
-**Total estimado:** ~18 dias úteis
+Ultima atualizacao: 02/06/2026 (tarde)
+Estrategia: Sprints curtas, foco em fundacao antes de features novas.
 
 ---
 
-## 🧹 SPRINT 0 — Housekeeping do núcleo
+## Visao geral das sprints
 
-**Objetivo:** Limpar débito técnico antes de evoluir.
-
-### Tarefas
-
-- [ ] Remover `src/features/appointments/index.ts.bak`
-- [ ] Remover `src/server/appointments/_shared.ts.bak`
-- [ ] Avaliar e remover `src/data/` (pasta órfã vazia)
-- [ ] Remover `src/styles/_backup-20260526-122845/`
-- [ ] Remover `tailwind.config.ts.bak-20260526-141139`
-- [ ] Validar `npm run typecheck` após limpeza
-- [ ] Validar `npm run build` após limpeza
-- [ ] Commit: `chore: housekeeping core (remove backups e dead code)`
-
-### Aceitação
-
-✅ Zero arquivos `.bak` no núcleo
-✅ Build verde
-✅ Typecheck verde
+- Sprint 0     Housekeeping                                CONCLUIDA
+- Sprint 0.5   Fundacao White-Label (switch active-studio) EM ANDAMENTO
+- Sprint 1     Dashboard administrativo                    PLANEJADA
+- Sprint 2     Appointments — update/cancel/reschedule     PLANEJADA
+- Sprint 3     Modulo Financeiro                           PLANEJADA
+- Sprint 4     Settings (configuracoes do studio)          PLANEJADA
+- Sprint 5     Integracao WhatsApp                         PLANEJADA
+- Sprint 6     Chat IA real                                PLANEJADA
+- Sprint 7     Hardening + observabilidade                 PLANEJADA
+- Sprint 8     Segundo studio (validacao white-label)      PLANEJADA
 
 ---
 
-## 📊 SPRINT 1 — Dashboard funcional
+## Sprint 0 — Housekeeping (CONCLUIDA)
 
-**Objetivo:** Substituir placeholder por dashboard real com KPIs.
+Objetivo: Limpar o repositorio antes de evoluir arquitetura.
 
-### Tarefas
+Entregas:
 
-- [ ] Criar `src/features/dashboard/`
-  - [ ] `types.ts` — KPI types
-  - [ ] `queries.ts` — `dashboardQueries.summary`
-  - [ ] `hooks.ts` — `useDashboardSummary`
-  - [ ] `components/KpiCard.tsx`
-  - [ ] `components/TodayAppointmentsList.tsx`
-  - [ ] `components/RevenueChart.tsx` (simples, sem libs novas)
-- [ ] Criar `src/server/dashboard/get-summary.ts`
-  - [ ] Agendamentos do dia
-  - [ ] Receita do mês
-  - [ ] Novos clientes (mês)
-  - [ ] Taxa de ocupação
-- [ ] Atualizar `src/routes/admin/index.tsx` com loader + UI real
-
-### Aceitação
-
-✅ Dashboard mostra dados reais do Supabase
-✅ KPIs com loading states (skeleton)
-✅ Mobile-first responsivo
-✅ SSR via `loader`
+- Remocao de arquivos .bak no nucleo
+- Remocao de pastas orfas
+- Remocao de backups antigos de styles
+- Build + typecheck verdes
+- Commit oficial aplicado
 
 ---
 
-## 📅 SPRINT 2 — Appointments completo
+## Sprint 0.5 — Fundacao White-Label (EM ANDAMENTO)
 
-**Objetivo:** Fechar o CRUD de agendamentos (faltam update, cancel, reschedule, delete).
+Objetivo: Estabelecer o switch unico de studio ativo e desacoplar o
+nucleo de src/sites/ruah/.
 
-### Tarefas
+Entregas planejadas:
 
-- [ ] `src/server/appointments/update-appointment.ts`
-- [ ] `src/server/appointments/cancel-appointment.ts`
-- [ ] `src/server/appointments/reschedule-appointment.ts`
-- [ ] `src/server/appointments/delete-appointment.ts`
-- [ ] Adicionar mutations em `features/appointments/hooks.ts`
-- [ ] Atualizar `AppointmentFormDialog.tsx` com modo edição
-- [ ] Adicionar ações em `AppointmentList.tsx` (editar, cancelar, remarcar)
-- [ ] Integrar ações no `CalendarSlot.tsx` (clique no card)
-- [ ] Confirmação via dialog antes de cancelar/remover
+- [x] Criar docs/adr/ e ADR-001
+- [x] Criar docs/CHECKPOINT.md
+- [x] Criar docs/ARCHITECTURE.md (v1.1 com secao White-Label Switch)
+- [x] Criar docs/ROADMAP.md (este arquivo)
+- [x] Criar src/sites/_legacy/ (placeholder)
+- [ ] Mapear consumidores atuais de src/sites/ruah/config/
+- [ ] Criar src/sites/ruah/studio.ts (export consolidado)
+- [ ] Criar src/config/active-studio.ts (switch)
+- [ ] Migrar imports do nucleo para @/config/active-studio
+- [ ] Validar typecheck
+- [ ] Validar build
+- [ ] Smoke test landing + admin
+- [ ] Commit oficial: feat(core): introduce active-studio switch
 
-### Aceitação
+Criterios de saida:
 
-✅ É possível editar agendamento
-✅ É possível cancelar (status → cancelled)
-✅ É possível remarcar (drag-and-drop ou dialog)
-✅ É possível excluir (com confirmação)
-✅ Calendário reflete mudanças em tempo real
-
----
-
-## 💰 SPRINT 3 — Finance
-
-**Objetivo:** Criar módulo financeiro completo (não existe hoje).
-
-### Tarefas
-
-- [ ] Criar `src/features/finance/`
-  - [ ] `types.ts` — Transaction, TransactionType, Category
-  - [ ] `queries.ts`
-  - [ ] `hooks.ts`
-  - [ ] `components/TransactionList.tsx`
-  - [ ] `components/TransactionFormDialog.tsx`
-  - [ ] `components/FinanceFiltersBar.tsx`
-  - [ ] `components/FinanceSummaryCards.tsx`
-- [ ] Criar `src/server/finance/`
-  - [ ] `list-transactions.ts`
-  - [ ] `create-transaction.ts`
-  - [ ] `update-transaction.ts`
-  - [ ] `delete-transaction.ts`
-  - [ ] `get-summary.ts`
-- [ ] Atualizar `src/routes/admin/finance.tsx`
-- [ ] Integração automática: appointment concluído → transação receita
-
-### Aceitação
-
-✅ Cadastro de receitas/despesas manuais
-✅ Categorias customizáveis
-✅ Filtro por período (mês, ano, custom)
-✅ Resumo: total receitas, despesas, lucro
-✅ Geração automática a partir de appointments
+- Zero imports de src/sites/ruah/* fora de src/sites/ e do switch
+- ARCHITECTURE.md, CHECKPOINT.md e ROADMAP.md atualizados
+- Typecheck verde
+- Build verde
+- Landing publica funcionando
+- Admin funcionando
 
 ---
 
-## ⚙️ SPRINT 4 — Settings
+## Sprint 1 — Dashboard administrativo
 
-**Objetivo:** Permitir editar config do studio direto no admin.
+Objetivo: Tela inicial do admin com metricas operacionais essenciais.
 
-### Tarefas
+Escopo:
 
-- [ ] Definir o que é editável **em runtime** vs **build time**
-- [ ] Criar tabela `studio_settings` (chave-valor JSON) ou colunas dedicadas
-- [ ] Criar `src/features/settings/`
-  - [ ] Form de identidade (nome, telefone, endereço)
-  - [ ] Form de horários de funcionamento
-  - [ ] Form de WhatsApp/Instagram
-  - [ ] Form de branding básico (cores primárias)
-- [ ] Criar `src/server/settings/`
-  - [ ] `get-settings.ts`
-  - [ ] `update-settings.ts`
-- [ ] Atualizar `src/routes/admin/settings.tsx`
+- Cards de KPI (agendamentos do dia, semana, mes)
+- Lista de proximos agendamentos
+- Lista de leads recentes
+- Atalhos para acoes frequentes
 
-### Aceitação
+Dependencias:
 
-✅ Admin altera horários sem deploy
-✅ Admin altera contatos sem deploy
-✅ Landing reflete mudanças após refresh
-✅ Apenas role `admin` pode editar
+- Sprint 0.5 concluida
 
 ---
 
-## 💬 SPRINT 5 — WhatsApp Integration
+## Sprint 2 — Appointments completos
 
-**Objetivo:** Histórico + envio de mensagens.
+Objetivo: Fechar o CRUD de agendamentos.
 
-### Tarefas
+Escopo:
 
-- [ ] Definir provider (Twilio, Z-API, Evolution API — **decidir**)
-- [ ] Criar `src/features/whatsapp/`
-  - [ ] `components/ConversationList.tsx`
-  - [ ] `components/MessageThread.tsx`
-  - [ ] `components/MessageInput.tsx`
-- [ ] Criar `src/server/whatsapp/`
-  - [ ] `list-conversations.ts`
-  - [ ] `send-message.ts`
-  - [ ] `webhook-receive.ts` (endpoint público)
-- [ ] Tabelas: `whatsapp_messages`, `whatsapp_settings`
-- [ ] Real-time via Supabase Realtime (opcional MVP)
+- Update (editar agendamento existente)
+- Cancel (com motivo)
+- Reschedule (drag-and-drop no calendar — opcional v2)
+- Delete (soft delete)
+- Historico de alteracoes (audit log simples)
 
-### Aceitação
+Dependencias:
 
-✅ Listar conversas
-✅ Enviar mensagem manual
-✅ Receber via webhook
-✅ Settings: número conectado, status
+- Sprint 1 concluida (atalhos do dashboard chamam estas acoes)
 
 ---
 
-## 🤖 SPRINT 6 — AI Chat Admin
+## Sprint 3 — Modulo Financeiro
 
-**Objetivo:** Painel pra ver/configurar o chat IA da landing.
+Objetivo: Controle financeiro basico por studio.
 
-### Tarefas
+Escopo:
 
-- [ ] Listar histórico de conversas IA (`ai_messages`)
-- [ ] Configurar prompt do studio
-- [ ] Configurar respostas automáticas
-- [ ] Métricas: conversas/dia, conversão lead
+- Tabela finance_transactions
+- CRUD de receitas e despesas
+- Categorias de transacao
+- Vinculo com appointments (receita automatica ao concluir)
+- Relatorios simples (mes atual, mes anterior)
+- Exportacao CSV
 
-### Aceitação
+Dependencias:
 
-✅ Histórico navegável
-✅ Prompt editável
-✅ Métricas básicas
-
----
-
-## 🎯 SPRINT 7 — Leads
-
-**Objetivo:** Gestão de leads vindos da landing.
-
-### Tarefas
-
-- [ ] Criar `src/features/leads/components/`
-- [ ] Server functions: list, update-status, convert-to-client
-- [ ] Pipeline: novo → contatado → agendado → convertido
-- [ ] Filtros por origem (landing, WhatsApp, IA chat)
-
-### Aceitação
-
-✅ Visualizar pipeline
-✅ Converter lead em client
-✅ Histórico de interações
+- Sprint 2 concluida (vinculo appointment -> transaction)
 
 ---
 
-## ✨ SPRINT 8 — Polish & Hardening
+## Sprint 4 — Settings do studio
 
-**Objetivo:** Refinar antes de declarar admin v1 "pronto".
+Objetivo: Painel de configuracoes editaveis pelo admin do studio.
 
-### Tarefas
+Escopo:
 
-- [ ] Auditar todos os loading states
-- [ ] Auditar empty states
-- [ ] Auditar error boundaries
-- [ ] Auditar acessibilidade (a11y básico)
-- [ ] Auditar mobile (drawer, formulários, tabelas)
-- [ ] Performance: lazy load de rotas pesadas
-- [ ] Logs estruturados (server functions)
-- [ ] Documentação inline (JSDoc onde necessário)
-- [ ] Atualizar ARCHITECTURE.md e CHECKPOINT.md
+- Tabela studio_settings
+- Edicao de horarios de funcionamento
+- Edicao de informacoes de contato
+- Edicao de redes sociais
+- Upload de logo
+- Preferencias de notificacao
 
-### Aceitação
+Nota: Settings vivem no banco do studio, NAO sobrescrevem o
+active-studio.ts (que continua sendo a fonte de identidade base
+white-label). Settings sao overrides dinamicos.
 
-✅ Lighthouse Admin ≥ 90
-✅ Zero erros no console
-✅ Mobile 100% navegável
-✅ Docs atualizadas
+Dependencias:
+
+- Sprint 0.5 concluida
 
 ---
 
-## 🚫 Fora de escopo (por enquanto)
+## Sprint 5 — Integracao WhatsApp
 
-- Multi-tenant no banco
-- Microserviços
-- Filas / event sourcing
-- App mobile nativo
-- Internacionalização (apenas pt-BR)
-- Tema dark/light toggle (apenas tema premium definido por studio)
+Objetivo: Receber e responder mensagens via WhatsApp Business API.
+
+Escopo:
+
+- Tabelas whatsapp_messages e whatsapp_settings
+- Webhook de recebimento
+- Envio de mensagens
+- Templates aprovados
+- Inbox no admin
+- Vinculo mensagem -> cliente -> appointment
+
+Dependencias:
+
+- Sprint 3 concluida
+- Definicao do provider (Meta direto, Z-API, Twilio, etc — ADR a criar)
 
 ---
 
-## 📌 Notas de execução
+## Sprint 6 — Chat IA real
 
-- Cada sprint encerra com **commit padrão** (`feat:`, `chore:`, `fix:`)
-- Atualizar `CHECKPOINT.md` ao fim de cada sprint
-- Validar `typecheck` + `build` antes de fechar sprint
-- Nenhuma alteração em `src/sites/ruah/` durante essas sprints (zona congelada)
+Objetivo: Substituir o placeholder de chat IA por integracao real.
+
+Escopo:
+
+- Provider LLM definido (ADR)
+- Contexto do studio injetado no prompt (servicos, equipe, horarios)
+- Captura de leads pelo chat
+- Agendamento via chat (handoff para fluxo de appointment)
+- Persistencia em ai_messages
+
+Dependencias:
+
+- Sprint 5 concluida (chat pode disparar WhatsApp para confirmacao)
 
 ---
 
-**Fim do documento.**
+## Sprint 7 — Hardening + observabilidade
+
+Objetivo: Preparar para escala e operacao real.
+
+Escopo:
+
+- Logging estruturado
+- Error tracking (Sentry ou alternativa)
+- Metricas basicas (Netlify Analytics + custom)
+- Rate limiting nas server functions criticas
+- Backup automatizado do Supabase
+- Documentacao de runbook (incidentes comuns)
+
+Dependencias:
+
+- Sprint 6 concluida
+
+---
+
+## Sprint 8 — Segundo studio (validacao white-label)
+
+Objetivo: Provar na pratica que o switch white-label funciona criando
+o segundo studio do zero.
+
+Escopo:
+
+- Criar src/sites/<novo-studio>/
+- Criar studio.ts do novo studio
+- Trocar active-studio.ts
+- Criar projeto Supabase novo
+- Criar deploy Netlify novo
+- Documentar processo em docs/PLAYBOOK-NOVO-STUDIO.md
+
+Resultado esperado:
+
+- Tempo total de provisionamento documentado
+- Ajustes necessarios no nucleo identificados
+- ADRs adicionais se necessario
+
+Dependencias:
+
+- Sprint 4 concluida (settings funcionando)
+
+---
+
+## Regras de execucao do roadmap
+
+- Uma sprint por vez
+- Nao iniciar a proxima sem fechar a anterior
+- Sempre validar typecheck + build antes de fechar
+- Sempre atualizar CHECKPOINT.md ao fechar uma sprint
+- Sempre criar ADR para decisoes que afetam o nucleo
+- Mudancas no roadmap devem ser explicitas e datadas neste documento
+
+---
+
+## Historico de mudancas do roadmap
+
+- 02/06/2026 — Criacao inicial. Sprint 0.5 introduzida entre 0 e 1
+  para fundar o switch white-label antes de evoluir features.
+
+---
+
+Fim do documento.
