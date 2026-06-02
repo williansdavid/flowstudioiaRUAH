@@ -4,15 +4,17 @@ import type { Tables } from '@/lib/supabase/types';
 import type { PublicServiceItem } from './types';
 
 /**
- * Busca serviços ativos do studio para exibição pública.
+ * Busca serviços ativos do studio para exibição pública na landing.
  *
- * - Server-only (executa no servidor via RPC bridge do TanStack Start).
- * - Apenas is_active = true.
- * - Ordenado por display_order, depois name.
- * - Mapeia para shape estável (camelCase) usado pela UI.
+ * Características:
+ *   - Server-only (executa via RPC bridge do TanStack Start).
+ *   - Filtra apenas is_active = true.
+ *   - Ordena por display_order ASC, depois name ASC.
+ *   - Adapta snake_case do Supabase → camelCase do contrato público.
  *
- * Erro de fetch NÃO derruba a rota: retorna [] e loga.
- * A landing precisa renderizar mesmo se o banco estiver indisponível.
+ * Resiliência:
+ *   Erros de fetch NÃO derrubam a rota. Retorna [] e loga no console.
+ *   A landing deve renderizar mesmo se o banco estiver indisponível.
  */
 export const fetchPublicServices = createServerFn({ method: 'GET' }).handler(
   async (): Promise<PublicServiceItem[]> => {

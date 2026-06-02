@@ -132,7 +132,8 @@ export interface ServicesContent {
    * Comportamento de runtime:
    *   - Se PRESENTE: componente usa esta lista (modo estático/demo).
    *   - Se AUSENTE:  componente busca via SSR loader do Supabase
-   *                  (src/lib/sections/fetchServices.ts).
+   *                  (src/lib/public/services.ts).
+
    *
    * Casos de uso pra hardcodar items aqui:
    *   - Preview/demo sem banco configurado.

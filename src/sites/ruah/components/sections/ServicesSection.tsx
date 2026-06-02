@@ -25,7 +25,8 @@
 import { Clock, Scissors } from 'lucide-react'
 import { content, useReveal } from '@/sites/ruah'
 import { formatPrice, formatDuration } from '@/sites/ruah/utils'
-import type { PublicServiceItem } from '@/lib/sections/types'
+import type { PublicServiceItem } from '@/lib/public'
+
 
 interface ServicesSectionProps {
   /** Lista de serviÃ§os ativos vinda do SSR loader da rota. */

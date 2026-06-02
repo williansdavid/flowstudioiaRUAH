@@ -21,7 +21,7 @@ import { buildWhatsAppUrl } from '../lib/whatsapp'
  * SERVICES.items (catálogo):
  *   - Aqui está OMITIDO de propósito.
  *   - Em runtime, ServicesGrid busca do Supabase via SSR loader
- *     (src/lib/sections/fetchServices.ts).
+ *     (src/lib/public/services.ts).
  *   - Para popular hardcoded (demo/preview sem banco), adicione
  *     `items: [...]` dentro de `services`.
  *

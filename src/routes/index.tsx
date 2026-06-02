@@ -25,7 +25,8 @@ import {
   HoursSection,
   WhatsAppFloating,
 } from '@/sites/ruah/components'
-import { fetchPublicServices } from '@/lib/sections/fetchServices'
+import { fetchPublicServices } from '@/lib/public'
+
 
 export const Route = createFileRoute('/')({
   loader: () => fetchPublicServices(),
