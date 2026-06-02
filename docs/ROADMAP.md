@@ -46,6 +46,9 @@ Entregas planejadas:
 - [x] Criar docs/ARCHITECTURE.md (v1.1 com secao White-Label Switch)
 - [x] Criar docs/ROADMAP.md (este arquivo)
 - [x] Criar src/sites/_legacy/ (placeholder)
+- [x] Consolidar tech debt legado em docs/TECHDEBT.md
+- [x] Arquivar pasta checkpoints/ em src/_legacy/docs/checkpoints/
+- [x] Mover src/admin/ antigo para src/_legacy/admConfig/
 - [ ] Mapear consumidores atuais de src/sites/ruah/config/
 - [ ] Criar src/sites/ruah/studio.ts (export consolidado)
 - [ ] Criar src/config/active-studio.ts (switch)
@@ -58,7 +61,7 @@ Entregas planejadas:
 Criterios de saida:
 
 - Zero imports de src/sites/ruah/* fora de src/sites/ e do switch
-- ARCHITECTURE.md, CHECKPOINT.md e ROADMAP.md atualizados
+- ARCHITECTURE.md, CHECKPOINT.md, ROADMAP.md e TECHDEBT.md atualizados
 - Typecheck verde
 - Build verde
 - Landing publica funcionando
@@ -232,6 +235,7 @@ Dependencias:
 - Nao iniciar a proxima sem fechar a anterior
 - Sempre validar typecheck + build antes de fechar
 - Sempre atualizar CHECKPOINT.md ao fechar uma sprint
+- Sempre atualizar TECHDEBT.md quando novo debito for identificado
 - Sempre criar ADR para decisoes que afetam o nucleo
 - Mudancas no roadmap devem ser explicitas e datadas neste documento
 
@@ -239,6 +243,11 @@ Dependencias:
 
 ## Historico de mudancas do roadmap
 
+- 02/06/2026 (tarde) — Consolidacao do tech debt: criacao de
+  docs/TECHDEBT.md com 8 debitos catalogados (5 migrados do legado +
+  3 novos da Sprint 0.5). Arquivamento de checkpoints/Tech Debt.md e
+  checkpoints/Roadmap1.md em src/_legacy/docs/checkpoints/.
+  Movimentacao de src/admin/ para src/_legacy/admConfig/.
 - 02/06/2026 — Criacao inicial. Sprint 0.5 introduzida entre 0 e 1
   para fundar o switch white-label antes de evoluir features.
 

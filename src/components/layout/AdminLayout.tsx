@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router';
 import {
   Calendar,
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 import { toast } from 'sonner';
-import { studioConfig } from '@/config/studio.config';
+import { studioConfig } from '@/_legacy/admConfig/studio.config';
 import type { SessionUser } from '@/lib/auth/types';
 import { getRoleLabel } from '@/lib/auth/roles';
 import { userHasPermission, type Permission } from '@/lib/auth/permissions';
@@ -36,13 +36,13 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { to: '/admin/appointments', label: 'Agendamentos', icon: Calendar, permission: 'appointments.view' },
-  { to: '/admin/calendar', label: 'Calendário', icon: CalendarDays, permission: 'appointments.view' },
+  { to: '/admin/calendar', label: 'CalendÃ¡rio', icon: CalendarDays, permission: 'appointments.view' },
   { to: '/admin/clients', label: 'Clientes', icon: Users, permission: 'clients.view' },
-  { to: '/admin/services', label: 'Serviços', icon: Scissors, permission: 'services.view' },
+  { to: '/admin/services', label: 'ServiÃ§os', icon: Scissors, permission: 'services.view' },
   { to: '/admin/staff', label: 'Equipe', icon: UserCog, permission: 'team.manage' },
   { to: '/admin/finance', label: 'Financeiro', icon: DollarSign, permission: 'finance.view' },
   { to: '/admin/whatsapp', label: 'WhatsApp', icon: MessageSquare, permission: 'whatsapp.view' },
-  { to: '/admin/settings', label: 'Configurações', icon: Settings, permission: 'settings.manage' },
+  { to: '/admin/settings', label: 'ConfiguraÃ§Ãµes', icon: Settings, permission: 'settings.manage' },
 ];
 
 function getInitials(fullName: string | null, email: string | null): string {
@@ -60,7 +60,7 @@ function getInitials(fullName: string | null, email: string | null): string {
 }
 
 function getUserLabel(user: SessionUser): string {
-  return user.fullName?.trim() || user.email?.trim() || 'Usuário';
+  return user.fullName?.trim() || user.email?.trim() || 'UsuÃ¡rio';
 }
 
 export function AdminLayout({ user }: AdminLayoutProps) {
@@ -99,11 +99,11 @@ export function AdminLayout({ user }: AdminLayoutProps) {
     try {
       await logout();
       await router.invalidate();
-      toast.success('Sessão encerrada com sucesso');
+      toast.success('SessÃ£o encerrada com sucesso');
       navigate({ to: '/login' });
     } catch (err) {
       console.error('[AdminLayout] logout falhou:', err);
-      toast.error('Não foi possível encerrar a sessão. Tente novamente.');
+      toast.error('NÃ£o foi possÃ­vel encerrar a sessÃ£o. Tente novamente.');
       setLoggingOut(false);
     }
   }
@@ -139,7 +139,7 @@ export function AdminLayout({ user }: AdminLayoutProps) {
             className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-border-subtle bg-sidebar md:hidden"
             role="dialog"
             aria-modal="true"
-            aria-label="Menu de navegação"
+            aria-label="Menu de navegaÃ§Ã£o"
           >
             <SidebarContent
               user={user}
@@ -156,7 +156,7 @@ export function AdminLayout({ user }: AdminLayoutProps) {
         </>
       )}
 
-      {/* === ÁREA PRINCIPAL === */}
+      {/* === ÃREA PRINCIPAL === */}
       {/* min-w-0 protege contra overflow horizontal em flex */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header mobile */}
@@ -185,8 +185,8 @@ export function AdminLayout({ user }: AdminLayoutProps) {
         {/*
           MAIN:
           - flex-1: ocupa toda altura restante
-          - min-h-0: regra de ouro do flex — permite que o filho com overflow funcione
-          - overflow-hidden: cada rota controla seu próprio scroll
+          - min-h-0: regra de ouro do flex â€” permite que o filho com overflow funcione
+          - overflow-hidden: cada rota controla seu prÃ³prio scroll
         */}
         <main className="min-h-0 flex-1 overflow-hidden">
           {/*
@@ -254,7 +254,7 @@ function SidebarContent({
       {/* Navigation */}
       <nav
         className="flex-1 space-y-1 overflow-y-auto px-3 py-4"
-        aria-label="Navegação administrativa"
+        aria-label="NavegaÃ§Ã£o administrativa"
       >
         {visibleNavItems.map(({ to, label, icon: Icon }) => (
           <Link

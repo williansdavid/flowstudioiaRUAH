@@ -1,9 +1,9 @@
-import { Link } from '@tanstack/react-router';
+﻿import { Link } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
-import { studioConfig } from '@/config/studio.config';
+import { studioConfig } from '@/_legacy/admConfig/studio.config';
 
 /**
- * Painel esquerdo do AuthLayout (visível apenas em lg+).
+ * Painel esquerdo do AuthLayout (visÃ­vel apenas em lg+).
  * Mostra hero bg do studio, nome, slogan e link de voltar.
  */
 export function AuthBrandPanel() {
@@ -23,7 +23,7 @@ export function AuthBrandPanel() {
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-black/80" />
 
-      {/* Conteúdo */}
+      {/* ConteÃºdo */}
       <div className="relative z-10 flex h-full flex-col justify-between p-10 text-white">
         {/* Topo: link voltar */}
         <Link

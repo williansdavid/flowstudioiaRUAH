@@ -1,4 +1,4 @@
-﻿import type { StudioBranding } from '@/config/studio.types';
+﻿import type { StudioBranding } from '@/_legacy/admConfig/studio.types';
 
 /**
  * Pipeline UNICO de branding white-label (SSR-safe).

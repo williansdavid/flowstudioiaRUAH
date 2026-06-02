@@ -1,4 +1,4 @@
-import { studioConfig } from '@/config/studio.config';
+﻿import { studioConfig } from '@/_legacy/admConfig/studio.config';
 
 export interface AuthHeaderProps {
   title: string;
@@ -6,7 +6,7 @@ export interface AuthHeaderProps {
 }
 
 /**
- * Logo + título + descrição opcional no topo do form.
+ * Logo + tÃ­tulo + descriÃ§Ã£o opcional no topo do form.
  */
 export function AuthHeader({ title, description }: AuthHeaderProps) {
   const { branding, name } = studioConfig;

@@ -74,6 +74,9 @@ e desacoplar o nucleo de src/sites/ruah/.
 - Criacao da pasta src/sites/_legacy/ (placeholder)
 - Validacao de encoding UTF-8 sem BOM nos novos docs
 - Validacao de typecheck e build apos criacao dos arquivos de docs
+- Consolidacao do tech debt legado em docs/TECHDEBT.md (8 debitos catalogados)
+- Arquivamento de checkpoints/ (legado) em src/_legacy/docs/checkpoints/
+- Movimentacao do src/admin/ antigo para src/_legacy/admConfig/
 
 ### Pendente
 
@@ -120,9 +123,12 @@ Apos a investigacao:
 - src/config/active-studio.ts       switch white-label (a criar)
 - src/sites/ruah/                   studio Ruah (isolado)
 - src/sites/_legacy/                sites arquivados
+- src/_legacy/admConfig/            admin antigo (referencia historica)
+- src/_legacy/docs/checkpoints/     historico de checkpoints e roadmaps antigos
 - docs/ARCHITECTURE.md              arquitetura oficial
 - docs/ROADMAP.md                   sprints planejados
 - docs/CHECKPOINT.md                este documento
+- docs/TECHDEBT.md                  debitos tecnicos do nucleo
 - docs/adr/                         decisoes arquiteturais
 
 ---
@@ -131,6 +137,7 @@ Apos a investigacao:
 
 - src/sites/ruah/ nao recebe alteracoes de feature
 - Apenas criacao de studio.ts e permitida
+- src/_legacy/ nao recebe edicoes (somente leitura para referencia)
 
 ---
 
@@ -141,8 +148,12 @@ Apos a investigacao:
 - Sempre fornecer comandos PowerShell prontos para Windows
 - Sempre atualizar memoria persistente com decisoes relevantes
 - Sempre validar typecheck + build antes de fechar etapa
-- Sempre manter os 3 documentos principais sincronizados
-  (ARCHITECTURE, ROADMAP, CHECKPOINT)
+- Sempre manter os 4 documentos principais sincronizados
+  (ARCHITECTURE, ROADMAP, CHECKPOINT, TECHDEBT)
+- Novos debitos tecnicos devem ser registrados em docs/TECHDEBT.md
+  no momento em que sao identificados (nao acumular na cabeca)
+- Tech debt e roadmap especificos de cada studio vivem em
+  src/sites/<studio>/docs/ (nao misturar com docs globais)
 
 ---
 

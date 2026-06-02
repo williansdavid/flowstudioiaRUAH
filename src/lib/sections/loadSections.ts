@@ -1,27 +1,27 @@
-import { studioSections } from '@/config/studio.sections';
-import { studioConfig } from '@/config/studio.config';
+﻿import { studioSections } from '@/_legacy/admConfig/studio.sections';
+import { studioConfig } from '@/_legacy/admConfig/studio.config';
 import type { Section, StudioSectionsConfig, SectionId } from '@/types/sections';
 import type { PublicServiceItem } from './types';
 
 /**
  * Dados externos (vindos do SSR loader da rota) que precisam
- * ser injetados nas seções dinâmicas.
+ * ser injetados nas seÃ§Ãµes dinÃ¢micas.
  */
 export interface SectionsRuntimeData {
   services?: PublicServiceItem[];
 }
 
 /**
- * Retorna a configuração das seções da landing.
+ * Retorna a configuraÃ§Ã£o das seÃ§Ãµes da landing.
  *
- * Hoje: lê de `studio.sections.ts` + injeta conteúdo de `studio.config.ts`.
- * Amanhã: poderá ler do Supabase, sem alterar quem consome este loader.
+ * Hoje: lÃª de `studio.sections.ts` + injeta conteÃºdo de `studio.config.ts`.
+ * AmanhÃ£: poderÃ¡ ler do Supabase, sem alterar quem consome este loader.
  *
  * Regra arquitetural:
- *   studio.sections.ts → layout, variantes, preferências
- *   studio.config.ts   → conteúdo de negócio (textos, imagens, contatos)
+ *   studio.sections.ts â†’ layout, variantes, preferÃªncias
+ *   studio.config.ts   â†’ conteÃºdo de negÃ³cio (textos, imagens, contatos)
  *
- * O loader é o ÚNICO ponto que mescla layout + conteúdo.
+ * O loader Ã© o ÃšNICO ponto que mescla layout + conteÃºdo.
  */
 export function loadStudioSections(): StudioSectionsConfig {
   const base = studioSections;
@@ -32,7 +32,7 @@ export function loadStudioSections(): StudioSectionsConfig {
     sections: {
       ...base.sections,
 
-      // Injeta conteúdo do studioConfig.hero no slot do Hero
+      // Injeta conteÃºdo do studioConfig.hero no slot do Hero
       hero: base.sections.hero && {
         ...base.sections.hero,
         props: {
@@ -57,7 +57,7 @@ export function loadStudioSections(): StudioSectionsConfig {
         },
       },
 
-      // Injeta conteúdo do studioConfig.about no slot do About
+      // Injeta conteÃºdo do studioConfig.about no slot do About
       about: base.sections.about && {
         ...base.sections.about,
         props: {
@@ -75,9 +75,9 @@ export function loadStudioSections(): StudioSectionsConfig {
 }
 
 /**
- * Retorna apenas as seções habilitadas, na ordem definida.
+ * Retorna apenas as seÃ§Ãµes habilitadas, na ordem definida.
  *
- * Aceita dados de runtime (vindos do SSR loader) que são
+ * Aceita dados de runtime (vindos do SSR loader) que sÃ£o
  * passados adiante pelo SectionsRenderer.
  */
 export function getEnabledSectionsInOrder(): Section[] {
