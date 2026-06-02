@@ -80,3 +80,7 @@ docs/Novo(a) Documento de Texto.txt
 
 # Backups de refactor (locais, nao versionar)
 .backup-*/
+
+# Backups locais (nao versionar)
+.backup-E2a/
+

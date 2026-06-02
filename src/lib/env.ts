@@ -5,12 +5,17 @@ import { z } from 'zod';
  * Environment Variables — Type-safe & Validated
  * ============================================
  *
- * Fonte única de verdade para variáveis de ambiente.
- * Falha rápida no startup se algo crítico estiver faltando.
+ * Fonte unica de verdade para variaveis de AMBIENTE/INFRA.
+ * Falha rapida no startup se algo critico estiver faltando.
  *
- * Convenções:
- * - VITE_*  → exposto ao client (público, seguro)
- * - Demais  → server-only (secreto, nunca vai pro bundle)
+ * IMPORTANTE:
+ *   Identidade do studio (nome, slogan, cores, logo, endereco)
+ *   NAO vive aqui. Vive em src/sites/<studio>/config/.
+ *   Aqui ficam SO secrets e infra (Supabase, Evolution, OpenAI...).
+ *
+ * Convencoes:
+ *   - VITE_*  -> exposto ao client (publico, seguro)
+ *   - Demais  -> server-only (secreto, nunca vai pro bundle)
  */
 
 // --------------------------------------------
@@ -22,56 +27,24 @@ const optionalString = z
   .trim()
   .optional()
   .transform((v) => (v === '' ? undefined : v));
-const hexColor = z
-  .string()
-  .regex(/^#[0-9a-fA-F]{6}$/, 'Cor deve ser hex #RRGGBB');
 
 // --------------------------------------------
-// Schema CLIENT (público — import.meta.env)
+// Schema CLIENT (publico — import.meta.env)
 // --------------------------------------------
 const clientSchema = z.object({
   // ---- Supabase ----
   VITE_SUPABASE_URL: z
     .string()
-    .url('VITE_SUPABASE_URL deve ser uma URL válida'),
+    .url('VITE_SUPABASE_URL deve ser uma URL valida'),
 
   VITE_SUPABASE_ANON_KEY: z
     .string()
-    .min(20, 'VITE_SUPABASE_ANON_KEY parece inválida'),
-
-  // ---- Studio identity ----
-  VITE_STUDIO_SLUG: z
-    .string()
-    .min(1, 'VITE_STUDIO_SLUG é obrigatório')
-    .regex(/^[a-z0-9-]+$/, 'VITE_STUDIO_SLUG deve ser slug (a-z, 0-9, -)'),
-
-  VITE_STUDIO_NAME: z.string().min(1, 'VITE_STUDIO_NAME é obrigatório'),
-
-  VITE_STUDIO_SLOGAN: optionalString,
-  VITE_STUDIO_DESCRIPTION: optionalString,
-
-  // ---- Contatos ----
-  VITE_STUDIO_PHONE: optionalString,
-  VITE_STUDIO_WHATSAPP: optionalString,
-  VITE_STUDIO_INSTAGRAM: optionalString,
-  VITE_STUDIO_EMAIL: z.string().email().optional().or(z.literal('')),
-
-  // ---- Endereço ----
-  VITE_STUDIO_ADDRESS: optionalString,
-  VITE_STUDIO_CITY: optionalString,
-  VITE_STUDIO_STATE: optionalString,
-  VITE_STUDIO_ZIP: optionalString,
-
-  // ---- Identidade visual ----
-  VITE_STUDIO_PRIMARY_COLOR: hexColor.optional(),
-  VITE_STUDIO_LOGO_URL: optionalString,
-  VITE_STUDIO_OG_IMAGE: optionalString,
-  VITE_STUDIO_HERO_IMAGE: optionalString,
+    .min(20, 'VITE_SUPABASE_ANON_KEY parece invalida'),
 
   // ---- App ----
   VITE_APP_URL: z
     .string()
-    .url('VITE_APP_URL deve ser uma URL válida')
+    .url('VITE_APP_URL deve ser uma URL valida')
     .default('http://localhost:3000'),
 });
 
@@ -82,7 +55,7 @@ const serverSchema = z.object({
   // ---- Supabase ----
   SUPABASE_SERVICE_ROLE_KEY: z
     .string()
-    .min(20, 'SUPABASE_SERVICE_ROLE_KEY é obrigatória no server'),
+    .min(20, 'SUPABASE_SERVICE_ROLE_KEY e obrigatoria no server'),
 
   // ---- Evolution API (WhatsApp) ----
   EVOLUTION_API_URL: z.string().url().optional().or(z.literal('')),
@@ -94,7 +67,7 @@ const serverSchema = z.object({
   OPENAI_API_KEY: optionalString,
   AI_MODEL: z.string().default('gpt-4o-mini'),
 
-  // ---- Segurança ----
+  // ---- Seguranca ----
   RATE_LIMIT_PUBLIC_PER_MINUTE: z.coerce.number().int().positive().default(10),
 
   // ---- Runtime ----
@@ -110,22 +83,6 @@ const serverSchema = z.object({
 const rawClient = {
   VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
   VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
-  VITE_STUDIO_SLUG: import.meta.env.VITE_STUDIO_SLUG,
-  VITE_STUDIO_NAME: import.meta.env.VITE_STUDIO_NAME,
-  VITE_STUDIO_SLOGAN: import.meta.env.VITE_STUDIO_SLOGAN,
-  VITE_STUDIO_DESCRIPTION: import.meta.env.VITE_STUDIO_DESCRIPTION,
-  VITE_STUDIO_PHONE: import.meta.env.VITE_STUDIO_PHONE,
-  VITE_STUDIO_WHATSAPP: import.meta.env.VITE_STUDIO_WHATSAPP,
-  VITE_STUDIO_INSTAGRAM: import.meta.env.VITE_STUDIO_INSTAGRAM,
-  VITE_STUDIO_EMAIL: import.meta.env.VITE_STUDIO_EMAIL,
-  VITE_STUDIO_ADDRESS: import.meta.env.VITE_STUDIO_ADDRESS,
-  VITE_STUDIO_CITY: import.meta.env.VITE_STUDIO_CITY,
-  VITE_STUDIO_STATE: import.meta.env.VITE_STUDIO_STATE,
-  VITE_STUDIO_ZIP: import.meta.env.VITE_STUDIO_ZIP,
-  VITE_STUDIO_PRIMARY_COLOR: import.meta.env.VITE_STUDIO_PRIMARY_COLOR,
-  VITE_STUDIO_LOGO_URL: import.meta.env.VITE_STUDIO_LOGO_URL,
-  VITE_STUDIO_OG_IMAGE: import.meta.env.VITE_STUDIO_OG_IMAGE,
-  VITE_STUDIO_HERO_IMAGE: import.meta.env.VITE_STUDIO_HERO_IMAGE,
   VITE_APP_URL: import.meta.env.VITE_APP_URL,
 };
 
@@ -133,29 +90,28 @@ const clientParsed = clientSchema.safeParse(rawClient);
 
 if (!clientParsed.success) {
   console.error(
-    '❌ [env] Variáveis CLIENT inválidas:',
+    '[env] Variaveis CLIENT invalidas:',
     clientParsed.error.flatten().fieldErrors,
   );
   throw new Error(
-    'Falha na validação das env vars do client. Verifique seu .env',
+    'Falha na validacao das env vars do client. Verifique seu .env',
   );
 }
 
-// Log apenas em dev, no client, uma única vez
+// Log apenas em dev, no client, uma unica vez
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   console.log(
-    '%c✅ FlowStudio env carregada',
+    '%c[env] FlowStudio env carregada',
     'color:#10b981;font-weight:bold',
     {
-      studio: clientParsed.data.VITE_STUDIO_NAME,
-      slug: clientParsed.data.VITE_STUDIO_SLUG,
       supabase: clientParsed.data.VITE_SUPABASE_URL,
+      app: clientParsed.data.VITE_APP_URL,
     },
   );
 }
 
 // --------------------------------------------
-// Parse SERVER (lazy — só quando chamado)
+// Parse SERVER (lazy — so quando chamado)
 // --------------------------------------------
 
 let _serverCache: z.infer<typeof serverSchema> | null = null;
@@ -165,7 +121,7 @@ function parseServerEnv() {
 
   if (typeof process === 'undefined' || !process.env) {
     throw new Error(
-      '[env] serverEnv só pode ser acessado em contexto server-side.',
+      '[env] serverEnv so pode ser acessado em contexto server-side.',
     );
   }
 
@@ -183,10 +139,10 @@ function parseServerEnv() {
 
   if (!parsed.success) {
     console.error(
-      '❌ [env] Variáveis SERVER inválidas:',
+      '[env] Variaveis SERVER invalidas:',
       parsed.error.flatten().fieldErrors,
     );
-    throw new Error('Falha na validação das env vars do server.');
+    throw new Error('Falha na validacao das env vars do server.');
   }
 
   _serverCache = parsed.data;
@@ -198,17 +154,17 @@ function parseServerEnv() {
 // --------------------------------------------
 
 /**
- * Env pública — disponível em client e server.
+ * Env publica — disponivel em client e server.
  *
  * @example
  * import { env } from '@/lib/env';
- * const studioName = env.VITE_STUDIO_NAME;
+ * const url = env.VITE_SUPABASE_URL;
  */
 export const env = clientParsed.data;
 
 /**
  * Env secreta — APENAS server-side.
- * Lazy-loaded para não crashar no browser.
+ * Lazy-loaded para nao crashar no browser.
  *
  * @example
  * import { serverEnv } from '@/lib/env';
