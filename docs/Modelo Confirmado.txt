@@ -1,5 +1,5 @@
 ╔══════════════════════════════════════════════════════════════╗
-║  REGRA ARQUITETURAL OFICIAL DO FLOWSTUDIO AI                ║
+║  REGRA ARQUITETURAL OFICIAL DO FLOWSTUDIO AI                 ║
 ╠══════════════════════════════════════════════════════════════╣
 ║                                                              ║
 ║   src/sites/<slug>/   →  EXCLUSIVO do studio                 ║
@@ -8,3 +8,30 @@
 ║   Ponte única:  studio.config.ts                             ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════╗
+║  REGRA ARQUITETURAL OFICIAL DO FLOWSTUDIO AI                                                                   ║
+╠════════════════════════════════════════════════════╣
+║                                                              	                                                                                               ║
+║   src/sites/<slug>/   →  EXCLUSIVO do studio    (produção não pode quebrar)                                                                               ║
+║   src/* (resto)       →  COMPARTILHADO entre todos studios (livre para recomeçar )               ║
+║                                                              							          ║
+║   Ponte única:  studio.config.ts                           					                        ║
+║                                                              					                                      ║
+╚════════════════════════════════════════════════════╝
+
+O sistema se separa em 2 partes 
+
+Parte 1 src/* tudo q vai ser compartilhado entre os studios 
+Parte 2 src/sites/<slug>/   →  EXCLUSIVO 
+Tudo deve ser conectado no arquivo de configuração base – inclusive .env
+
+Nossa meta agora é deixar a parte 1 pronta para ligar com o estúdio ruah  - tudo relativo a legado visual deve ser usado apenas como documento para uso na fase 2 quando de fato vamos mexer no sistema ADM – por hora concentração total na fase 1 
+
+Fase 1 – deixar tudo preparado para trocar de studio – e com isso funcionar o site(page exclusiva) conexão com banco – login – e dados do studio 
+
+
+
+
+"O núcleo (src/*) é genérico, simples e plugável.
+ O studio (src/sites/ruah/) é a fonte única de identidade.
+ Tudo que o núcleo precisa do studio vem por UMA ponte só."

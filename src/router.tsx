@@ -26,7 +26,7 @@ export function getRouter() {
 
   const router = createTanStackRouter({
     routeTree,
-    context: { queryClient, user: null },
+    context: { queryClient },
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0, // queries gerenciam staleness; router não cacheia loader
     scrollRestoration: true,

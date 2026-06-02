@@ -24,7 +24,7 @@ import {
 } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 
-import type { SessionUser } from '@/lib/auth/types'
+
 import { branding } from '@/sites/ruah/config/branding'
 import { content } from '@/sites/ruah/config/content'
 import { identity } from '@/sites/ruah/config/identity'
@@ -40,8 +40,7 @@ import { buildBrandingCss, buildSeo } from '@/sites/ruah/utils'
 // Router Context
 // ============================================================
 export interface RouterContext {
-  queryClient: QueryClient
-  user: SessionUser | null
+  queryClient: QueryClient 
 }
 
 // CSS variables geradas a partir do branding

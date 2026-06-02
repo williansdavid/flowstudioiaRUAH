@@ -1,1 +1,0 @@
-export { ServicesGrid } from './ServicesGrid';
