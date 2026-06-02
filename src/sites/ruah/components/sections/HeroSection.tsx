@@ -74,7 +74,7 @@ export function HeroSection() {
           preload="metadata"
           disablePictureInPicture
           // @ts-expect-error — atributo nativo HTML, não tipado no React
-          disableRemotePlayback="true"
+          disableRemotePlayback={true}
         />
       </div>
 
