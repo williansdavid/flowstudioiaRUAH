@@ -71,3 +71,9 @@ docs/user e senha staf.txt
 docs/link chat.txt
 docs/Novo(a) Documento de Texto.txt
 
+
+# === Padroes extras de seguranca (Sprint 1) ===
+*.bak*
+* - Copia*
+* - Copy*
+*.copy
