@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Studio Branding — Ruah Barber Lounge
  * ----------------------------------------------------------------
  * Identidade visual oficial do studio Ruah.
@@ -29,7 +29,7 @@
  *
  * Assets atuais em /public/ruah/images/logo/.
  * Por ora, as 3 variantes (dark/light/gold) apontam para o mesmo
- * logo.jpg. Quando Willians gerar as variantes SVG definitivas,
+ * logo.webp. Quando Willians gerar as variantes SVG definitivas,
  * basta trocar os paths abaixo — nenhum componente precisa mudar.
  * ----------------------------------------------------------------
  */
@@ -75,9 +75,9 @@ export const branding: BrandIdentity = {
   },
 
   logo: {
-    dark:  '/ruah/images/logo/logo.jpeg',
-    light: '/ruah/images/logo/logo.jpeg',
-    gold:  '/ruah/images/logo/logo.jpeg',
+    dark:  '/ruah/images/logo/logo.webp',
+    light: '/ruah/images/logo/logo.webp',
+    gold:  '/ruah/images/logo/logo.webp',
     alt:   'Ruah Barber Lounge',
   },
 

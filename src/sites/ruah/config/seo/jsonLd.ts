@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Schema.org JSON-LD Builder — Ruah Barber Lounge
  * ----------------------------------------------------------------
  * Gera o objeto LocalBusiness/HairSalon para rich snippets do Google.
@@ -42,7 +42,7 @@ export function buildLocalBusinessJsonLd(siteUrl?: string) {
     '@type': 'HairSalon',
     name,
     description,
-    image: siteUrl ? `${siteUrl}/logo.jpg` : undefined,
+    image: siteUrl ? `${siteUrl}/ruah/images/logo/logo.webp` : undefined,
     url: siteUrl,
     telephone: contact.phone,
     email: contact.email,

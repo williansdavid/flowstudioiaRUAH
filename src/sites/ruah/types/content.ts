@@ -21,7 +21,7 @@
  *   - Todos os precos em centavos (number), nao string.
  *     Ex.: R$ 65,00 = 6500
  *   - URLs de imagem sempre absolutas a partir de /public.
- *     Ex.: '/ruah/images/team/joao.jpg'
+ *     Ex.: '/ruah/images/team/joao.webp'
  *   - Textos sempre em pt-BR.
  *   - Nenhum campo aceita HTML; markup fica nos componentes.
  * ----------------------------------------------------------------

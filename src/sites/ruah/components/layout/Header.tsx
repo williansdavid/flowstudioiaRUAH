@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Star } from 'lucide-react'
 import { useScrolled } from '@/sites/ruah/utils'
@@ -51,7 +51,7 @@ export function Header() {
           {/* Logo */}
           <a href="#inicio" className="ruah-header__logo" aria-label={identity.name}>
             <img
-              src="/ruah/images/logo/logo.jpeg"
+              src="/ruah/images/logo/logo.webp"
               alt={identity.name}
               className="ruah-header__logo-img"
               onError={(e) => {

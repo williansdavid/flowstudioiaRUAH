@@ -60,9 +60,6 @@ externalLinks: {
     headlineLine2: 'Barber Lounge',
     subheadline:
       'Onde a sofisticação encontra a precisão.' ,
-/*    backgroundImage: '/ruah/hero-barber-premium.webp', */ 
-/*	backgroundImage: '/ruah/images/hero/imgHero.webp',*/
-/*	backgroundImage: '/ruah/images/hero/img1.jpeg',*/
     /**
      * Carrossel de fundo do hero.
      * Crossfade automático a cada 7s entre as imagens.
@@ -99,7 +96,7 @@ externalLinks: {
         'Fundada em 2025, a Barbearia Ruah une tradição e modernidade em um ambiente pensado nos detalhes. Mais do que estética, acreditamos que aparência também comunica identidade, confiança e presença.',
         'Cada corte, cada atendimento e cada conversa fazem parte daquilo que queremos transmitir: excelência, autenticidade e respeito por quem senta na cadeira.',
       ],
-      image: '/ruah/images/hero/imgabout.jpg',
+      image: '/ruah/images/hero/imgabout.webp',
       etymology: {
         symbol: 'רוּחַ',
         transliteration: 'ruach',
@@ -217,7 +214,7 @@ externalLinks: {
       'barba botucatu',
       'ruah barbearia',
     ],
-    ogImage: '/ruah/images/logo/logo.jpg',
+    ogImage: '/ruah/images/logo/logo.webp',
   },
 
   // ════════════════════════════════════════════════════════════════
