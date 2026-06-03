@@ -1,21 +1,21 @@
-/**
- * HeroSection — Ruah Barber Lounge
+﻿/**
+ * HeroSection â€” Ruah Barber Lounge
  * ----------------------------------------------------------------
- * Hero acima da dobra. Animações SNAPPY (premium ≠ lento).
+ * Hero acima da dobra. AnimaÃ§Ãµes SNAPPY (premium â‰  lento).
  *
- * BACKGROUND: vídeo único em loop (autoplay/muted/playsInline).
- *   • Poster (.webp) como fallback até o vídeo carregar (LCP-safe).
- *   • Respeita prefers-reduced-motion (pausa o vídeo, mostra poster).
- *   • Mobile-first: playsInline obrigatório (iOS).
+ * BACKGROUND: vÃ­deo Ãºnico em loop (autoplay/muted/playsInline).
+ *   â€¢ Poster (.webp) como fallback atÃ© o vÃ­deo carregar (LCP-safe).
+ *   â€¢ Respeita prefers-reduced-motion (pausa o vÃ­deo, mostra poster).
+ *   â€¢ Mobile-first: playsInline obrigatÃ³rio (iOS).
  *
- * Timing das animações de entrada (total ≈ 750ms até CTAs visíveis):
- *   eyebrow      → 0ms    + 500ms
- *   headline     → 80ms   + 600ms
- *   subheadline  → 180ms  + 500ms
- *   ctas         → 280ms  + 500ms
- *   scroll arrow → 600ms  + 400ms
+ * Timing das animaÃ§Ãµes de entrada (total â‰ˆ 750ms atÃ© CTAs visÃ­veis):
+ *   eyebrow      â†’ 0ms    + 500ms
+ *   headline     â†’ 80ms   + 600ms
+ *   subheadline  â†’ 180ms  + 500ms
+ *   ctas         â†’ 280ms  + 500ms
+ *   scroll arrow â†’ 600ms  + 400ms
  *
- * Easing: cubic-bezier(0.22, 1, 0.36, 1) — easeOutExpo customizado.
+ * Easing: cubic-bezier(0.22, 1, 0.36, 1) â€” easeOutExpo customizado.
  * ----------------------------------------------------------------
  */
 import { useEffect, useRef, useState } from "react";
@@ -23,10 +23,10 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { content } from "@/sites/ruah";
 
-// Easing premium reutilizável (easeOutExpo customizado)
+// Easing premium reutilizÃ¡vel (easeOutExpo customizado)
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// Fontes do background — vídeo + poster fallback
+// Fontes do background â€” vÃ­deo + poster fallback
 const HERO_VIDEO_SRC = "/ruah/videos/v1.mp4";
 const HERO_POSTER_SRC = "/ruah/images/gallery/showreel-poster.webp";
 
@@ -45,7 +45,7 @@ export function HeroSection() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Pausa o vídeo se o usuário preferir menos movimento
+  // Pausa o vÃ­deo se o usuÃ¡rio preferir menos movimento
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -53,14 +53,14 @@ export function HeroSection() {
       video.pause();
     } else {
       video.play().catch(() => {
-        /* autoplay bloqueado em alguns browsers — poster cobre */
+        /* autoplay bloqueado em alguns browsers â€” poster cobre */
       });
     }
   }, [reducedMotion]);
 
   return (
-    <section id="inicio" className="ruah-hero" aria-label="Apresentação">
-      {/* Background — vídeo único em loop */}
+    <section id="inicio" className="ruah-hero" aria-label="ApresentaÃ§Ã£o">
+      {/* Background â€” vÃ­deo Ãºnico em loop */}
       <div className="ruah-hero__bg" aria-hidden="true">
         <video
           ref={videoRef}
@@ -73,8 +73,7 @@ export function HeroSection() {
           playsInline
           preload="metadata"
           disablePictureInPicture
-          // @ts-expect-error — atributo nativo HTML, não tipado no React
-          disableRemotePlayback={true}
+          disableRemotePlayback
         />
       </div>
 
@@ -82,7 +81,7 @@ export function HeroSection() {
       <div className="ruah-hero__overlay" aria-hidden="true" />
       <div className="ruah-hero__vignette" aria-hidden="true" />
 
-      {/* Conteúdo */}
+      {/* ConteÃºdo */}
       <div className="ruah-hero__content">
         <motion.div
           className="ruah-hero__eyebrow"
@@ -123,7 +122,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.28, ease: EASE }}
         >
-          {/* CTA primário → WhatsApp (nova aba) */}
+          {/* CTA primÃ¡rio â†’ WhatsApp (nova aba) */}
           <a
             href={hero.primaryCta.href}
             target="_blank"
@@ -133,7 +132,7 @@ export function HeroSection() {
             {hero.primaryCta.label}
           </a>
 
-          {/* CTA secundário → âncora interna (mesma aba) */}
+          {/* CTA secundÃ¡rio â†’ Ã¢ncora interna (mesma aba) */}
           {hero.secondaryCta && (
             <a
               href={hero.secondaryCta.href}
@@ -149,7 +148,7 @@ export function HeroSection() {
       <motion.a
         href="#sobre"
         className="ruah-hero__scroll"
-        aria-label="Rolar para próxima seção"
+        aria-label="Rolar para prÃ³xima seÃ§Ã£o"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.6, ease: EASE }}

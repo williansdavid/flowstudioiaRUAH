@@ -84,3 +84,9 @@ docs/Novo(a) Documento de Texto.txt
 # Backups locais (nao versionar)
 .backup-E2a/
 
+
+# Binarios de assinatura digital (BirdID etc.)
+*.exe
+
+# Contexto interno do agente (nao versionar)
+_agent-v2-context/

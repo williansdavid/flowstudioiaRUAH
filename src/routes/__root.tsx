@@ -2,17 +2,18 @@
  * __root.tsx — Root Route do TanStack React Start
  * ----------------------------------------------------------------
  * Responsabilidades:
- *   1. Carregar branding + content + identity do studio
+ *   1. Consumir dados/assets do studio ativo via @/config/active-studio
  *   2. Injetar CSS variables no <head> via SSR (zero FOUC)
  *   3. Aplicar a classe de tema no <html> (.theme-dark)
  *   4. Carregar fontes Google via preconnect + link
- *   5. Importar theme.css + base.css + animations.css + gallery.css + testimonials.css
- *   6. Resolver SEO com fallback identity (buildSeo)
- *   7. SEO completo: Open Graph + Twitter Card + favicon + theme-color
+ *   5. Importar os CSS do studio (styleHrefs)
+ *   6. SEO completo: Open Graph + Twitter Card + favicon + theme-color
+ *   7. Serializar JSON-LD (LocalBusiness/HairSalon) para <script>
  *   8. Renderizar <Outlet />
  *   9. Tipar RouterContext global
  *
- * FONTE DA VERDADE UNICA: src/sites/<studio>/**
+ * FONTE DA VERDADE ÚNICA: src/config/active-studio (→ src/sites/<studio>)
+ * O núcleo NUNCA importa direto de src/sites/.
  * ----------------------------------------------------------------
  */
 
@@ -24,16 +25,16 @@ import {
 } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 
-import { branding } from '@/sites/ruah/config/branding'
-import { content } from '@/sites/ruah/config/content'
-import { identity } from '@/sites/ruah/config/identity'
-import { buildLocalBusinessJsonLd } from '@/sites/ruah/config/seo/jsonLd'
-import themeCss from '@/sites/ruah/styles/theme.css?url'
-import baseCss from '@/sites/ruah/styles/base.css?url'
-import animationsCss from '@/sites/ruah/styles/animations.css?url'
-import galleryCss from '@/sites/ruah/styles/gallery.css?url'
-import testimonialsCss from '@/sites/ruah/styles/testimonials.css?url'
-import { buildBrandingCss, buildSeo } from '@/sites/ruah/utils'
+import {
+  branding,
+  content,
+  identity,
+  brandingCss,
+  themeClass,
+  seo,
+  buildLocalBusinessJsonLd,
+  styleHrefs,
+} from '@/config/active-studio'
 
 // ============================================================
 // Router Context
@@ -42,21 +43,13 @@ export interface RouterContext {
   queryClient: QueryClient
 }
 
-// CSS variables geradas a partir do branding
-const brandingCss = buildBrandingCss(branding)
-
-// Classe aplicada no <html>
-const themeClass = `theme-${branding.theme}`
-
-// SEO resolvido com fallback do identity (sempre definido)
-const seo = buildSeo(content.seo, identity)
-
-// JSON-LD Schema.org (LocalBusiness/HairSalon) — rich snippets Google
+// JSON-LD Schema.org (LocalBusiness/HairSalon) — rich snippets Google.
+// Serialização é responsabilidade do núcleo; o studio provê a função pura.
 const localBusinessJsonLd = JSON.stringify(
   buildLocalBusinessJsonLd(seo.canonicalUrl),
 ).replace(/</g, '\\u003c')
 
-// Logo oficial (consome branding — fonte unica da verdade)
+// Logo oficial (consome branding via switch — fonte única da verdade)
 const LOGO_URL = branding.logo.light
 const LOGO_ALT = branding.logo.alt
 const OG_IMAGE = seo.ogImage ?? LOGO_URL
@@ -64,7 +57,7 @@ const OG_IMAGE = seo.ogImage ?? LOGO_URL
 // Theme color do navegador mobile (cor accent do studio)
 const THEME_COLOR = branding.colors.accent
 
-// URL unica de Google Fonts (3 familias)
+// URL única de Google Fonts (3 famílias)
 const GOOGLE_FONTS_HREF =
   'https://fonts.googleapis.com/css2?' +
   'family=Playfair+Display:wght@400;600;700;900&' +
@@ -78,7 +71,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
 
-      // SEO basico — sempre definido via buildSeo()
+      // SEO básico — sempre definido via buildSeo()
       { title: seo.title },
       { name: 'description', content: seo.description },
       ...(seo.keywords.length > 0
@@ -128,12 +121,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       { rel: 'stylesheet', href: GOOGLE_FONTS_HREF },
 
-      // CSS do studio — ordem importa
-      { rel: 'stylesheet', href: themeCss },
-      { rel: 'stylesheet', href: baseCss },
-      { rel: 'stylesheet', href: animationsCss },
-      { rel: 'stylesheet', href: galleryCss },
-      { rel: 'stylesheet', href: testimonialsCss },
+      // CSS do studio — ordem importa (vem de active-studio.styleHrefs)
+      ...styleHrefs.map((href) => ({ rel: 'stylesheet', href })),
     ],
     scripts: [
       {
