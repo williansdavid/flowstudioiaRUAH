@@ -1,0 +1,23 @@
+# Normaliza todo texto pra LF no repositório
+* text=auto eol=lf
+
+# Código — sempre LF
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.jsx   text eol=lf
+*.json  text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.md    text eol=lf
+*.sql   text eol=lf
+
+# Binários — nunca tocar
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.svg   text eol=lf
+*.ico   binary
+*.woff  binary
+*.woff2 binary
