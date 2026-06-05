@@ -16,7 +16,7 @@
  * O núcleo NUNCA importa direto de src/sites/.
  * ----------------------------------------------------------------
  */
-
+import { Toaster } from 'sonner'
 import {
   createRootRouteWithContext,
   Outlet,
@@ -24,6 +24,9 @@ import {
   Scripts,
 } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
+
+import { GlobalLoadingIndicator } from '@/components/feedback'
+import '@/styles/app.css'
 
 import {
   branding,
@@ -147,7 +150,14 @@ function RootComponent() {
         />
       </head>
       <body>
+        <GlobalLoadingIndicator />
         <Outlet />
+        <Toaster
+          theme="dark"
+          position="top-center"
+          richColors
+          closeButton
+        />
         <Scripts />
       </body>
     </html>
@@ -185,7 +195,7 @@ function RootErrorBoundary({ error }: { error: Error }) {
           >
             <h1>Algo deu errado</h1>
             <p>
-              Tente recarregar a pagina. Se o problema persistir, entre em
+              Tente recarregar a página. Se o problema persistir, entre em
               contato com o suporte.
             </p>
             {import.meta.env.DEV && (
@@ -234,7 +244,7 @@ function RootNotFound() {
         >
           <div style={{ maxWidth: '28rem' }}>
             <h1 style={{ fontSize: '3rem', margin: 0 }}>404</h1>
-            <p>Pagina nao encontrada.</p>
+            <p>Página não encontrada.</p>
             <a
               href="/"
               style={{
@@ -251,7 +261,7 @@ function RootNotFound() {
                 fontSize: '0.875rem',
               }}
             >
-              Voltar ao inicio
+              Voltar ao início
             </a>
           </div>
         </div>

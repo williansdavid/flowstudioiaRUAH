@@ -723,6 +723,24 @@
   }
 }
 
+/* Login Mobile — botão dourado compacto, visível só no mobile */
+.theme-dark .ruah-header__login-mobile {
+  display: inline-flex;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.8rem;
+  padding: 0.55rem 1.1rem;
+  margin-left: auto;
+  margin-right: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .theme-dark .ruah-header__login-mobile {
+    display: none;
+  }
+}
+
+
 /* Toggle Mobile */
 .theme-dark .ruah-header__toggle {
   display: inline-flex;

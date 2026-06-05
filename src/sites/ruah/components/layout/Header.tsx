@@ -1,4 +1,5 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Star } from 'lucide-react'
 import { useScrolled } from '@/sites/ruah/utils'
@@ -13,10 +14,11 @@ import { content } from '@/sites/ruah/config/content'
  *   - Rolado (scrollY > 50)  → glassmorphism + borda dourada sutil
  *
  * Comportamento:
- *   - Desktop: nav inline + CTA dourado
- *   - Mobile:  logo + hambúrguer → drawer fullscreen
+ *   - Desktop: nav inline (inclui "Entrar" → /login) + toggle oculto
+ *   - Mobile:  "Entrar" (→ /login) ao lado do hambúrguer → drawer fullscreen
  *
- * Links internos: anchors (#sobre, #servicos, etc).
+ * Links internos (anchors): #sobre, #servicos, etc.
+ * Link de app (rota real): "Entrar" → /login via TanStack Link (SSR-safe).
  * Link externo (Google Reviews): item dedicado no drawer mobile.
  * CTA "Agendar Horário": Booksy (nova aba).
  * ----------------------------------------------------------------
@@ -78,6 +80,22 @@ export function Header() {
               </a>
             ))}
           </nav>
+
+          {/* Login Desktop (botão dourado) */}
+          <Link
+            to="/login"
+            className="ruah-btn ruah-btn--primary ruah-header__cta"
+          >
+            Login
+          </Link>
+
+          {/* Login Mobile (botão dourado, ao lado do toggle) */}
+          <Link
+            to="/login"
+            className="ruah-btn ruah-btn--primary ruah-header__login-mobile"
+          >
+            Login
+          </Link>
 
           {/* Toggle Mobile */}
           <button

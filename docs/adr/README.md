@@ -1,72 +1,72 @@
-# 📐 ADR — Architecture Decision Records
+# ADR — Architecture Decision Records
 
-Esta pasta contém os **registros de decisões arquiteturais** do FlowStudio AI.
+Esta pasta contem os registros de decisoes arquiteturais do FlowStudio AI.
 
-## O que é um ADR?
+## O que e um ADR?
 
-Um **ADR (Architecture Decision Record)** é um documento curto que registra uma decisão arquitetural importante, incluindo:
+Um ADR (Architecture Decision Record) e um documento curto que registra uma
+decisao arquitetural importante, incluindo:
 
-- **Contexto** — por que essa decisão precisou ser tomada
-- **Decisão** — o que foi decidido
-- **Alternativas consideradas** — o que foi avaliado e descartado
-- **Consequências** — o que se ganha e o que se perde
+- Contexto — por que essa decisao precisou ser tomada
+- Decisao — o que foi decidido
+- Alternativas consideradas — o que foi avaliado e descartado
+- Consequencias — o que se ganha e o que se perde
 
 ## Regras de ouro
 
-1. 🔒 **ADRs são imutáveis.** Uma vez aprovados, nunca são editados.
-2. 🔁 Se uma decisão muda, **cria-se um novo ADR** que "supersedes" o anterior.
-3. 📅 Cada ADR é datado e numerado sequencialmente.
-4. 🎯 Um ADR responde **uma decisão**, não várias.
+1. ADRs sao imutaveis. Uma vez aprovados, nunca sao editados.
+2. Se uma decisao muda, cria-se um novo ADR que supersedes o anterior.
+3. Cada ADR e datado e numerado sequencialmente.
+4. Um ADR responde uma decisao, nao varias.
+
+> Nota: ADRs substituidos nao sao apagados. Ficam na pasta com selo de
+> "Substituido por ADR-YYY" no topo, preservando o historico de raciocinio.
 
 ## Por que ADRs importam
 
-Sem ADRs, decisões arquiteturais viram **folclore oral**. Em 6 meses, ninguém lembra POR QUE algo foi feito de determinado jeito, e o time refaz a discussão do zero (ou pior: desfaz a decisão sem saber).
+Sem ADRs, decisoes arquiteturais viram folclore oral. Em 6 meses, ninguem
+lembra POR QUE algo foi feito de determinado jeito, e o time refaz a discussao
+do zero (ou pior: desfaz a decisao sem saber).
 
-ADRs preservam o **histórico de pensamento arquitetural** do projeto.
+ADRs preservam o historico de pensamento arquitetural do projeto.
 
 ---
 
-## Índice de ADRs
+## Indice de ADRs
 
-| #   | Título                                       | Status      | Data       |
-| --- | -------------------------------------------- | ----------- | ---------- |
-| [ADR-001](./ADR-001-white-label-switch.md) | Arquitetura White-Label com Switch Master | ✅ Aprovado | 02/06/2026 |
+- ADR-001 (./ADR-001-white-label-switch.md)
+  Arquitetura White-Label com Switch Master
+  Status: Substituido por ADR-002 | Data: 02/06/2026
+
+- ADR-002 (./ADR-002-switch-simplificado.md)
+  Switch White-Label Simplificado (export *)
+  Status: Aprovado | Data: 05/06/2026
 
 ---
 
 ## Template para novos ADRs
 
-```markdown
-# ADR-XXX: Título da decisão
+    # ADR-XXX: Titulo da decisao
 
-> **Status:** Proposto / Aprovado / Substituído por ADR-YYY
-> **Data:** DD/MM/AAAA
-> **Decisores:** Nome(s)
+    > Status: Proposto / Aprovado / Substituido por ADR-YYY
+    > Data: DD/MM/AAAA
+    > Decisores: Nome(s)
 
-## Contexto
+    ## Contexto
+    Qual problema estamos resolvendo? Qual e a situacao atual?
 
-Qual problema estamos resolvendo? Qual é a situação atual?
+    ## Decisao
+    O que foi decidido?
 
-## Decisão
+    ## Alternativas consideradas
+    - Alternativa A: descricao + por que foi descartada
+    - Alternativa B: descricao + por que foi descartada
 
-O que foi decidido?
+    ## Consequencias
+    ### Positivas
+    - ...
+    ### Negativas / Trade-offs
+    - ...
 
-## Alternativas consideradas
-
-- **Alternativa A:** descrição + por que foi descartada
-- **Alternativa B:** descrição + por que foi descartada
-
-## Consequências
-
-### Positivas
-
-- ...
-
-### Negativas / Trade-offs
-
-- ...
-
-## Implementação
-
-Passos concretos (ou link pra checklist no CHECKPOINT.md).
-```
+    ## Implementacao
+    Passos concretos (ou link pra checklist no CHECKPOINT.md).

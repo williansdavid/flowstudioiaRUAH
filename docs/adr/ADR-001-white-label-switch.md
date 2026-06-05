@@ -1,164 +1,102 @@
 # ADR-001: Arquitetura White-Label com Switch Master
 
-> **Status:** ✅ Aprovado
-> **Data:** 02/06/2026
-> **Decisores:** Willians + FlowStudio AI Architect
-> **Supersedes:** —
-> **Relacionado:** `ARCHITECTURE.md` §3 (Zonas) e §9 (Studio Config)
+> ## SUBSTITUIDO POR ADR-002 (./ADR-002-switch-simplificado.md) — 05/06/2026
+> Este ADR esta descontinuado. A validacao cruzada via VITE_STUDIO_SLUG
+> e o objeto deploy foram descartados na implementacao real por
+> acoplamento desnecessario. Mantido intacto como registro historico
+> (regra de imutabilidade da pasta adr/). Para a decisao vigente, ver ADR-002.
+
+---
+
+> Status: Substituido por ADR-002
+> Data: 02/06/2026
+> Decisores: Willians + FlowStudio AI Architect
+> Supersedes: —
+> Substituido por: ADR-002 (05/06/2026)
+> Relacionado: ARCHITECTURE.md
 
 ---
 
 ## Contexto
 
-O FlowStudio AI é uma plataforma **white-label** com modelo de implantação **isolada por studio** (1 deploy Netlify + 1 Supabase + 1 código por cliente).
+O FlowStudio AI e uma plataforma white-label com modelo de implantacao
+isolada por studio (1 deploy Netlify + 1 Supabase + 1 codigo por cliente).
 
-O modelo atual de configuração (`src/config/studio.config.ts`) tem **3 limitações operacionais** que comprometem a escalabilidade do white-label:
+O modelo de configuracao antigo (src/config/studio.config.ts) tinha
+3 limitacoes operacionais:
 
-1. **Não amarra metadados de deploy** (qual Netlify, qual Supabase, qual repo). Risco: subir código do Studio A apontando pro banco do Studio B = **vazamento catastrófico de dados**.
-
-2. **Não valida `.env` contra código.** Se o `.env` aponta pro Supabase do Lumi mas o código importa o branding do Ruah, o app sobe **sem erro** e expõe dados errados.
-
-3. **Não tem ponto único de troca.** Para trocar de studio hoje, é preciso editar múltiplos arquivos em locais distintos — propenso a erro.
-
-Adicionalmente, há uma **inconsistência conceitual**: o nome `studio.config.ts` sugere "configuração do studio", mas o studio em si vive em `src/sites/{slug}/`. O arquivo na verdade é um **switch** que aponta qual studio está ativo.
+1. Nao amarrava metadados de deploy (qual Netlify, qual Supabase, qual repo).
+   Risco: subir codigo do Studio A apontando pro banco do Studio B = vazamento.
+2. Nao validava .env contra codigo. App subia sem erro mesmo com .env de um
+   studio e branding de outro.
+3. Nao tinha ponto unico de troca. Trocar de studio exigia editar varios arquivos.
 
 ---
 
-## Decisão
+## Decisao (descontinuada)
 
-Adotar arquitetura **"Studio Autocontido + Switch Master"** com 3 princípios:
+Adotar "Studio Autocontido + Switch Master" com 3 principios:
 
-### Princípio 1 — Studio autocontido em `src/sites/{slug}/`
+### Principio 1 — Studio autocontido em src/sites/{slug}/
+Cada studio e uma pasta autocontida com tudo que lhe pertence (componentes,
+branding, conteudo, identidade, horarios, SEO, estilos, helpers).
+Este principio sobrevive no ADR-002.
 
-Cada studio é uma **pasta autocontida** com TUDO que lhe pertence:
+### Principio 2 — Entrypoint consolidado por studio
+Cada studio expoe src/sites/{slug}/studio.ts re-exportando sua config.
+Este principio sobrevive no ADR-002.
 
-- Componentes React específicos
-- Branding (cores, fontes, logos)
-- Conteúdo (textos, gallery, testimonials)
-- Identidade (nome, slogan, contato)
-- Horários de funcionamento
-- SEO específico
-- Estilos CSS próprios
-- Helpers e utils locais
-
-**Regra:** para criar um novo studio, basta copiar a pasta e editar o conteúdo.
-**Regra:** nenhuma pasta `sites/A` importa de `sites/B`.
-
-### Princípio 2 — Entrypoint consolidado por studio
-
-Cada studio expõe um único arquivo de entrada que re-exporta toda sua config:
-
-```
-src/sites/{slug}/studio.ts
-```
-
-Esse arquivo consolida `identity + branding + content + businessHours` em um objeto `studio` tipado, pronto para consumo externo.
-
-### Princípio 3 — Switch master + validação cruzada
-
-Substituir `src/config/studio.config.ts` por `src/config/active-studio.ts`:
-
-```ts
-import { studio } from '@/sites/ruah/studio'
-
-export { studio }
-
-export const deploy = {
-  slug: 'ruah',
-  siteFolder: 'sites/ruah',
-  netlifySiteName: 'ruah-barbearia',
-  productionUrl: 'https://ruahbarbearia.com.br',
-  supabaseProjectRef: 'ewexyctlrkvcpnutxygt',
-  gitRepo: 'flowstudio-ruah',
-  gitBranch: 'main',
-} as const
-
-// Validação cruzada: aborta o app se .env não bater com o studio importado
-if (import.meta.env.VITE_STUDIO_SLUG !== deploy.slug) {
-  throw new Error('STUDIO MISMATCH: ...')
-}
-```
-
-**Para trocar de studio:** editar **1 import** + **2 vars do .env**. Fim.
+### Principio 3 — Switch master + validacao cruzada (DESCARTADO)
+Substituir studio.config.ts por active-studio.ts com objeto deploy e
+validacao cruzada abortando o app se VITE_STUDIO_SLUG !== deploy.slug.
+Este principio foi DESCARTADO — ver ADR-002.
 
 ---
 
 ## Alternativas consideradas
 
-### ❌ Alternativa A — Import dinâmico via `.env`
+### Alternativa A — Import dinamico via .env (descartada)
+Vite nao tree-shake import dinamico (bundle inflado), quebra SSR
+(head() exige sincrono), perde inferencia de tipo.
 
-```ts
-const slug = import.meta.env.VITE_ACTIVE_STUDIO
-const studio = await import(`@/sites/${slug}/studio.ts`)
-```
+### Alternativa B — Pasta src/studios/{slug}/ separada de src/sites/ (descartada)
+Refatoracao destrutiva desnecessaria, fronteira artificial, complexidade
+sem ganho.
 
-**Descartada** por 3 motivos técnicos críticos:
-
-- Vite não consegue tree-shake imports dinâmicos → **bundle inflado** com TODOS os studios
-- SSR exige código síncrono em `head()` → import dinâmico **quebra SSR**
-- TypeScript perde inferência de tipo → **perda de type-safety**
-
-### ❌ Alternativa B — Pasta nova `src/studios/{slug}/` separada de `src/sites/`
-
-Separar "dados do cliente" (`studios/`) de "código do template" (`sites/`).
-
-**Descartada** por:
-
-- Força refatoração desnecessária de tudo que já existe no Ruah
-- Cria fronteira artificial onde "1 pasta = 1 studio" já resolvia
-- Adiciona complexidade conceitual sem ganho prático
-
-### ✅ Alternativa C (escolhida) — Studio autocontido em `sites/` + switch master
-
-Vantagens decisivas:
-
-- Mantém estrutura atual (zero refatoração destrutiva)
-- 1 studio = 1 pasta (princípio limpo)
-- Switch master amarra tudo em 1 arquivo
-- Validação cruzada protege contra deploy errado
-- Import estático = SSR-safe + tree-shake automático
-- Escala linear (cliente novo = cópia + edit + deploy)
+### Alternativa C (escolhida na epoca) — Studio autocontido + switch master
+Escolhida entao. O ADR-002 manteve os Principios 1 e 2 e descartou apenas
+o Principio 3 (validacao cruzada).
 
 ---
 
-## Consequências
+## Consequencias (registradas na epoca)
 
 ### Positivas
-
-- 🛡️ **Segurança:** validação cruzada impede deploy de código com `.env` errado
-- 🎯 **DX:** abrir `src/sites/ruah/` mostra TUDO do Ruah em um só lugar
-- 📦 **Performance:** tree-shake automático mantém bundle enxuto (só o studio ativo)
-- 🚀 **Escalabilidade:** novo studio = `cp -r` + 1 edit em switch + .env
-- 🧩 **Manutenção:** decisão de "qual studio" centralizada em 1 arquivo
-- 📝 **Documentação inline:** metadados de deploy ficam no código (Netlify, Supabase, repo)
+- Validacao cruzada impediria deploy com .env errado
+- Tudo do studio em um lugar
+- Tree-shake automatico
+- Novo studio = copia + edit + deploy
 
 ### Negativas / Trade-offs
-
-- 📂 Cada studio ocupa espaço no source (mesmo que não vá pro bundle)
-  - **Mitigação:** ESLint rule futura proibindo imports cruzados `sites/A → sites/B`
-- 🔀 Trocar de studio exige **rebuild** (não é runtime switch)
-  - **Aceitável:** Netlify já faz rebuild por deploy, comportamento natural
-- ⚠️ Disciplina manual no início (sem lint enforcement ainda)
-  - **Mitigação:** code review + ADR documentado
+- Trocar de studio exige rebuild (aceitavel)
+- Disciplina manual sem lint enforcement
 
 ---
 
-## Implementação
+## Por que foi substituido
 
-Ver `CHECKPOINT.md` → **Sprint 0.5 — Fundação White-Label**.
+Na implementacao real (Sprint 0.5), o Principio 3 mostrou-se acoplamento
+desnecessario:
 
-Resumo dos passos:
+- A validacao cruzada via VITE_STUDIO_SLUG duplicava em env uma verdade que
+  ja vive no codigo (active-studio.ts).
+- O .env passou a conter apenas infra/secrets — identidade de studio nunca
+  mais entrou em env, eliminando a classe de erro que a validacao tentava pegar.
+- O objeto deploy no codigo adicionava metadados que, na pratica, vivem no
+  painel Netlify/Supabase — nao no source.
 
-1. Criar `src/sites/ruah/studio.ts` (entrypoint consolidado)
-2. Criar `src/config/active-studio.ts` (switch + validação cruzada)
-3. Atualizar `src/config/studio.types.ts` (tipo Studio consolidado)
-4. Migrar consumidores de `@/config/studio.config` → `@/config/active-studio`
-5. Deletar `src/config/studio.config.ts` (legacy)
-6. Refatorar `__root.tsx` e `index.tsx` para consumir `active-studio`
-7. Atualizar `.env.example` com `VITE_STUDIO_SLUG`
-8. Validar typecheck + build + dev
-9. Validar mismatch deliberado: trocar `VITE_STUDIO_SLUG` para valor errado → app deve abortar
+Resultado: o switch foi simplificado para export * puro. Ver ADR-002.
 
 ---
 
-**Fim do ADR-001.**
+Fim do ADR-001 (descontinuado).
