@@ -1,4 +1,4 @@
-# FlowStudio AI — Roadmap
+﻿# FlowStudio AI — Roadmap
 
 Ultima atualizacao: 05/06/2026
 Estrategia: Sprints curtas, foco em fundacao antes de features novas.
@@ -9,8 +9,8 @@ Estrategia: Sprints curtas, foco em fundacao antes de features novas.
 
 - Sprint 0     Housekeeping                                CONCLUIDA
 - Sprint 0.5   Fundacao White-Label (switch + demolicao)   CONCLUIDA
-- Sprint 1     Auth + Login (core do zero)                 EM ANDAMENTO
-- Sprint 2     Dashboard administrativo                    PLANEJADA
+- Sprint 1     Auth + Login (core do zero)                 CONCLUIDA
+- Sprint 2     Dashboard administrativo                    PLANEJADA (proxima)
 - Sprint 3     Appointments — CRUD completo                PLANEJADA
 - Sprint 4     Modulo Financeiro                           PLANEJADA
 - Sprint 5     Settings (configuracoes do studio)          PLANEJADA
@@ -56,12 +56,12 @@ cabeada (so sobraram os clients Supabase). Admin sera reconstruido do zero.
 
 ---
 
-## Sprint 1 — Auth + Login (core do zero) (EM ANDAMENTO)
+## Sprint 1 — Auth + Login (core do zero) (CONCLUIDA)
 
 Objetivo: Construir a fundacao de autenticacao e a tela de login NOVA.
 O admin foi demolido — nao ha login existente para reaproveitar.
 
-Escopo:
+Escopo planejado:
 
 - src/features/auth/ (types, queries, hooks, components)
 - src/server/auth/ (server functions: signIn, signOut, getSession)
@@ -84,6 +84,16 @@ Criterios de saida:
 - Guard bloqueia /admin/* sem sessao
 - Typecheck + build verdes
 - Console limpo (sem erro SSR/hydration)
+
+Resultado real: auth cabeada do zero. Entregue conforme escopo, com dois
+extras alem do planejado:
+- Fluxo de reset de senha (forgot-password + reset-password +
+  requestPasswordReset no server)
+- Sistema de feedback global (sonner Toaster + GlobalLoadingIndicator +
+  BusyOverlay + TopProgressBar + useGlobalBusy)
+O guard de sessao ficou no layout route _authed.tsx (cobre o subtree
+/admin), nao no __root — o root permanece publico para a landing.
+Smoke test OK (login + sessao SSR sem flash, console limpo).
 
 ---
 
@@ -219,6 +229,11 @@ Dependencias: Sprint 5 concluida
 
 ## Historico de mudancas do roadmap
 
+- 05/06/2026 (tarde) — Sprint 1 marcada CONCLUIDA. Entregue conforme escopo
+  + dois extras: fluxo de reset de senha e sistema de feedback global
+  (sonner + GlobalLoadingIndicator). Guard de sessao implementado no layout
+  route _authed.tsx (nao no __root). Smoke test OK. Sprint 2 (Dashboard) e
+  a proxima.
 - 05/06/2026 — Sprint 0.5 marcada CONCLUIDA (switch export * puro, admin
   demolido, ADR-002 criado supersedindo ADR-001). Renumeracao: antiga
   Sprint 1 (Dashboard) virou Sprint 2; inserida Sprint 1 = Auth + Login do

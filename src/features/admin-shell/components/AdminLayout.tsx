@@ -1,0 +1,94 @@
+import { useState } from 'react';
+import { Outlet, useMatches } from '@tanstack/react-router';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X } from 'lucide-react';
+import { Sidebar } from './Sidebar';
+import { Topbar } from './Topbar';
+import { useSignOut } from '@/features/auth/hooks';
+import type { SessionData } from '@/features/auth/types';
+
+interface AdminLayoutProps {
+  session: SessionData;
+  studioName: string;
+}
+
+export function AdminLayout({ session, studioName }: AdminLayoutProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const signOut = useSignOut();
+  const matches = useMatches();
+
+  // Pega o título do match mais profundo que define staticData.title.
+  const title =
+    [...matches]
+      .reverse()
+      .find((m) => m.staticData.title)?.staticData.title ?? studioName;
+
+  const handleSignOut = () => signOut.mutate();
+
+  return (
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: 'var(--gradient-app)' }}
+    >
+      {/* Sidebar desktop */}
+      <aside className="hidden w-64 shrink-0 lg:block">
+        <Sidebar
+          session={session}
+          studioName={studioName}
+          onSignOut={handleSignOut}
+          isSigningOut={signOut.isPending}
+        />
+      </aside>
+
+      {/* Drawer mobile */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              key="overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.aside
+              key="drawer"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'tween', duration: 0.25 }}
+              className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden"
+            >
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="absolute right-2 top-4 z-10 rounded-[var(--radius-button)] p-2 text-[var(--color-text-body)] hover:bg-[var(--color-surface-alt)]"
+                aria-label="Fechar menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <Sidebar
+                session={session}
+                studioName={studioName}
+                onSignOut={handleSignOut}
+                isSigningOut={signOut.isPending}
+                onNavigate={() => setMobileOpen(false)}
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Conteúdo */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar title={title} onOpenMenu={() => setMobileOpen(true)} />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="mx-auto h-full max-w-7xl">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

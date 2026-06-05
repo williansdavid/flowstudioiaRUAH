@@ -1,7 +1,7 @@
-# FlowStudio AI — Arquitetura
+﻿# FlowStudio AI - Arquitetura
 
 Ultima atualizacao: 05/06/2026
-Versao: 2.0 — alinhada ao estado real pos-demolicao do admin legado (ADR-002)
+Versao: 2.1 - alinhada ao estado real pos-Sprint 1 (auth + login cabeados)
 
 ---
 
@@ -36,21 +36,55 @@ Cada cliente e uma instancia autonoma.
 
 ## Estado real do codigo (05/06/2026)
 
-ATENCAO: o admin legado foi DEMOLIDO na Sprint 0.5. O que existe HOJE:
+Pos-Sprint 1: auth + login cabeados do zero. O que existe HOJE:
 
     src/
       routes/
-        __root.tsx                  root layout + SSR head
+        __root.tsx                  root layout + SSR head (publico)
         index.tsx                   landing publica do studio ativo
+        login.tsx                   tela de login (publica)
+        forgot-password.tsx         solicitar reset de senha (publica)
+        reset-password.tsx          definir nova senha (publica)
+        _authed.tsx                 LAYOUT GUARD (valida sessao no subtree)
+        _authed/
+          admin/
+            index.tsx               dashboard stub (primeira tela protegida)
+      features/
+        auth/
+          types.ts                  tipos do dominio auth
+          queries.ts                queryOptions (sessao)
+          hooks.ts                  hooks de auth
+          components/
+            LoginForm.tsx
+            ForgotPasswordForm.tsx
+            ResetPasswordForm.tsx
+            login/
+              LoginSplitLayout.tsx
+              LoginBrandPanel.tsx
+              ForgotPasswordLayout.tsx
+              ResetPasswordLayout.tsx
+      server/
+        auth/
+          getSession.ts             resolve sessao SSR
+          signIn.ts                 login email/senha
+          signOut.ts                logout
+          requestPasswordReset.ts   dispara email de reset
       lib/
         env.ts                      validacao Zod (client + server)
         supabase/
           client.ts                 client browser (anon)
-          server.ts                 client server (auth.* / service role)
+          server.ts                 client server SSR (anon + cookies)
         query/
           client.ts                 React Query client
+      components/
+        feedback/                   sistema de feedback global (ver secao)
+          GlobalLoadingIndicator.tsx
+          BusyOverlay.tsx
+          TopProgressBar.tsx
+          useGlobalBusy.ts
+          index.ts                  barrel
       config/
-        active-studio.ts            SWITCH white-label (export * puro — ADR-002)
+        active-studio.ts            SWITCH white-label (export * puro - ADR-002)
       sites/
         ruah/
           studio.ts                 export unico consolidado
@@ -66,11 +100,11 @@ ATENCAO: o admin legado foi DEMOLIDO na Sprint 0.5. O que existe HOJE:
 
 NAO EXISTE AINDA (a construir):
 
-    src/routes/login.tsx          (Sprint 1 — proxima)
-    src/routes/admin/             (Sprint 1+)
-    src/features/                 (auth, clients, services, etc — a recriar)
-    src/server/                   (server functions — a recriar)
-    src/components/ui/            (UI Kit — a recriar)
+    src/routes/_authed/admin/*    (telas alem do stub - Sprint 2+)
+    src/features/<outros>/        (clients, services, appointments, etc)
+    src/server/<outros>/          (server functions de outros dominios)
+    src/components/ui/            (UI Kit - a recriar; login foi feito sem ele)
+    src/lib/supabase/admin.ts     (client service role - quando necessario)
 
 ---
 
@@ -116,28 +150,69 @@ Decisao: docs/adr/ADR-002-switch-simplificado.md
 Decisao do ADR-002: identidade de studio vive SO em src/sites/<slug>/config/,
 nunca em .env. O .env contem apenas infra/secrets. Com identidade fora do env,
 o mismatch que uma validacao cruzada cacaria nao existe. VITE_STUDIO_SLUG e
-VITE_STUDIO_NAME estao OBSOLETOS — nao existem no env.ts.
+VITE_STUDIO_NAME estao OBSOLETOS - nao existem no env.ts.
 
 ---
 
-## Autenticacao e Autorizacao (A CONSTRUIR — Sprint 1)
+## Autenticacao e Autorizacao (IMPLEMENTADA - Sprint 1)
 
-ESTADO REAL: auth NAO esta cabeada. Sobrou apenas:
+ESTADO REAL: auth cabeada do zero na Sprint 1. Funcional, com sessao SSR
+sem flash e guard de subtree.
 
-- src/lib/supabase/client.ts    client browser
-- src/lib/supabase/server.ts    client server (unico lugar com auth.*)
-
-NAO existe ainda: rota de login, guard de sessao, beforeLoad, telas admin.
-
-### Plano (Sprint 1)
+### Componentes
 
 - Auth provider: Supabase Auth (email/senha)
-- Sessao SSR resolvida via beforeLoad no TanStack Router
-- Roles: admin | staff | client (vivem em profiles.role HOJE, nao em
-  tabela user_roles)
+- Client SSR: src/lib/supabase/server.ts (createServerClient com anon key +
+  cookies via @supabase/ssr; modulo server-only com guarda anti-bundle).
+  NAO usa service role - service role (admin client) ainda nao foi criado.
+- Feature: src/features/auth/ (types, queries, hooks, components).
+  Nota: esta feature NAO tem barrel index.ts; consumo por path direto.
+- Server functions: src/server/auth/
+  - getSession.ts            resolve sessao no SSR
+  - signIn.ts                login email/senha
+  - signOut.ts               logout
+  - requestPasswordReset.ts  dispara email de reset
+
+### Rotas
+
+Publicas:
+  - login.tsx
+  - forgot-password.tsx
+  - reset-password.tsx
+
+Protegidas:
+  - _authed.tsx              LAYOUT GUARD - valida sessao e protege todo o
+                             subtree. O guard vive AQUI, nao em __root nem
+                             num beforeLoad espalhado por /admin/*. __root
+                             permanece publico (landing).
+  - _authed/admin/index.tsx  primeira tela protegida (dashboard stub)
+
+### Roles
+
+- admin | staff | client - vivem em profiles.role HOJE (nao em tabela
+  user_roles).
 - Function de RLS: current_user_role()
-- Guards de rota: beforeLoad nas rotas /admin/* valida sessao e role
-- Tela de login nova: src/routes/login.tsx + feature src/features/auth/
+
+### Reset de senha
+
+Fluxo completo: forgot-password (solicita) -> email -> reset-password
+(define nova). Server: requestPasswordReset.ts.
+
+---
+
+## Feedback Global (sistema)
+
+Modulo de sistema em src/components/feedback/ (com barrel index.ts),
+construido na Sprint 1.
+
+- Toaster (Sonner) montado no root para toasts globais
+- GlobalLoadingIndicator   indicador de carregamento global
+- TopProgressBar           barra de progresso de navegacao/topo
+- BusyOverlay              overlay de bloqueio durante operacoes
+- useGlobalBusy            hook para acionar estado busy de forma centralizada
+
+Uso: features acionam busy/toast via este modulo em vez de gerenciar estado
+de loading global localmente.
 
 ---
 
@@ -170,10 +245,10 @@ Cada studio tem seu proprio Postgres.
 
 ### Tabelas PLANEJADAS (NAO existem ainda)
 
-- whatsapp_messages, whatsapp_settings   (Sprint 5)
-- ai_messages                            (Sprint 6)
-- studio_settings                        (Sprint 4)
-- user_roles                             (NAO — role vive em profiles hoje)
+- studio_settings                        (Sprint 5)
+- whatsapp_messages, whatsapp_settings   (Sprint 6)
+- ai_messages                            (Sprint 7)
+- user_roles                             (NAO - role vive em profiles hoje)
 
 RLS habilitada nas tabelas principais. Como cada studio possui seu proprio
 Supabase, as policies sao simples (autenticado + role via current_user_role()).
@@ -184,24 +259,24 @@ Supabase, as policies sao simples (autenticado + role via current_user_role()).
 
 ### Modelo de 2 modulos
 
-Modulo 1 — Sistema (nucleo compartilhado):
+Modulo 1 - Sistema (nucleo compartilhado):
   src/lib/, src/routes/ (estruturais), src/components/ core, auth, guards,
-  admin panels reutilizaveis, types do banco.
+  feedback global, admin panels reutilizaveis, types do banco.
   REGRA: Sistema NUNCA importa de sites/.
 
-Modulo 2 — Site (individual por studio):
-  src/sites/<studio>/ — config, componentes da landing, styles, assets.
+Modulo 2 - Site (individual por studio):
+  src/sites/<studio>/ - config, componentes da landing, styles, assets.
   REGRA: Sites consomem o core via fachadas
   (buildBrandingCss.ts, buildSeo.ts).
 
-### Feature-based (ao recriar features)
+### Feature-based
 
 Cada dominio em src/features/<domain>/:
 - types.ts          tipos do dominio
 - queries.ts        queryOptions do React Query
 - hooks.ts          hooks customizados
 - components/       UI especifica do dominio
-- index.ts          barrel export
+- index.ts          barrel export (padrao alvo; auth ainda nao tem)
 
 ### Server functions
 
@@ -223,7 +298,7 @@ TanStack Start, com validator (zod) e handler tipado.
 - Tailwind com tokens por studio (cores via brandingCss)
 - Primitivos em src/components/ui/ (a recriar)
 - Compostos admin em src/components/, landing em src/sites/<slug>/components/
-- Sem libs de UI pesadas — headless quando necessario
+- Sem libs de UI pesadas - headless quando necessario
 - Estados obrigatorios em telas de dados: loading / error / empty
 
 ---
@@ -249,7 +324,7 @@ SERVER (runtime):
 - NODE_ENV
 - EVOLUTION_API_* / OPENAI_API_KEY / AI_MODEL / RATE_LIMIT_* (opcionais)
 
-Identidade do studio NAO mora em env — mora em src/sites/<slug>/config/.
+Identidade do studio NAO mora em env - mora em src/sites/<slug>/config/.
 VITE_STUDIO_SLUG / VITE_STUDIO_NAME estao OBSOLETOS.
 
 ---

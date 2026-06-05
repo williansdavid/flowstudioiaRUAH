@@ -1,7 +1,7 @@
-# FlowStudio AI — Checkpoint do Projeto
+﻿# FlowStudio AI — Checkpoint do Projeto
 
 Ultima atualizacao: 05/06/2026
-Estado: Sprint 1 iniciando — Auth + Login (core do zero)
+Estado: Sprint 1 (Auth + Login) CONCLUIDA — pronto para Sprint 2
 
 ---
 
@@ -9,8 +9,9 @@ Estado: Sprint 1 iniciando — Auth + Login (core do zero)
 
 FlowStudio AI e uma plataforma white-label para studios de beleza. Cada
 studio recebe deploy isolado (Netlify + Supabase proprios). A Sprint 0.5
-fechou a fundacao white-label (switch) e DEMOLIU o admin legado. Agora o
-core sera reconstruido do zero, comecando pela autenticacao.
+fechou a fundacao white-label (switch) e DEMOLIU o admin legado. A Sprint 1
+reconstruiu o core de autenticacao do zero: login, guard, sessao SSR e
+fluxo de reset de senha, alem de um sistema de feedback global.
 
 ---
 
@@ -18,18 +19,33 @@ core sera reconstruido do zero, comecando pela autenticacao.
 
 ### Rotas existentes
 
-- src/routes/__root.tsx
-- src/routes/index.tsx (landing publica do Ruah)
+- src/routes/__root.tsx               root layout + SSR head + feedback global
+- src/routes/index.tsx                landing publica do Ruah
+- src/routes/login.tsx                tela de login (UI nova, mobile-first)
+- src/routes/forgot-password.tsx      solicitar reset de senha
+- src/routes/reset-password.tsx       definir nova senha
+- src/routes/_authed.tsx              layout route com guard de sessao + role
+- src/routes/_authed/admin/index.tsx  area admin protegida
 
-NAO existe rota de login, /admin, nem _authed.
+### Auth (CABEADA)
 
-### Auth
-
-- src/lib/supabase/server.ts  unico arquivo com auth.* / createServerClient
+- src/features/auth/    types, queries, hooks, components da feature
+- src/server/auth/      signIn, signOut, getSession, requestPasswordReset
+- src/lib/supabase/server.ts  createServerClient + auth.*
 - src/lib/supabase/client.ts  client browser (anon)
 
-AVISO: auth NAO esta cabeada. Nao ha signInWithPassword ativo, guard,
-beforeLoad de sessao nem tela de login. Sobrou apenas a fundacao de clients.
+Guard ativo em _authed.tsx:
+- getSession() sem sessao -> redirect('/login')
+- canAccessAdmin(role) negado -> redirect('/login')
+- A sessao NAO e validada no __root (root e publico); a protecao vive
+  no layout route _authed, que cobre todo o subtree /admin.
+
+### Feedback global (NOVO na Sprint 1)
+
+- src/components/feedback/  GlobalLoadingIndicator, BusyOverlay,
+  TopProgressBar, useGlobalBusy
+- Toaster (sonner) montado no __root, tema dark, top-center
+- src/styles/app.css importado no __root
 
 ### Infra de lib
 
@@ -76,44 +92,41 @@ beforeLoad de sessao nem tela de login. Sobrou apenas a fundacao de clients.
 
 ---
 
-## Sprint 1 — Auth + Login (EM ANDAMENTO)
+## Sprint 1 — Auth + Login (CONCLUIDA)
 
 Objetivo: Construir auth do zero + tela de login NOVA sobre os clients
 Supabase existentes.
 
-### Pendente
-
-- [ ] src/features/auth/ (types, queries, hooks, components)
-- [ ] src/server/auth/ (signIn, signOut, getSession)
-- [ ] src/routes/login.tsx (UI nova, mobile-first)
-- [ ] beforeLoad de sessao SSR no router
-- [ ] Guard base para /admin/* (role via current_user_role())
-- [ ] Redirects (nao auth -> /login ; auth em /login -> /admin)
-- [ ] Typecheck + build verdes
-- [ ] Smoke test login + sessao SSR (sem flash, console limpo)
+- [x] src/features/auth/ (types, queries, hooks, components)
+- [x] src/server/auth/ (signIn, signOut, getSession, requestPasswordReset)
+- [x] src/routes/login.tsx (UI nova, mobile-first)
+- [x] beforeLoad de sessao SSR no layout route _authed
+- [x] Guard base para /admin/* (role via canAccessAdmin / current_user_role())
+- [x] Redirects (nao auth -> /login ; auth em /login -> /admin)
+- [x] Fluxo de reset de senha (forgot-password + reset-password)
+- [x] Sistema de feedback global (sonner + GlobalLoadingIndicator)
+- [x] Typecheck + build verdes
+- [x] Smoke test login + sessao SSR (sem flash, console limpo)
 
 ---
 
 ## Proximo passo imediato
 
-Investigar o conteudo real de src/lib/supabase/client.ts e server.ts para
-saber exatamente o que ja existe (qual API de client, como a sessao e lida)
-ANTES de desenhar a feature auth. Sem isso nao da pra cabear o login
-corretamente.
-
-Apos a investigacao:
-
-1. Definir contrato da feature auth (types + server fns)
-2. Construir src/routes/login.tsx
-3. Cabear beforeLoad + guard
-4. Validar typecheck + build + smoke test
+Definir o escopo da Sprint 2 no docs/ROADMAP.md. Antes de planejar
+qualquer feature de dominio (agenda, clientes, financeiro), investigar
+o estado real das tabelas e RLS no Supabase do Ruah.
 
 ---
 
 ## Arquivos criticos do projeto (referencia rapida)
 
-- src/routes/__root.tsx           root layout + SSR head
+- src/routes/__root.tsx           root layout + SSR head + feedback global
 - src/routes/index.tsx            landing do studio ativo
+- src/routes/login.tsx            tela de login
+- src/routes/_authed.tsx          guard de sessao + role
+- src/features/auth/              feature de autenticacao
+- src/server/auth/                server fns de auth
+- src/components/feedback/         feedback global (loading/toaster)
 - src/lib/env.ts                  validacao Zod de env
 - src/lib/supabase/client.ts      client browser
 - src/lib/supabase/server.ts      client server (auth.*)
@@ -131,7 +144,7 @@ Apos a investigacao:
 
 ---
 
-## Zonas congeladas durante Sprint 1
+## Zonas congeladas
 
 - src/sites/ruah/ nao recebe alteracoes de feature (so a landing ja existe)
 - src/_legacy/ somente leitura (referencia historica)

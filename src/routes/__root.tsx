@@ -68,6 +68,14 @@ const GOOGLE_FONTS_HREF =
   'family=Lato:wght@300;400;700&' +
   'display=swap'
 
+// __root.tsx — adicionar após os imports existentes
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    title?: string;
+  }
+}
+
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [

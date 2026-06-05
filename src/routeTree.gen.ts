@@ -14,7 +14,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
+import { Route as AuthedAdminServicosRouteImport } from './routes/_authed/admin/servicos'
+import { Route as AuthedAdminFinanceiroRouteImport } from './routes/_authed/admin/financeiro'
+import { Route as AuthedAdminEquipeRouteImport } from './routes/_authed/admin/equipe'
+import { Route as AuthedAdminClientesRouteImport } from './routes/_authed/admin/clientes'
+import { Route as AuthedAdminAgendamentosRouteImport } from './routes/_authed/admin/agendamentos'
+import { Route as AuthedAdminAgendaRouteImport } from './routes/_authed/admin/agenda'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -40,10 +47,45 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
+const AuthedAdminRouteRoute = AuthedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminServicosRoute = AuthedAdminServicosRouteImport.update({
+  id: '/servicos',
+  path: '/servicos',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminFinanceiroRoute = AuthedAdminFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminEquipeRoute = AuthedAdminEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminClientesRoute = AuthedAdminClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminAgendamentosRoute = AuthedAdminAgendamentosRouteImport.update({
+  id: '/agendamentos',
+  path: '/agendamentos',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminAgendaRoute = AuthedAdminAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -51,6 +93,13 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AuthedAdminRouteRouteWithChildren
+  '/admin/agenda': typeof AuthedAdminAgendaRoute
+  '/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
+  '/admin/clientes': typeof AuthedAdminClientesRoute
+  '/admin/equipe': typeof AuthedAdminEquipeRoute
+  '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
+  '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin/': typeof AuthedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +107,12 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/agenda': typeof AuthedAdminAgendaRoute
+  '/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
+  '/admin/clientes': typeof AuthedAdminClientesRoute
+  '/admin/equipe': typeof AuthedAdminEquipeRoute
+  '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
+  '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin': typeof AuthedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -67,13 +122,43 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authed/admin': typeof AuthedAdminRouteRouteWithChildren
+  '/_authed/admin/agenda': typeof AuthedAdminAgendaRoute
+  '/_authed/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
+  '/_authed/admin/clientes': typeof AuthedAdminClientesRoute
+  '/_authed/admin/equipe': typeof AuthedAdminEquipeRoute
+  '/_authed/admin/financeiro': typeof AuthedAdminFinanceiroRoute
+  '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forgot-password' | '/login' | '/reset-password' | '/admin/'
+  fullPaths:
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/admin'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/clientes'
+    | '/admin/equipe'
+    | '/admin/financeiro'
+    | '/admin/servicos'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login' | '/reset-password' | '/admin'
+  to:
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/admin/agenda'
+    | '/admin/agendamentos'
+    | '/admin/clientes'
+    | '/admin/equipe'
+    | '/admin/financeiro'
+    | '/admin/servicos'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -81,6 +166,13 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/_authed/admin'
+    | '/_authed/admin/agenda'
+    | '/_authed/admin/agendamentos'
+    | '/_authed/admin/clientes'
+    | '/_authed/admin/equipe'
+    | '/_authed/admin/financeiro'
+    | '/_authed/admin/servicos'
     | '/_authed/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -129,22 +221,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/admin': {
+      id: '/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthedAdminRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/admin/': {
       id: '/_authed/admin/'
-      path: '/admin'
+      path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthedAdminIndexRouteImport
-      parentRoute: typeof AuthedRoute
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/servicos': {
+      id: '/_authed/admin/servicos'
+      path: '/servicos'
+      fullPath: '/admin/servicos'
+      preLoaderRoute: typeof AuthedAdminServicosRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/financeiro': {
+      id: '/_authed/admin/financeiro'
+      path: '/financeiro'
+      fullPath: '/admin/financeiro'
+      preLoaderRoute: typeof AuthedAdminFinanceiroRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/equipe': {
+      id: '/_authed/admin/equipe'
+      path: '/equipe'
+      fullPath: '/admin/equipe'
+      preLoaderRoute: typeof AuthedAdminEquipeRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/clientes': {
+      id: '/_authed/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AuthedAdminClientesRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/agendamentos': {
+      id: '/_authed/admin/agendamentos'
+      path: '/agendamentos'
+      fullPath: '/admin/agendamentos'
+      preLoaderRoute: typeof AuthedAdminAgendamentosRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/agenda': {
+      id: '/_authed/admin/agenda'
+      path: '/agenda'
+      fullPath: '/admin/agenda'
+      preLoaderRoute: typeof AuthedAdminAgendaRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
     }
   }
 }
 
-interface AuthedRouteChildren {
+interface AuthedAdminRouteRouteChildren {
+  AuthedAdminAgendaRoute: typeof AuthedAdminAgendaRoute
+  AuthedAdminAgendamentosRoute: typeof AuthedAdminAgendamentosRoute
+  AuthedAdminClientesRoute: typeof AuthedAdminClientesRoute
+  AuthedAdminEquipeRoute: typeof AuthedAdminEquipeRoute
+  AuthedAdminFinanceiroRoute: typeof AuthedAdminFinanceiroRoute
+  AuthedAdminServicosRoute: typeof AuthedAdminServicosRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
 }
 
-const AuthedRouteChildren: AuthedRouteChildren = {
+const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
+  AuthedAdminAgendaRoute: AuthedAdminAgendaRoute,
+  AuthedAdminAgendamentosRoute: AuthedAdminAgendamentosRoute,
+  AuthedAdminClientesRoute: AuthedAdminClientesRoute,
+  AuthedAdminEquipeRoute: AuthedAdminEquipeRoute,
+  AuthedAdminFinanceiroRoute: AuthedAdminFinanceiroRoute,
+  AuthedAdminServicosRoute: AuthedAdminServicosRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
+}
+
+const AuthedAdminRouteRouteWithChildren =
+  AuthedAdminRouteRoute._addFileChildren(AuthedAdminRouteRouteChildren)
+
+interface AuthedRouteChildren {
+  AuthedAdminRouteRoute: typeof AuthedAdminRouteRouteWithChildren
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAdminRouteRoute: AuthedAdminRouteRouteWithChildren,
 }
 
 const AuthedRouteWithChildren =
