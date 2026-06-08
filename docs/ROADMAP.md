@@ -1,6 +1,6 @@
 # FlowStudio AI — Roadmap
 
-Ultima atualizacao: 05/06/2026 (noite)
+Ultima atualizacao: 08/06/2026
 Estrategia: Sprints curtas, foco em fundacao antes de features novas.
 
 ---
@@ -19,6 +19,9 @@ Estrategia: Sprints curtas, foco em fundacao antes de features novas.
 - Sprint 7     Chat IA real                                 PLANEJADA
 - Sprint 8     Hardening + observabilidade                  PLANEJADA
 - Sprint 9     Segundo studio (validacao white-label)       PLANEJADA
+
+Tarefa de manutencao fora de sprint (08/06/2026): resgate do schema de
+finance lifecycle (DEBT-015) — ver "Manutencao" abaixo.
 
 ---
 
@@ -122,6 +125,35 @@ o deploy Netlify do 6ffff34.
 
 ---
 
+## Manutencao (fora de sprint) — Resgate Finance Lifecycle (08/06/2026)
+
+Objetivo: trazer pro git o motor de receita que vivia so em producao
+(DEBT-015), garantindo ambiente reproduzivel para o provisionamento de
+novos studios.
+
+Entregas:
+
+- [x] Auditoria do schema vivo via information_schema + pg_get_functiondef
+- [x] Migration idempotente 20260608_011_finance_lifecycle.sql:
+      payment_methods, appointments.payment_method_id (+FK), colunas/FKs
+      em finance_transactions, agregados/denormalizados em clients,
+      recalc_client_aggregates, handle_appointment_lifecycle (transcrita
+      FIEL de producao) + trigger trg_appointment_lifecycle
+- [x] Indice unico parcial income/service por appointment (reforco de
+      idempotencia)
+- [x] ADR-003 (Finance Lifecycle & Resgate de Schema)
+- [x] Diagnostico: 0 duplicatas income/service em producao
+- [x] Diagnostico: nome real do trigger confere (trg_appointment_lifecycle)
+- [ ] Aplicar migration em ambiente limpo / novo studio e validar
+- [ ] DEBT-016: AJUSTE*.sql + trigger trg_appointments_updated_at fora do
+      git (resgatar/limpar)
+
+Observacao: descobriu-se um segundo trigger so em producao
+(trg_appointments_updated_at, updated_at automatico). Registrado em
+DEBT-016 — ha mais schema fora do versionamento alem do lifecycle.
+
+---
+
 ## Sprint 2 — Dashboard administrativo
 
 Objetivo: Preencher o dashboard (_authed/admin/index.tsx) com metricas
@@ -131,7 +163,11 @@ navegacao) JA foi entregue na Sprint 1.5.
 Escopo:
 
 - INVESTIGAR tabelas/RLS reais do Supabase Ruah antes de codar
+  (schema de finance lifecycle ja resgatado/documentado — usar ADR-003 e
+  a migration 011 como fonte de verdade)
 - Cards de KPI (agendamentos do dia, semana, mes)
+- KPIs financeiros derivados de finance_transactions (receita do dia/mes)
+  e agregados de clients (total_spent / last_visit_at) ja disponiveis
 - Lista de proximos agendamentos
 - Lista de leads recentes
 - Atalhos para acoes frequentes
@@ -154,6 +190,11 @@ Escopo:
 - Recriar calendar (DayView, WeekView, NowLine, slots)
 - Soft delete + audit log simples
 - Preencher rotas placeholder agenda/agendamentos
+- IMPORTANTE: conclusao de atendimento (status=completed) exige
+  payment_method_id — o trigger trg_appointment_lifecycle lanca excecao
+  sem ele. A UI deve coletar forma de pagamento ao concluir (ver ADR-003).
+- A receita (finance_transactions income/service) e materializada pelo
+  trigger; a feature NAO deve inserir/duplicar transacao manualmente.
 
 Dependencias: Sprint 2 concluida
 
@@ -167,7 +208,9 @@ Escopo:
 
 - CRUD de finance_transactions (receitas/despesas)
 - Categorias (transaction_category)
-- Vinculo appointment -> transaction (receita ao concluir)
+- CRUD/seed de payment_methods (resgatado na manutencao 08/06)
+- Vinculo appointment -> transaction (receita ao concluir) JA existe via
+  trigger trg_appointment_lifecycle — escopo aqui e expor/gerir, nao recriar
 - Relatorios simples (mes atual/anterior) + export CSV
 - Preencher rota placeholder financeiro
 
@@ -229,6 +272,8 @@ Escopo:
 - Metricas (Netlify Analytics + custom)
 - Rate limiting nas server functions criticas
 - Backup automatizado do Supabase + runbook
+- Auditoria final de schema vs git (fechar de vez DEBT-015/016: garantir
+  que nada mais vive so em producao)
 
 Dependencias: Sprint 7 concluida
 
@@ -242,7 +287,8 @@ Escopo:
 
 - src/sites/<novo>/ + studio.ts
 - Trocar active-studio.ts
-- Supabase + Netlify novos
+- Supabase + Netlify novos (aplicar migration 011 valida o resgate do
+  finance lifecycle no provisionamento)
 - Documentar tempo de provisionamento e ajustes no nucleo
 
 Dependencias: Sprint 5 concluida
@@ -262,6 +308,14 @@ Dependencias: Sprint 5 concluida
 
 ## Historico de mudancas do roadmap
 
+- 08/06/2026 — Inserida tarefa de manutencao fora de sprint: resgate do
+  schema de finance lifecycle (DEBT-015) — migration idempotente
+  20260608_011_finance_lifecycle.sql + ADR-003. Diagnosticos OK (0
+  duplicatas income/service; trigger trg_appointment_lifecycle confere).
+  Descoberto segundo trigger fora do git (trg_appointments_updated_at,
+  DEBT-016). Anotadas dependencias do lifecycle nas Sprints 2/3/4 (guard de
+  payment_method em completed; receita materializada via trigger; nao
+  duplicar transacao na aplicacao).
 - 05/06/2026 (noite) — Inserida Sprint 1.5 (Refator Nucleo Pluggable +
   Admin Shell) marcada CONCLUIDA: lib/core, lib/public, feature admin-shell
   (AdminLayout/Sidebar/Topbar), route.tsx do /admin e 7 rotas placeholder.

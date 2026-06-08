@@ -1,7 +1,9 @@
-# FlowStudio AI — Checkpoint do Projeto
+﻿# FlowStudio AI — Checkpoint do Projeto
 
-Ultima atualizacao: 05/06/2026 (noite)
-Estado: Sprint 1.5 (Refator Nucleo Pluggable + Admin Shell) CONCLUIDA — pronto para Sprint 2
+Ultima atualizacao: 08/06/2026 (fim do dia)
+Estado: Sprint 1.5 CONCLUIDA. Finance lifecycle (DEBT-015) resgatado e
+DESBLOQUEADO para aplicar (trigger + duplicatas confirmados em prod).
+ADR-003 finalizado. Sprint 2 (dashboard) INICIADA — WIP commitado.
 
 ---
 
@@ -35,7 +37,7 @@ Sidebar, Topbar) e montou a arvore de rotas /admin com telas placeholder.
 - src/routes/_authed/admin/financeiro.tsx  placeholder
 - src/routes/_authed/admin/servicos.tsx    placeholder
 
-### Nucleo pluggable (NOVO na Sprint 1.5)
+### Nucleo pluggable (Sprint 1.5)
 
 - src/lib/core/         contrato compartilhado do sistema
   - types/   branding, identity, seo (+ index)
@@ -46,7 +48,7 @@ Sidebar, Topbar) e montou a arvore de rotas /admin com telas placeholder.
 Regra de ouro mantida: Sistema nunca importa de sites/. Sites consomem
 lib/core via fachadas (buildBrandingCss / buildSeo em sites/ruah/utils/).
 
-### Admin Shell (NOVO na Sprint 1.5)
+### Admin Shell (Sprint 1.5)
 
 - src/features/admin-shell/
   - components/  AdminLayout, Sidebar, SidebarItem, Topbar, PlaceholderScreen
@@ -91,6 +93,29 @@ Guard ativo em _authed.tsx:
 - Landing publica funcional em /
 - Identidade, branding, content, SEO, businessHours em config/
 - Fachadas: buildBrandingCss.ts, buildSeo.ts (consomem lib/core)
+
+### Banco — Finance Lifecycle (resgatado 08/06/2026, DEBT-015)
+
+Schema que vivia so em producao, agora versionado em
+supabase/migrations/20260608_011_finance_lifecycle.sql (idempotente):
+
+- payment_methods (code/description/is_installment/icon/is_active/sort_order)
+- appointments.payment_method_id (+ FK -> payment_methods)
+- finance_transactions: appointment_id, staff_id, payment_method_id,
+  occurred_at (+ FKs) + indice unico parcial income/service por appointment
+- clients: total_appointments, total_spent, last_visit_at +
+  denormalizados full_name, phone, email
+- recalc_client_aggregates(uuid)
+- handle_appointment_lifecycle() — MOTOR DE RECEITA (transcrita fiel de
+  producao). Guard de payment_method em completed; cria/atualiza/deleta
+  finance_transactions income/service conforme o ciclo do appointment;
+  recalcula agregados do cliente.
+- trigger AFTER INSERT OR UPDATE em appointments.
+
+Decisao registrada em docs/adr/ADR-003-finance-lifecycle.md (finalizado).
+DESBLOQUEADO em 08/06/2026: trigger confirmado (trg_appointment_lifecycle
+via pg_trigger) e duplicatas income/service = 0 (query agregada). Migration
+pronta para aplicar em ambiente limpo.
 
 ### Legado (somente referencia, nao builda)
 
@@ -164,19 +189,46 @@ reais (ver DEBT-014). Pendente validacao do deploy Netlify do 6ffff34.
 
 ---
 
-## Proximos passos
+## 08/06/2026 — Finance Lifecycle (resgate de schema, fora de sprint)
 
-1. Validar deploy Netlify do commit 6ffff34 em producao:
-   - Landing publica carrega normal
-   - /admin sem sessao -> redirect /login
-   - Logado: AdminLayout + sidebar renderizam; rotas placeholder respondem
-2. Sprint 2 — Dashboard administrativo:
+- Auditoria revelou o motor de receita vivendo so em producao (fora do git).
+- Criada migration idempotente 20260608_011_finance_lifecycle.sql
+  resgatando: payment_methods, appointments.payment_method_id (+FK),
+  vinculos/colunas em finance_transactions, agregados/denormalizados em
+  clients, recalc_client_aggregates, handle_appointment_lifecycle
+  (transcrita FIEL de producao via pg_get_functiondef) e trigger.
+- Reforco de idempotencia: indice unico parcial income/service por
+  appointment (alem do not exists do trigger).
+- Decisao registrada em docs/adr/ADR-003-finance-lifecycle.md.
+- Teste 1 (conclusao -> receita) validado em producao.
+- Novos debitos: DEBT-015 (resgatado), DEBT-016 (AJUSTE*.sql + duplicatas).
+- Pendencias antes de aplicar em prod: confirmar nome real do trigger e
+  checar duplicatas income/service.
+
+---
+
+## Ponto de retomada (RETOMAR AQUI — 09/06/2026)
+
+### Onde paramos
+- Finance lifecycle resgatado, ADR-003 finalizado, migration 011 commitada.
+- Trigger e duplicatas CONFIRMADOS em prod -> migration desbloqueada.
+- Sprint 2 (dashboard) iniciada: src/features/dashboard/ + ErrorState +
+  admin/index.tsx em WIP (commitado, ainda sem dados reais).
+
+### Proximos passos (ordem)
+1. DEBT-016 — limpeza de schema fora do git:
+   - mover/deletar os AJUSTE*.sql soltos
+   - consolidar role em profiles (avaliar user_roles planejada)
+   - resgatar trigger trg_appointments_updated_at em migration propria
+2. Aplicar migration 011 em ambiente limpo (ja desbloqueada) e validar
+   Teste 1 (conclusao -> receita) no ambiente novo.
+3. Continuar Sprint 2 — Dashboard:
    - INVESTIGAR tabelas/RLS reais do Supabase Ruah antes de codar
-   - Preencher _authed/admin/index.tsx com KPIs (dia/semana/mes),
-     proximos agendamentos e leads recentes
-   - Atalhos para acoes frequentes
-3. Decidir destino do UI Kit (DEBT-002 / DEBT-011): nasce junto da
-   Sprint 2 ou vira sprint propria.
+   - completar _authed/admin/index.tsx com KPIs (dia/semana/mes),
+     proximos agendamentos e leads recentes + atalhos
+4. Validar deploy Netlify do commit 6ffff34 em producao:
+   - landing carrega; /admin sem sessao -> /login; logado renderiza shell
+5. Decidir destino do UI Kit (DEBT-002 / DEBT-011).
 
 ---
 
@@ -201,6 +253,7 @@ reais (ver DEBT-014). Pendente validacao do deploy Netlify do 6ffff34.
 - src/sites/ruah/studio.ts           export consolidado do Ruah
 - src/sites/ruah/config/             identidade, branding, content, seo, horarios
 - src/sites/ruah/utils/              fachadas (buildBrandingCss, buildSeo)
+- supabase/migrations/20260608_011_finance_lifecycle.sql  motor de receita
 - docs/ARCHITECTURE.md               arquitetura oficial (v2.0)
 - docs/ROADMAP.md                    sprints planejados
 - docs/CHECKPOINT.md                 este documento
@@ -231,3 +284,4 @@ reais (ver DEBT-014). Pendente validacao do deploy Netlify do 6ffff34.
 ---
 
 Fim do documento.
+
