@@ -14,11 +14,13 @@ import { content } from '@/sites/ruah/config/content'
  *   - Rolado (scrollY > 50)  → glassmorphism + borda dourada sutil
  *
  * Comportamento:
- *   - Desktop: nav inline (inclui "Entrar" → /login) + toggle oculto
- *   - Mobile:  "Entrar" (→ /login) ao lado do hambúrguer → drawer fullscreen
+ *   - Desktop: nav inline (anchors + "Login" como link de texto)
+ *              + CTA dourado "Agendar Horário" (Booksy, nova aba)
+ *   - Mobile:  CTA dourado "Agendar Horário" ao lado do hambúrguer
+ *              → drawer fullscreen (anchors + Google Reviews + Login)
  *
- * Links internos (anchors): #sobre, #servicos, etc.
- * Link de app (rota real): "Entrar" → /login via TanStack Link (SSR-safe).
+ * Links internos (anchors): #inicio, #sobre, #servicos, #galeria, #testimonials
+ * Link de app (rota real): "Login" → /login via TanStack Link (SSR-safe).
  * Link externo (Google Reviews): item dedicado no drawer mobile.
  * CTA "Agendar Horário": Booksy (nova aba).
  * ----------------------------------------------------------------
@@ -79,23 +81,30 @@ export function Header() {
                 {link.label}
               </a>
             ))}
+            <Link to="/login" className="ruah-header__nav-link">
+              Login
+            </Link>
           </nav>
 
-          {/* Login Desktop (botão dourado) */}
-          <Link
-            to="/login"
+          {/* CTA Desktop — Agendar Horário (Booksy) */}
+          <a
+            href={booksyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="ruah-btn ruah-btn--primary ruah-header__cta"
           >
-            Login
-          </Link>
+            Agendar Horário
+          </a>
 
-          {/* Login Mobile (botão dourado, ao lado do toggle) */}
-          <Link
-            to="/login"
+          {/* CTA Mobile — Agendar Horário (ao lado do toggle) */}
+          <a
+            href={booksyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="ruah-btn ruah-btn--primary ruah-header__login-mobile"
           >
-            Login
-          </Link>
+            Agendar Horário
+          </a>
 
           {/* Toggle Mobile */}
           <button
@@ -139,6 +148,21 @@ export function Header() {
                 </motion.a>
               ))}
 
+              {/* Login (rota real) */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.03 * navLinks.length }}
+              >
+                <Link
+                  to="/login"
+                  className="ruah-mobile-menu__link"
+                  onClick={handleNavClick}
+                >
+                  Login
+                </Link>
+              </motion.div>
+
               {/* Link externo — Google Reviews */}
               {googleReviewsUrl && (
                 <motion.a
@@ -149,7 +173,7 @@ export function Header() {
                   onClick={handleNavClick}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.03 * navLinks.length }}
+                  transition={{ duration: 0.4, delay: 0.03 * (navLinks.length + 1) }}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                 >
                   <Star size={18} aria-hidden="true" />
@@ -158,20 +182,18 @@ export function Header() {
               )}
 
               {/* CTA Agendar — Booksy */}
-              {booksyUrl && (
-                <motion.a
-                  href={booksyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ruah-btn ruah-btn--primary ruah-mobile-menu__cta"
-                  onClick={handleNavClick}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.05 * (navLinks.length + 1) }}
-                >
-                  Agendar Horário
-                </motion.a>
-              )}
+              <motion.a
+                href={booksyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ruah-btn ruah-btn--primary ruah-mobile-menu__cta"
+                onClick={handleNavClick}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.05 * (navLinks.length + 2) }}
+              >
+                Agendar Horário
+              </motion.a>
             </nav>
           </motion.div>
         )}
