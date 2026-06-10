@@ -14,10 +14,10 @@ import { content } from '@/sites/ruah/config/content'
  *   - Rolado (scrollY > 50)  → glassmorphism + borda dourada sutil
  *
  * CTA "Agendar Horário" (desktop + mobile) tem visibilidade reativa:
- *   - Hero (#inicio) visível  → CTA escondido (slide-up + fade), pois
- *                               o próprio Hero já exibe um CTA.
- *   - Hero fora da viewport   → CTA aparece (slide-down + fade).
- *   Observado via useElementInView('#inicio') (IntersectionObserver).
+ *   - Bloco de CTAs do Hero (#hero-ctas) visível → CTA do header escondido
+ *                                                  (slide-up + fade).
+ *   - #hero-ctas fora da viewport → CTA do header aparece (slide-down + fade).
+ *   Observado via useElementInView('#hero-ctas') (IntersectionObserver).
  *
  * Comportamento:
  *   - Desktop: nav inline (anchors + "Login" como link de texto)
@@ -42,7 +42,7 @@ const navLinks = [
 
 export function Header() {
   const scrolled = useScrolled(50)
-  const heroInView = useElementInView('#inicio')
+  const heroInView = useElementInView('#hero-ctas', '-120px 0px 0px 0px')
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleNavClick = () => {
@@ -191,20 +191,6 @@ export function Header() {
                   Avaliações Google
                 </motion.a>
               )}
-
-              {/* CTA Agendar — Booksy */}
-              <motion.a
-                href={booksyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ruah-btn ruah-btn--primary ruah-mobile-menu__cta"
-                onClick={handleNavClick}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.05 * (navLinks.length + 2) }}
-              >
-                Agendar Horário
-              </motion.a>
             </nav>
           </motion.div>
         )}
