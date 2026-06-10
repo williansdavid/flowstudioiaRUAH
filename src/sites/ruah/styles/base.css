@@ -1834,3 +1834,15 @@
   color: var(--color-accent);
   opacity: 0.7;
 }
+.ruah-header__cta,
+.ruah-header__login-mobile {
+  transition:
+    opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ruah-header__cta--hidden {
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+}

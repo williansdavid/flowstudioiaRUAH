@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Star } from 'lucide-react'
-import { useScrolled } from '@/sites/ruah/utils'
+import { useScrolled, useElementInView } from '@/sites/ruah/utils'
 import { identity } from '@/sites/ruah/config/identity'
 import { content } from '@/sites/ruah/config/content'
 
@@ -12,6 +12,12 @@ import { content } from '@/sites/ruah/config/content'
  * Header fixo com 2 estados visuais:
  *   - Topo (scrollY <= 50)   → transparente, sem borda
  *   - Rolado (scrollY > 50)  → glassmorphism + borda dourada sutil
+ *
+ * CTA "Agendar Horário" (desktop + mobile) tem visibilidade reativa:
+ *   - Hero (#inicio) visível  → CTA escondido (slide-up + fade), pois
+ *                               o próprio Hero já exibe um CTA.
+ *   - Hero fora da viewport   → CTA aparece (slide-down + fade).
+ *   Observado via useElementInView('#inicio') (IntersectionObserver).
  *
  * Comportamento:
  *   - Desktop: nav inline (anchors + "Login" como link de texto)
@@ -36,6 +42,7 @@ const navLinks = [
 
 export function Header() {
   const scrolled = useScrolled(50)
+  const heroInView = useElementInView('#inicio')
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleNavClick = () => {
@@ -91,7 +98,9 @@ export function Header() {
             href={booksyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="ruah-btn ruah-btn--primary ruah-header__cta"
+            className={`ruah-btn ruah-btn--primary ruah-header__cta ${
+              heroInView ? 'ruah-header__cta--hidden' : ''
+            }`}
           >
             Agendar Horário
           </a>
@@ -101,7 +110,9 @@ export function Header() {
             href={booksyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="ruah-btn ruah-btn--primary ruah-header__login-mobile"
+            className={`ruah-btn ruah-btn--primary ruah-header__login-mobile ${
+              heroInView ? 'ruah-header__cta--hidden' : ''
+            }`}
           >
             Agendar Horário
           </a>

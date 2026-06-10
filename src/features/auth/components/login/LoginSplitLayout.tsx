@@ -1,4 +1,6 @@
 ﻿import { motion } from 'framer-motion';
+import { Link } from '@tanstack/react-router';
+import { ChevronLeft } from 'lucide-react';
 import { LoginBrandPanel } from './LoginBrandPanel';
 import { LoginForm } from '../LoginForm';
 
@@ -7,7 +9,7 @@ import { LoginForm } from '../LoginForm';
  * Desktop (lg+): 2 colunas (brand | form). Mobile: brand vira header + form.
  *
  * Fundo UNICO em mesh sobrio (1 linear base + 2 radiais difusos) cobrindo
- * a tela inteira â€” elimina o vinco entre colunas. Camada de dither
+ * a tela inteira — elimina o vinco entre colunas. Camada de dither
  * (feTurbulence) em overlay quebra o banding 8-bit. SSR-safe (strings estaticas).
  */
 
@@ -22,7 +24,7 @@ const MESH_BACKGROUND = [
   'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface-dark) 100%)',
 ].join(', ');
 
-// Divisoria dourada vertical â€” trecho central (so desktop). Gradiente
+// Divisoria dourada vertical — trecho central (so desktop). Gradiente
 // some nas pontas para dar o efeito "linha curta no meio".
 const DIVIDER_GRADIENT =
   'linear-gradient(to bottom, transparent 0%, var(--color-accent) 50%, transparent 100%)';
@@ -49,7 +51,7 @@ export function LoginSplitLayout() {
         }}
       />
 
-      {/* Divisoria dourada vertical â€” trecho central (so desktop) */}
+      {/* Divisoria dourada vertical — trecho central (so desktop) */}
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-1/2 hidden h-[40vh] w-px -translate-x-1/2 -translate-y-1/2 lg:block"
@@ -59,7 +61,7 @@ export function LoginSplitLayout() {
       {/* Lado brand */}
       <LoginBrandPanel />
 
-      {/* Lado form â€” card glass */}
+      {/* Lado form — card glass */}
       <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-12 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -67,6 +69,22 @@ export function LoginSplitLayout() {
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="flex w-full max-w-sm flex-col rounded-[var(--radius-card)] border border-white/15 bg-white/[0.07] px-7 py-8 shadow-2xl backdrop-blur-xl"
         >
+          {/* Voltar ao site — botao fantasma */}
+          <Link
+            to="/"
+            className="group mb-6 inline-flex items-center gap-1.5 self-start rounded-[var(--radius-button)] border px-3.5 py-2 text-sm font-medium text-[var(--color-accent)] transition-colors duration-200 hover:bg-[var(--color-accent)] hover:text-[var(--color-background)]"
+            style={{
+              fontFamily: 'var(--font-body)',
+              borderColor: 'var(--color-accent)',
+            }}
+          >
+            <ChevronLeft
+              className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5"
+              aria-hidden
+            />
+            Voltar ao site
+          </Link>
+
           <div className="mb-8">
             <h2
               className="text-2xl font-bold text-[var(--color-text-heading)]"
