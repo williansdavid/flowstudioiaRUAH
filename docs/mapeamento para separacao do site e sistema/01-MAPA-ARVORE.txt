@@ -1,0 +1,254 @@
+================================================================
+FLOWSTUDIO AI — INVESTIGACAO DE DESVINCULO SITE x SISTEMA
+DOC 01 — MAPA DE ARVORE DO src/
+================================================================
+Data: 2026-06-09
+Status: MAPEADO (topologia reconstruida e validada via [1B]+[1D])
+
+----------------------------------------------------------------
+RAIZ DO PROJETO (arquivos de config relevantes)
+----------------------------------------------------------------
+package.json
+postcss.config.js
+tailwind.config.ts
+tsconfig.json
+vite.config.ts
+
+----------------------------------------------------------------
+RAIZ DE src/ (arquivos soltos)
+----------------------------------------------------------------
+router.tsx          <- config do TanStack Router (entry de roteamento)
+routeTree.gen.ts    <- GERADO automaticamente. NUNCA editar a mao.
+
+----------------------------------------------------------------
+PESO POR PASTA DE TOPO (src/*)
+----------------------------------------------------------------
+components     6   (sistema - feedback/)
+config         1   (active-studio.ts = PONTO DE ACOPLAMENTO)
+features      26   (sistema - admin-shell, auth, dashboard)
+lib           16   (sistema - core, public, query, supabase, env)
+routes        14   (sistema - estrutural + index landing)
+server         4   (sistema - server fns de auth)
+sites         53   (SITE - INTOCAVEL - ruah/)
+styles         1   (app.css)
+
+----------------------------------------------------------------
+ARVORE REAL RECONSTRUIDA
+----------------------------------------------------------------
+
+src/
+├── router.tsx                       [SISTEMA] entry roteamento
+├── routeTree.gen.ts                 [GERADO] nao editar
+│
+├── components/                      [SISTEMA] 6 arquivos
+│   └── feedback/
+│       ├── BusyOverlay.tsx
+│       ├── ErrorState.tsx
+│       ├── GlobalLoadingIndicator.tsx
+│       ├── TopProgressBar.tsx
+│       ├── useGlobalBusy.ts
+│       └── index.ts
+│
+├── config/                          [ACOPLAMENTO] 1 arquivo
+│   └── active-studio.ts             export * from '@/sites/ruah/studio'
+│
+├── features/                        [SISTEMA] 26 arquivos
+│   ├── admin-shell/
+│   │   ├── components/
+│   │   │   ├── AdminLayout.tsx
+│   │   │   ├── PlaceholderScreen.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── SidebarItem.tsx
+│   │   │   └── Topbar.tsx
+│   │   ├── config/
+│   │   │   └── nav-items.ts
+│   │   ├── index.ts
+│   │   └── types.ts
+│   ├── auth/
+│   │   ├── components/
+│   │   │   ├── login/
+│   │   │   │   ├── ForgotPasswordLayout.tsx
+│   │   │   │   ├── LoginBrandPanel.tsx
+│   │   │   │   ├── LoginSplitLayout.tsx
+│   │   │   │   └── ResetPasswordLayout.tsx
+│   │   │   ├── ForgotPasswordForm.tsx
+│   │   │   ├── LoginForm.tsx
+│   │   │   └── ResetPasswordForm.tsx
+│   │   ├── hooks.ts
+│   │   ├── queries.ts
+│   │   ├── index.ts
+│   │   └── types.ts
+│   └── dashboard/
+│       ├── components/
+│       │   ├── KpiCard.tsx
+│       │   ├── KpiGrid.tsx
+│       │   ├── RecentLeads.tsx
+│       │   └── UpcomingAppointments.tsx
+│       ├── server/
+│       │   └── getDashboardData.ts
+│       ├── index.ts
+│       └── types.ts
+│
+├── lib/                             [SISTEMA] 16 arquivos
+│   ├── core/
+│   │   ├── types/
+│   │   │   ├── branding.ts
+│   │   │   ├── identity.ts
+│   │   │   ├── seo.ts
+│   │   │   └── index.ts
+│   │   ├── utils/
+│   │   │   ├── buildBrandingCss.ts   (NUCLEO - gera .theme-<mode>)
+│   │   │   ├── buildSeo.ts
+│   │   │   └── index.ts
+│   │   └── index.ts
+│   ├── public/
+│   │   ├── services.ts
+│   │   ├── types.ts
+│   │   └── index.ts
+│   ├── query/
+│   │   └── client.ts
+│   ├── supabase/
+│   │   ├── client.ts
+│   │   ├── server.ts
+│   │   └── types.ts
+│   └── env.ts
+│
+├── routes/                          [SISTEMA estrutural + landing]
+│   ├── __root.tsx                   PONTO DE SEPARACAO (reescrever)
+│   ├── index.tsx                    LANDING (renderiza o SITE)
+│   ├── login.tsx
+│   ├── forgot-password.tsx
+│   ├── reset-password.tsx
+│   ├── _authed.tsx                  guard de rota autenticada
+│   └── _authed/
+│       └── admin/
+│           ├── route.tsx
+│           ├── index.tsx
+│           ├── agenda.tsx
+│           ├── agendamentos.tsx
+│           ├── clientes.tsx
+│           ├── equipe.tsx
+│           ├── financeiro.tsx
+│           └── servicos.tsx
+│
+├── server/                          [SISTEMA] 4 arquivos
+│   └── auth/
+│       ├── getSession.ts
+│       ├── requestPasswordReset.ts
+│       ├── signIn.ts
+│       └── signOut.ts
+│
+├── styles/                          [SISTEMA] 1 arquivo
+│   └── app.css                      (so @tailwind base/components/utilities)
+│
+└── sites/                           [SITE - INTOCAVEL] 53 arquivos
+    └── ruah/
+        ├── studio.ts                <- origem de TODOS os exports
+        ├── index.ts
+        ├── components/
+        │   ├── floating/
+        │   │   ├── WhatsAppFloating.tsx
+        │   │   └── index.ts
+        │   ├── icons/
+        │   │   └── SocialIcons.tsx
+        │   ├── layout/
+        │   │   ├── Footer.tsx
+        │   │   ├── Header.tsx
+        │   │   └── index.ts
+        │   ├── motion/
+        │   │   └── LazyMotionProvider.tsx
+        │   ├── sections/
+        │   │   ├── AboutSection.tsx
+        │   │   ├── GallerySection.tsx
+        │   │   ├── HeroSection.tsx
+        │   │   ├── HoursSection.tsx
+        │   │   ├── ServicesSection.tsx
+        │   │   └── TestimonialsSection.tsx
+        │   └── index.ts
+        ├── config/
+        │   ├── branding.ts
+        │   ├── businessHours.ts
+        │   ├── content.ts
+        │   ├── identity.ts
+        │   ├── seo/
+        │   │   └── jsonLd.ts
+        │   └── index.ts
+        ├── lib/
+        │   ├── hours.ts
+        │   ├── whatsapp.ts
+        │   └── index.ts
+        ├── styles/
+        │   ├── animations.css
+        │   ├── base.css
+        │   ├── base.css.err          (LIXO - artefato de erro)
+        │   ├── base.csse             (LIXO - artefato de erro)
+        │   ├── footer.css
+        │   ├── gallery.css
+        │   ├── hours.css
+        │   ├── testimonials.css
+        │   ├── theme.css
+        │   └── whatsapp-floating.css
+        ├── types/
+        │   ├── branding.ts
+        │   ├── businessHours.ts
+        │   ├── content.ts
+        │   ├── identity.ts
+        │   └── index.ts
+        ├── utils/
+        │   ├── buildBrandingCss.ts
+        │   ├── buildSeo.ts
+        │   ├── formatDuration.ts
+        │   ├── formatPrice.ts
+        │   └── index.ts
+        └── docs/
+            ├── arquitetura.txt
+            ├── DESIGN_SYSTEM_RUAH.md
+            ├── prompt de correcao de curso .txt
+            ├── road maps page .txt
+            ├── RUAH-CONTRATO-V2.txt
+            └── techdeb.md
+
+----------------------------------------------------------------
+OBSERVACOES CRITICAS DESTA FASE
+----------------------------------------------------------------
+O1. NUCLEO duplica utils do SITE:
+    - src/lib/core/utils/buildBrandingCss.ts  (NUCLEO)
+    - src/sites/ruah/utils/buildBrandingCss.ts (SITE)
+    - src/lib/core/utils/buildSeo.ts           (NUCLEO)
+    - src/sites/ruah/utils/buildSeo.ts         (SITE)
+    >> A Fase 3 precisa confirmar QUEM usa qual. Suspeita: o site
+       tem sua propria copia (isolamento), e o nucleo tem a "fachada"
+       generica. Isso e BOM pro desvinculo (cada lado autossuficiente).
+
+O2. NUCLEO duplica TYPES do SITE:
+    - src/lib/core/types/branding.ts, identity.ts, seo.ts (NUCLEO)
+    - src/sites/ruah/types/* (SITE)
+    >> Mesmo racional: tipos genericos no nucleo, especificos no site.
+
+O3. active-studio.ts e o UNICO ponto formal de acoplamento.
+    Tudo que importa de sites/ deveria passar por ele. A Fase 2 vai
+    cacar TODOS os imports reais de @/sites e @/config/active-studio
+    pra confirmar se ha vazamento fora desse canal.
+
+O4. routeTree.gen.ts e GERADO. Reescrever __root regenera ele. OK.
+
+O5. LIXO confirmado em src/sites/ruah/styles/:
+    base.css.err e base.csse. Sao do SITE (intocavel) — NAO mexer
+    agora. Registrar como techdeb do site (limpar em DEV depois).
+
+O6. ESTRUTURA DE FEATURES esta saudavel e isolada:
+    admin-shell / auth / dashboard. Nenhuma depende do site (a
+    confirmar na Fase 2/4). Login tem brand panel (LoginBrandPanel)
+    que PODE estar consumindo branding do site — VERIFICAR Fase 4.
+
+----------------------------------------------------------------
+ALVOS DA PROXIMA FASE (02 — FRONTEIRA SITE)
+----------------------------------------------------------------
+- Cacar TODOS os imports de '@/sites' e '@/config/active-studio'
+  em todo o src/ (fora de sites/).
+- Mapear exatamente QUEM toca o site e POR ONDE.
+- Identificar vazamentos fora do canal active-studio.ts.
+
+----------------------------------------------------------------
+FIM DOC 01
+================================================================

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { LoginBrandPanel } from './LoginBrandPanel';
 import { ResetPasswordForm } from '../ResetPasswordForm';
 
@@ -8,7 +8,7 @@ const NOISE_SVG =
 const MESH_BACKGROUND = [
   'radial-gradient(ellipse 120% 90% at 20% -10%, color-mix(in srgb, var(--color-accent) 9%, transparent) 0%, transparent 60%)',
   'radial-gradient(ellipse 100% 90% at 110% 110%, color-mix(in srgb, var(--color-accent-bright) 8%, transparent) 0%, transparent 65%)',
-  'linear-gradient(160deg, var(--color-primary) 0%, var(--color-surface-dark) 100%)',
+  'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface-dark) 100%)',
 ].join(', ');
 
 const DIVIDER_GRADIENT =

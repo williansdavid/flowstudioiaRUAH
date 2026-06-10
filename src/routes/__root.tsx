@@ -1,19 +1,23 @@
-/**
+﻿/**
  * __root.tsx — Root Route do TanStack React Start
  * ----------------------------------------------------------------
- * Responsabilidades:
- *   1. Consumir dados/assets do studio ativo via @/config/active-studio
- *   2. Injetar CSS variables no <head> via SSR (zero FOUC)
- *   3. Aplicar a classe de tema no <html> (.theme-dark)
- *   4. Carregar fontes Google via preconnect + link
- *   5. Importar os CSS do studio (styleHrefs)
- *   6. SEO completo: Open Graph + Twitter Card + favicon + theme-color
- *   7. Serializar JSON-LD (LocalBusiness/HairSalon) para <script>
- *   8. Renderizar <Outlet />
- *   9. Tipar RouterContext global
+ * Responsabilidade: SHELL NEUTRO ABSOLUTO do app.
  *
- * FONTE DA VERDADE ÚNICA: src/config/active-studio (→ src/sites/<studio>)
- * O núcleo NUNCA importa direto de src/sites/.
+ * O root NÃO conhece studio/site:
+ *   - não importa @/config/active-studio
+ *   - não injeta SEO/OG/Twitter do site
+ *   - não injeta Google Fonts do site
+ *   - não injeta styleHrefs do site
+ *   - não injeta JSON-LD do site
+ *   - não injeta brandingCss do site
+ *   - não aplica classe de tema de SITE (o <body> usa systemThemeClass p/ boundaries globais)
+ *
+ * Cada zona de rota é dona do seu tema:
+ *   - /           -> rota index.tsx injeta brandingCss do site + themeClass
+  *   - /login etc  -> _auth.tsx aplica systemThemeClass
+ *   - /admin      -> _authed.tsx aplica systemThemeClass
+ *
+ * Boundaries globais usam .theme-system com vars do sistema.
  * ----------------------------------------------------------------
  */
 import { Toaster } from 'sonner'
@@ -26,146 +30,53 @@ import {
 import type { QueryClient } from '@tanstack/react-query'
 
 import { GlobalLoadingIndicator } from '@/components/feedback'
+import { systemThemeCssHref, systemBrandingCss, systemThemeClass } from '@/lib/core/system'
 import '@/styles/app.css'
 
-import {
-  branding,
-  content,
-  identity,
-  brandingCss,
-  themeClass,
-  seo,
-  buildLocalBusinessJsonLd,
-  styleHrefs,
-} from '@/config/active-studio'
-
-// ============================================================
-// Router Context
-// ============================================================
 export interface RouterContext {
   queryClient: QueryClient
 }
 
-// JSON-LD Schema.org (LocalBusiness/HairSalon) — rich snippets Google.
-// Serialização é responsabilidade do núcleo; o studio provê a função pura.
-const localBusinessJsonLd = JSON.stringify(
-  buildLocalBusinessJsonLd(seo.canonicalUrl),
-).replace(/</g, '\\u003c')
-
-// Logo oficial (consome branding via switch — fonte única da verdade)
-const LOGO_URL = branding.logo.light
-const LOGO_ALT = branding.logo.alt
-const OG_IMAGE = seo.ogImage ?? LOGO_URL
-
-// Theme color do navegador mobile (cor accent do studio)
-const THEME_COLOR = branding.colors.accent
-
-// URL única de Google Fonts (3 famílias)
-const GOOGLE_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?' +
-  'family=Playfair+Display:wght@400;600;700;900&' +
-  'family=Montserrat:wght@400;500;600;700&' +
-  'family=Lato:wght@300;400;700&' +
-  'display=swap'
-
-// __root.tsx — adicionar após os imports existentes
 declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
-    title?: string;
+    title?: string
   }
 }
-
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-
-      // SEO básico — sempre definido via buildSeo()
-      { title: seo.title },
-      { name: 'description', content: seo.description },
-      ...(seo.keywords.length > 0
-        ? [{ name: 'keywords', content: seo.keywords.join(', ') }]
-        : []),
-
-      // Theme color (barra de navegador mobile)
-      { name: 'theme-color', content: THEME_COLOR },
-
-      // Open Graph completo
-      { property: 'og:title', content: seo.title },
-      { property: 'og:description', content: seo.description },
-      { property: 'og:type', content: 'website' },
-      { property: 'og:locale', content: 'pt_BR' },
-      { property: 'og:site_name', content: identity.name },
-      { property: 'og:image', content: OG_IMAGE },
-      { property: 'og:image:width', content: '1200' },
-      { property: 'og:image:height', content: '630' },
-      { property: 'og:image:alt', content: LOGO_ALT },
-      ...(seo.canonicalUrl
-        ? [{ property: 'og:url', content: seo.canonicalUrl }]
-        : []),
-
-      // Twitter Card
-      { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: seo.title },
-      { name: 'twitter:description', content: seo.description },
-      { name: 'twitter:image', content: OG_IMAGE },
-      { name: 'twitter:image:alt', content: LOGO_ALT },
+      { title: 'FlowStudio' },
     ],
-    links: [
-      // Favicon + apple-touch-icon (consome branding.logo.light)
-      { rel: 'icon', type: 'image/jpeg', href: LOGO_URL },
-      { rel: 'apple-touch-icon', href: LOGO_URL },
-
-      // Canonical URL (se configurada)
-      ...(seo.canonicalUrl
-        ? [{ rel: 'canonical', href: seo.canonicalUrl }]
-        : []),
-
-      // Preconnect Google Fonts
-      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: 'anonymous',
-      },
-      { rel: 'stylesheet', href: GOOGLE_FONTS_HREF },
-
-      // CSS do studio — ordem importa (vem de active-studio.styleHrefs)
-      ...styleHrefs.map((href) => ({ rel: 'stylesheet', href })),
-    ],
-    scripts: [
-      {
-        type: 'application/ld+json',
-        children: localBusinessJsonLd,
-      },
-    ],
+    links: [{ rel: 'stylesheet', href: systemThemeCssHref }],
   }),
   component: RootComponent,
   errorComponent: RootErrorBoundary,
   notFoundComponent: RootNotFound,
 })
 
+function SystemThemeVars() {
+  return (
+    <style
+      id="system-branding-vars"
+      dangerouslySetInnerHTML={{ __html: systemBrandingCss }}
+    />
+  )
+}
+
 function RootComponent() {
   return (
-    <html lang="pt-BR" className={themeClass}>
+    <html lang="pt-BR">
       <head>
         <HeadContent />
-        <style
-          id="studio-branding-vars"
-          dangerouslySetInnerHTML={{ __html: brandingCss }}
-        />
+        <SystemThemeVars />
       </head>
-      <body>
+      <body className={systemThemeClass}>
         <GlobalLoadingIndicator />
         <Outlet />
-        <Toaster
-          theme="dark"
-          position="top-center"
-          richColors
-          closeButton
-        />
+        <Toaster theme="dark" position="top-center" richColors closeButton />
         <Scripts />
       </body>
     </html>
@@ -174,16 +85,14 @@ function RootComponent() {
 
 function RootErrorBoundary({ error }: { error: Error }) {
   return (
-    <html lang="pt-BR" className={themeClass}>
+    <html lang="pt-BR">
       <head>
         <HeadContent />
-        <style
-          id="studio-branding-vars"
-          dangerouslySetInnerHTML={{ __html: brandingCss }}
-        />
+        <SystemThemeVars />
       </head>
       <body>
         <div
+          className={systemThemeClass}
           style={{
             minHeight: '100vh',
             display: 'flex',
@@ -231,16 +140,14 @@ function RootErrorBoundary({ error }: { error: Error }) {
 
 function RootNotFound() {
   return (
-    <html lang="pt-BR" className={themeClass}>
+    <html lang="pt-BR">
       <head>
         <HeadContent />
-        <style
-          id="studio-branding-vars"
-          dangerouslySetInnerHTML={{ __html: brandingCss }}
-        />
+        <SystemThemeVars />
       </head>
       <body>
         <div
+          className={systemThemeClass}
           style={{
             minHeight: '100vh',
             display: 'flex',

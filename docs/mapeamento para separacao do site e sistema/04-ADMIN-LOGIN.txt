@@ -1,0 +1,150 @@
+================================================================
+FLOWSTUDIO AI — INVESTIGACAO DE DESVINCULO SITE x SISTEMA
+DOC 04 — ADMIN-SHELL + LOGIN + API head() por rota
+================================================================
+Data: 2026-06-09
+Status: MAPEADO E COMPLETO. Vazamentos confirmados e dimensionados.
+
+----------------------------------------------------------------
+Q1 — RESPONDIDA (doc oficial TanStack Start/Router)
+----------------------------------------------------------------
+SIM. head() funciona por rota e COMPOE com o __root.
+- routeOptions.head retorna { title, meta, links, styles, scripts }.
+- Router faz DEDUPE automatico de title e meta (vence a ocorrencia
+  mais profunda; nested route sobrescreve parent).
+- Tags carregam/descarregam conforme visibilidade da rota.
+- Requer <HeadContent /> e <Scripts /> renderizados (JA TEMOS no __root).
+Fonte: tanstack.com/router .../document-head-management
+       tanstack.com/start .../guide/seo (exemplo em src/routes/index.tsx)
+
+>> IMPLICACAO DIRETA: podemos mover SEO/OG/JSON-LD/fonts/styleHrefs
+   do site PARA index.tsx via head() da rota '/'. O title/description
+   da landing vai sobrescrever o neutro do __root por dedupe. CSS e
+   scripts do site so carregam quando '/' esta ativa. EXATO o que
+   queremos. Plano viavel sem hack.
+
+----------------------------------------------------------------
+MAPA DE CONSUMO — ADMIN-SHELL
+----------------------------------------------------------------
+AdminLayout.tsx:
+  - recebe { session, studioName } por props. NAO importa site. OK.
+  - tokens: var(--gradient-app), var(--radius-button),
+    var(--color-text-body), var(--color-surface-alt). Tudo TOKEN.
+  - titulo via useMatches + staticData.title; fallback studioName.
+  - >> Limpo. Depende so de tokens + props. Nenhuma marca hardcoded.
+
+Topbar.tsx:
+  - props { title, onOpenMenu }. So tokens (--color-*, --font-heading,
+    --radius-button). Zero import de site. PERFEITO.
+
+Sidebar.tsx  >> VAZAMENTO CONFIRMADO (Doc 02 #2):
+  - linha 4: import { branding } from '@/sites/ruah/config/branding'
+  - uso: branding.logo.dark (linha 47) e branding.logo.alt (48).
+  - studioName JA chega por prop (linha 59) — esse esta certo.
+  - >> So o LOGO vaza. Resto e token. Vazamento PEQUENO e cirurgico.
+
+SidebarItem / nav-items / PlaceholderScreen / types:
+  - nao lidos, mas pelo padrao dos demais sao token+config de nav.
+  - >> registrar leitura rapida na execucao (baixo risco).
+
+>> RESUMO ADMIN: o unico acoplamento ao site e Sidebar.logo.
+   AdminLayout/Topbar ja sao 100% sistema (token+props). Otimo.
+
+----------------------------------------------------------------
+MAPA DE CONSUMO — LOGIN
+----------------------------------------------------------------
+LoginSplitLayout.tsx:
+  - 100% tokens (--color-accent, --color-primary, --color-surface-dark,
+    --color-accent-bright). Mesh + dither + divisoria. ZERO import site.
+  - >> Limpo. So depende de tokens.
+
+LoginBrandPanel.tsx  >> VAZAMENTO CONFIRMADO (Doc 02 #3):
+  - linha 2: import { branding, identity } from '@/config/active-studio'
+  - uso: branding.logo.light (49), branding.logo.alt (50),
+    identity.name (72), identity.slogan (75/83).
+  - tokens ok. O que vaza: LOGO + NOME + SLOGAN do studio.
+  - >> Este e o vazamento de MARCA mais "pesado": exibe a identidade
+     do studio na tela de login do sistema.
+
+ForgotPasswordLayout / ResetPasswordLayout:
+  - nao lidos. Provavel mesmo padrao (split + brand panel). Registrar
+    leitura na execucao p/ confirmar se reaproveitam LoginBrandPanel.
+
+>> RESUMO LOGIN: vazam logo+nome+slogan via LoginBrandPanel. Layout
+   em si (split/mesh) e sistema puro.
+
+----------------------------------------------------------------
+DIAGNOSTICO CONSOLIDADO (toda a investigacao Docs 01-04)
+----------------------------------------------------------------
+A separacao site x sistema esta 90% pronta na pratica. Os tokens
+ja sao do nucleo; admin-layout/topbar/login-layout ja sao sistema
+puro. O acoplamento residual e PEQUENO e concentrado em 3 pontos:
+
+  V1. __root.tsx  -> injeta TODA a identidade do site (tema, SEO,
+      fonts, JSON-LD, styleHrefs, brandingCss) no shell global.
+  V2. Sidebar.tsx -> branding.logo.dark do site.
+  V3. LoginBrandPanel.tsx -> branding.logo + identity.name/slogan.
+
+Tudo o mais (AdminLayout, Topbar, LoginSplitLayout, router, env,
+buildBrandingCss) ja respeita a fronteira.
+
+----------------------------------------------------------------
+DECISOES PENDENTES (Willians precisa fechar antes do plano)
+----------------------------------------------------------------
+DF1 — Marca no LOGIN: a tela de login mostra
+   (A) marca NEUTRA do sistema "FlowStudio", OU
+   (B) a marca do STUDIO ativo (logo/nome/slogan do ruah)?
+   >> Isto define se V3 vira "marca de sistema" ou "marca de studio
+      via canal de sistema". Recomendacao tecnica: discutir.
+
+DF2 — Marca na SIDEBAR (admin logado): logo exibido e
+   (A) neutro do sistema, OU
+   (B) do studio ativo?
+   >> Idem para V2.
+
+DF3 — TEMA do shell de sistema (__root): esquema
+   (A) reusar .theme-<mode> (mesma classe do site), OU
+   (B) usar tema de sistema separado ([data-theme] ou .theme-system)
+       que convive com o tema do site quando '/' aplica o seu?
+   >> Afeta como __root e index.tsx coexistem sem conflito de vars.
+
+DF4 — Onde mora "branding de sistema": 
+   (A) src/lib/core/system/branding.ts (config de sistema), OU
+   (B) outro local.
+   >> Reusa buildBrandingCss sem alterar o builder.
+
+----------------------------------------------------------------
+ESBOCO DE PLANO DE EXECUCAO (NAO executar — depende de DF1-DF4)
+----------------------------------------------------------------
+Passo 1 — Criar branding de sistema (DF4) + buildSystemBrandingCss
+          (reusa buildBrandingCss do nucleo). Tema premium dark.
+Passo 2 — __root.tsx vira shell NEUTRO:
+          - aplica tema/brandingCss de sistema (DF3)
+          - SEO neutro de sistema (title FlowStudio, viewport, charset)
+          - remove fonts do site, styleHrefs, JSON-LD, favicon do site
+          - Toaster theme conforme tema de sistema
+          - ErrorBoundary/NotFound em tokens de sistema (ja usam token)
+Passo 3 — index.tsx (rota '/') ganha head() proprio com TODA a
+          identidade do site (SEO/OG/twitter/fonts/styleHrefs/JSON-LD/
+          favicon) + injeta brandingCss do site (via <style> no
+          componente da rota ou styles[] do head). Dedupe cuida do
+          title. Site so "acende" sua identidade em '/'.
+Passo 4 — Sidebar (V2): logo conforme DF2 (sistema ou studio).
+Passo 5 — LoginBrandPanel (V3): marca conforme DF1.
+Passo 6 — Limpezas: TD1 (radius duplicado no builder), TD2 (main
+          background hardcoded em index), TD3 (base.css.err/base.csse).
+Passo 7 — Confirmar leitura de SidebarItem/nav-items/Placeholder e
+          Forgot/Reset layouts (baixo risco) antes de mexer.
+
+----------------------------------------------------------------
+TECHDEB (consolidado ate aqui)
+----------------------------------------------------------------
+TD1. buildBrandingCss nucleo: radius-* duplicado.
+TD2. index.tsx: <main> background '#1a3a3a' hardcoded -> var(--color-bg).
+TD3. sites/ruah/styles: base.css.err / base.csse (lixo).
+TD4. (novo) Forgot/Reset layouts: confirmar se reusam LoginBrandPanel
+     (se sim, V3 resolve os 3 de uma vez).
+
+----------------------------------------------------------------
+FIM DOC 04 — INVESTIGACAO ENCERRADA
+================================================================

@@ -1,13 +1,5 @@
-// src/features/dashboard/types.ts
 
-export interface DashboardAppointmentItem {
-  id: string;
-  startsAt: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
-  clientName: string;
-  serviceName: string;
-  staffName: string;
-}
+// src/features/dashboard/types.ts
 
 export interface DashboardLeadItem {
   id: string;
@@ -73,7 +65,6 @@ export interface AdminDashboardData {
   revenueSeries: RevenuePoint[];
   weekSeries: WeekDayPoint[];
   popularServices: PopularServiceItem[];
-  upcomingAppointments: DashboardAppointmentItem[];
   recentLeads: DashboardLeadItem[];
   recentClients: RecentClientItem[];
 }
@@ -84,8 +75,7 @@ export interface StaffDashboardData {
     todayAppointments: number;
     activeClients: number;
     inactiveClients: number;
-  };
-  upcomingAppointments: DashboardAppointmentItem[];
+  }; 
 }
 
 export type DashboardData = AdminDashboardData | StaffDashboardData;

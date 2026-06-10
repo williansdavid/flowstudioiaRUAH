@@ -96,7 +96,8 @@ export interface BrandShape {
   pill: string
 }
 
-export type BrandTheme = 'light' | 'dark'
+export type BrandTheme = 'light' | 'dark' | 'system-dark' | 'system-light'
+
 
 export interface BrandIdentity {
   colors: BrandColors

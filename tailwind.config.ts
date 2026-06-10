@@ -5,194 +5,63 @@ export default {
   theme: {
     extend: {
       colors: {
-        // === BRAND ===
-        brand: {
-          50:  'var(--brand-50)',
-          100: 'var(--brand-100)',
-          200: 'var(--brand-200)',
-          300: 'var(--brand-300)',
-          400: 'var(--brand-400)',
-          500: 'var(--brand-500)',
-          600: 'var(--brand-600)',
-          700: 'var(--brand-700)',
-          800: 'var(--brand-800)',
-          900: 'var(--brand-900)',
-          DEFAULT: 'var(--brand-500)',
-          fg: 'var(--brand-fg)',
+        primary: {
+          DEFAULT: 'var(--color-primary)',
+          hover: 'var(--color-primary-hover)',
         },
-
-        // === SURFACES (LEGADO) ===
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          hover: 'var(--color-accent-hover)',
+          bright: 'var(--color-accent-bright)',
+        },
+        bg: 'var(--color-bg)',
         surface: {
-          DEFAULT: 'var(--surface)',
-          muted:   'var(--surface-muted)',
-          subtle:  'var(--surface-subtle)',
-          dark:    'var(--surface-dark)',
+          DEFAULT: 'var(--color-surface)',
+          alt: 'var(--color-surface-alt)',
+          2: 'var(--color-surface-2)',
+          dark: 'var(--color-surface-dark)',
         },
-
-        // === FOREGROUND (LEGADO) ===
-        fg: {
-          DEFAULT: 'var(--fg)',
-          muted:   'var(--fg-muted)',
-        },
-
-        // === BORDERS (LEGADO) ===
-        line: {
-          DEFAULT: 'var(--border)',
-          strong:  'var(--border-strong)',
-        },
-
-        // === BACKGROUNDS HIERÁRQUICOS ===
-        bg: {
-          page:     'var(--bg-page)',
-          card:     'var(--bg-card)',
-          elevated: 'var(--bg-elevated)',
-          subtle:   'var(--bg-subtle)',
-          input:    'var(--bg-input)',
-          hover:    'var(--bg-hover)',
-        },
-
-        // === TEXTO HIERÁRQUICO ===
         text: {
-          strong:   'var(--fg-strong)',
-          DEFAULT:  'var(--fg-default)',
-          subtle:   'var(--fg-subtle)',
-          disabled: 'var(--fg-disabled)',
+          heading: 'var(--color-text-heading)',
+          body: 'var(--color-text-body)',
+          muted: 'var(--color-text-muted)',
+          'on-dark': 'var(--color-text-on-dark)',
+          'on-dark-muted': 'var(--color-text-on-dark-muted)',
         },
-
-        // === BORDAS HIERÁRQUICAS ===
         border: {
-          subtle:  'var(--border-subtle)',
-          DEFAULT: 'var(--border-default)',
-          strong:  'var(--border-strong)',
-          focus:   'var(--border-focus)',
+          DEFAULT: 'var(--color-border)',
+          accent: 'var(--color-border-accent)',
         },
-
-        // === ADMIN SIDEBAR ===
         sidebar: {
-          DEFAULT:     'var(--sidebar-bg)',
-          fg:          'var(--sidebar-fg)',
-          'fg-muted':  'var(--sidebar-fg-muted)',
-          border:      'var(--sidebar-border)',
-          hover:       'var(--sidebar-hover)',
-          'active-bg': 'var(--sidebar-active-bg)',
-          'active-fg': 'var(--sidebar-active-fg)',
+          DEFAULT: 'var(--color-sidebar-bg)',
+          text: 'var(--color-sidebar-text)',
+          active: 'var(--color-sidebar-active)',
         },
-
-        // === STATUS (calendar/appointments) ===
-        status: {
-          pending:   { DEFAULT: '#D97706', bg: '#FEF3C7' },
-          confirmed: { DEFAULT: '#0E7490', bg: '#CFFAFE' },
-          completed: { DEFAULT: '#15803D', bg: '#DCFCE7' },
-          cancelled: { DEFAULT: '#B91C1C', bg: '#FEE2E2' },
-          no_show:   { DEFAULT: '#475569', bg: '#E2E8F0' },
-        },
-
-        // === FEEDBACK ===
-        feedback: {
-          success: 'var(--success)',
-          error:   'var(--danger)',
-          warning: 'var(--warning)',
-          info:    'var(--info)',
-        },
-      },
-
-      ringColor: {
-        DEFAULT: 'var(--ring)',
-        strong:  'var(--ring-strong)',
-        brand:   'var(--brand-500)',
+        success: 'var(--color-success)',
+        danger: 'var(--color-danger)',
       },
 
       fontFamily: {
-        sans:    ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['"Cormorant Garamond"', '"Playfair Display"', 'Georgia', 'serif'],
-        mono:    ['"JetBrains Mono"', 'monospace'],
-      },
-
-      fontSize: {
-        xs:   ['var(--font-size-xs)',   { lineHeight: 'var(--line-height-normal)' }],
-        sm:   ['var(--font-size-sm)',   { lineHeight: 'var(--line-height-normal)' }],
-        base: ['var(--font-size-base)', { lineHeight: 'var(--line-height-normal)' }],
-        lg:   ['var(--font-size-lg)',   { lineHeight: 'var(--line-height-snug)'   }],
-        xl:   ['var(--font-size-xl)',   { lineHeight: 'var(--line-height-snug)'   }],
-        '2xl':['var(--font-size-2xl)',  { lineHeight: 'var(--line-height-snug)'   }],
-        '3xl':['var(--font-size-3xl)',  { lineHeight: 'var(--line-height-tight)'  }],
-        '4xl':['var(--font-size-4xl)',  { lineHeight: 'var(--line-height-tight)'  }],
-        '5xl':['var(--font-size-5xl)',  { lineHeight: 'var(--line-height-tight)'  }],
-        '6xl':['var(--font-size-6xl)',  { lineHeight: 'var(--line-height-tight)'  }],
-        '7xl':['var(--font-size-7xl)',  { lineHeight: 'var(--line-height-tight)'  }],
-      },
-
-      letterSpacing: {
-        tighter: 'var(--tracking-tighter)',
-        tight:   'var(--tracking-tight)',
-        normal:  'var(--tracking-normal)',
-        wide:    'var(--tracking-wide)',
-        wider:   'var(--tracking-wider)',
+        display: ['var(--font-display)'],
+        heading: ['var(--font-heading)'],
+        body: ['var(--font-body)'],
       },
 
       borderRadius: {
-        xs:    'var(--radius-xs)',
-        sm:    'var(--radius-sm)',
-        md:    'var(--radius-md)',
-        lg:    'var(--radius-lg)',
-        xl:    'var(--radius-xl)',
-        '2xl': 'var(--radius-2xl)',
-        '3xl': 'var(--radius-3xl)',
-        full:  'var(--radius-full)',
-      },
-
-      borderWidth: {
-        hairline: 'var(--border-width-hairline)',
-        thin:     'var(--border-width-thin)',
-        thick:    'var(--border-width-thick)',
+        card: 'var(--radius-card)',
+        button: 'var(--radius-button)',
+        pill: 'var(--radius-pill)',
       },
 
       boxShadow: {
-        // === Sistema semântico de elevação ===
-        flat:      'var(--elevation-flat)',
-        hairline:  'var(--elevation-hairline)',
-        raised:    'var(--elevation-raised)',
-        floating:  'var(--elevation-floating)',
-        overlay:   'var(--elevation-overlay)',
-        modal:     'var(--elevation-modal)',
-        brand:     'var(--shadow-brand)',
-
-        // === Aliases legado (retrocompat) ===
-        card:         'var(--shadow-card)',
-        'card-hover': 'var(--shadow-card-hover)',
-        elevated:     'var(--shadow-elevated)',
-        gold:         'var(--shadow-gold)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        accent: 'var(--shadow-accent)',
       },
 
-      transitionTimingFunction: {
-        'out-quart':   'var(--ease-out-quart)',
-        'out-expo':    'var(--ease-out-expo)',
-        'in-out-soft': 'var(--ease-in-out-soft)',
-        spring:        'var(--ease-spring)',
-      },
-
-      transitionDuration: {
-        fast:   '120ms',
-        base:   '200ms',
-        slow:   '320ms',
-        spring: '420ms',
-      },
-
-      backdropBlur: {
-        sm: 'var(--blur-sm)',
-        md: 'var(--blur-md)',
-        lg: 'var(--blur-lg)',
-        xl: 'var(--blur-xl)',
-      },
-
-      zIndex: {
-        dropdown: 'var(--z-dropdown)',
-        sticky:   'var(--z-sticky)',
-        overlay:  'var(--z-overlay)',
-        modal:    'var(--z-modal)',
-        popover:  'var(--z-popover)',
-        toast:    'var(--z-toast)',
-        tooltip:  'var(--z-tooltip)',
+      backgroundImage: {
+        app: 'var(--gradient-app)',
       },
     },
   },

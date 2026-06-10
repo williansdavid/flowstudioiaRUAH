@@ -1,12 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  getDashboardData,
-  KpiGrid,
-  UpcomingAppointments,
-  RecentLeads,
-} from '@/features/dashboard';
+import { getDashboardData, KpiGrid, RecentLeads } from '@/features/dashboard';
 import { ErrorState } from '@/components/feedback';
 
 const dashboardQuery = {
@@ -30,12 +25,11 @@ function DashboardPage() {
     <div className="space-y-6">
       <KpiGrid data={data} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <UpcomingAppointments items={data.upcomingAppointments} />
-        {data.role === 'admin' ? (
-          <RecentLeads items={data.recentLeads} />
-        ) : null}
-      </div>
+      {data.role === 'admin' ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <RecentLeads leads={data.recentLeads} />
+        </div>
+      ) : null}
     </div>
   );
 }

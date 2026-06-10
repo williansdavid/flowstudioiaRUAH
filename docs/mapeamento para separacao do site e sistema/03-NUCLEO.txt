@@ -1,0 +1,187 @@
+================================================================
+FLOWSTUDIO AI — INVESTIGACAO DE DESVINCULO SITE x SISTEMA
+DOC 03 — NUCLEO (coracao da separacao)
+================================================================
+Data: 2026-06-09
+Status: MAPEADO E COMPLETO. Quadro do nucleo 100% claro.
+
+----------------------------------------------------------------
+RESUMO EXECUTIVO
+----------------------------------------------------------------
+O __root.tsx e HOJE 100% acoplado ao SITE: tema, branding CSS,
+SEO, Open Graph, fonts, favicon, JSON-LD, theme-color e styleHrefs
+SAO TODOS do studio ruah (via @/config/active-studio).
+
+DESCOBERTA-CHAVE: o sistema de tokens JA E DO NUCLEO.
+- src/lib/core/utils/buildBrandingCss.ts = implementacao REAL
+- src/sites/ruah/utils/buildBrandingCss.ts = so FACHADA (reexporta core)
+Logo: NAO ha logica duplicada. O nucleo ja "sabe" gerar tokens.
+O que falta e o nucleo TER OS PROPRIOS VALORES (tema de sistema),
+em vez de usar os valores do site.
+
+----------------------------------------------------------------
+O QUE O __root.tsx INJETA HOJE (tudo do SITE)
+----------------------------------------------------------------
+No <html>:
+  - className={themeClass}      -> "theme-dark" (do branding do site)
+
+No <head> (head() + RootComponent):
+  - <title>, description, keywords        -> seo (site)
+  - theme-color = branding.colors.accent  -> SITE
+  - Open Graph completo (og:*)            -> seo + identity (site)
+  - Twitter Card                          -> seo (site)
+  - favicon/apple-touch = branding.logo   -> SITE
+  - canonical = seo.canonicalUrl          -> SITE
+  - Google Fonts (Playfair/Montserrat/Lato) HARDCODED -> fontes do SITE
+  - styleHrefs (5 CSS do studio)          -> SITE
+  - <style id="studio-branding-vars">{brandingCss}</style> -> SITE
+  - <script ld+json> LocalBusiness        -> SITE
+
+RootErrorBoundary e RootNotFound:
+  - tambem aplicam themeClass + brandingCss (SITE)
+  - usam var(--color-*), var(--radius-*), var(--font-*) -> tokens do SITE
+  - Toaster theme="dark" HARDCODED
+
+>> CONCLUSAO: hoje TODA pagina do app (incluindo /login e /admin)
+   herda tema, fonts e CSS vars do studio ruah. O sistema NAO tem
+   identidade visual propria — ele "pega carona" no site.
+
+----------------------------------------------------------------
+FORMATO DE TOKEN (definido pelo NUCLEO — buildBrandingCss)
+----------------------------------------------------------------
+Escopo: .theme-<mode>  (ex.: .theme-dark)
+Prefixo de cor:  --color-*
+Prefixo de fonte: --font-*
+Prefixo de raio: --radius-*
+Mais: --color-surface-2, --shadow-*, --gradient-app (derivados)
+
+Tokens gerados (lista real):
+  --color-primary / -hover
+  --color-accent / -hover / -bright
+  --color-bg, --color-surface, --color-surface-alt, --color-surface-dark
+  --color-surface-2 (derivado color-mix)
+  --color-text-heading/body/muted/on-dark/on-dark-muted
+  --color-border, --color-border-accent
+  --font-display, --font-heading, --font-body
+  --radius-card, --radius-button, --radius-pill
+  --shadow-sm/md/lg/accent
+  --gradient-app
+
+OBS: ha DUPLICATA inofensiva no array (radius-card/button/pill
+aparecem 2x, linhas 65-67 e 69-71). Sobrescreve igual, sem efeito.
+Registrar como micro-techdeb do nucleo (limpar junto na execucao).
+
+>> IMPORTANTE PRA SEPARACAO: o tema de SISTEMA vai usar O MESMO
+   buildBrandingCss e O MESMO formato de token (--color-*, etc).
+   Ou seja: sistema e site falam a MESMA "linguagem de tokens".
+   Isso e OTIMO: admin/login podem usar var(--color-*) e so muda
+   QUEM preenche os valores (branding de sistema vs branding do site).
+
+----------------------------------------------------------------
+COMO O SITE E RENDERIZADO (index.tsx)
+----------------------------------------------------------------
+- Rota '/' = LandingRuah.
+- Importa componentes DIRETO de @/sites/ruah/components (vazamento #1
+  do Doc 02 — mas LEGITIMO: index e a borda do site).
+- loader: fetchPublicServices() (server fn do nucleo, lib/public).
+- <main style={{ background: '#1a3a3a' }}> -> COR HARDCODED!
+  >> techdeb do SITE: deveria ser var(--color-bg). Nao mexer agora
+     (e do site), so registrar.
+
+----------------------------------------------------------------
+ROUTER / ENV / APP.CSS
+----------------------------------------------------------------
+router.tsx:
+  - getRouter() (nome travado pelo contrato do Start). NAO acoplado
+    a site. QueryClient fresco por request. SSR-query integrado. OK.
+  - NAO precisa mexer na separacao.
+
+env.ts:
+  - Ja documenta explicitamente: identidade do studio NAO mora aqui,
+    mora em sites/<studio>/config. Coerente com a arquitetura. OK.
+  - Tem schema client/server, Evolution e OpenAI ja previstos. OK.
+  - NAO precisa mexer na separacao.
+
+app.css:
+  - So @tailwind base/components/utilities. Limpo. OK.
+  - Aqui (ou em arquivo importado por ele) e onde pode entrar o
+    TEMA DE SISTEMA base (ex.: :root / [data-theme] de sistema),
+    se decidirmos que o sistema tem CSS vars default fora do
+    .theme-<mode> do studio.
+
+----------------------------------------------------------------
+DIAGNOSTICO DA SEPARACAO (o problema real, em 1 frase)
+----------------------------------------------------------------
+O __root mistura DOIS papeis: "shell HTML do app" (sistema) e
+"head/tema da landing publica" (site). Eles precisam ser separados:
+__root vira shell NEUTRO de sistema; tudo que e do site DESCE pra
+index.tsx (a rota que de fato renderiza o site).
+
+----------------------------------------------------------------
+DESENHO DA SEPARACAO (proposta — NAO executar ainda)
+----------------------------------------------------------------
+APROVEITANDO que tokens ja sao do nucleo e site<->sistema falam a
+mesma linguagem de tokens, a separacao fica assim:
+
+[ __root.tsx ] vira SHELL NEUTRO DE SISTEMA:
+  - <html> com tema de SISTEMA (ex.: class "theme-system-dark" ou
+    [data-theme="dark"]) — premium dark default.
+  - injeta brandingCss de SISTEMA (buildBrandingCss(systemBranding)).
+  - SEO neutro/minimo de sistema (title "FlowStudio", robots, etc).
+  - SEM Google Fonts do site (sistema escolhe suas fonts).
+  - SEM styleHrefs do site. SEM JSON-LD. SEM favicon do site.
+  - Toaster theme controlado pelo tema de sistema.
+  - ErrorBoundary/NotFound usam tokens de sistema.
+
+[ index.tsx ] (rota '/') ABSORVE o que era do site:
+  - aplica tema/branding/fonts/SEO/JSON-LD/styleHrefs do studio
+    (via head() da PROPRIA rota '/', que o TanStack permite).
+  - continua renderizando @/sites/ruah/components (legitimo).
+
+[ Sidebar.tsx / LoginBrandPanel.tsx ] (Doc 02, vazamentos #2/#3):
+  - param de consumir branding do SITE.
+  - passam a consumir identidade/branding de SISTEMA (ou marca
+    do studio via canal de sistema, a decidir DF1/DF2).
+
+NECESSARIO CRIAR (escopo de execucao):
+  - Um "branding de sistema" (BrandIdentity preenchido com a
+    identidade FlowStudio premium dark/light) em lib/core ou
+    config de sistema. Reusa buildBrandingCss SEM mudar o builder.
+  - Definir como a rota '/' injeta head proprio (head() na rota
+    index, que o Start suporta) — validar API na Fase 4.
+
+----------------------------------------------------------------
+PERGUNTAS QUE A FASE 4 PRECISA FECHAR (antes de planejar execucao)
+----------------------------------------------------------------
+Q1. TanStack Start permite head() (meta/links/scripts) por rota
+    filha, somando ao do __root? (precisamos confirmar pra mover
+    SEO/fonts/styleHrefs do site pra index.tsx). >> VALIDAR.
+Q2. Como o admin/login devem exibir marca: neutra FlowStudio ou
+    marca do studio ativo? (DF1/DF2). >> DECISAO DO WILLIANS.
+Q3. Tema de sistema: usa .theme-<mode> (mesmo esquema do site) ou
+    [data-theme] separado? Convivencia das duas classes no <html>
+    quando a landing aplicar a sua. >> DECIDIR esquema.
+Q4. Onde mora o "branding de sistema": lib/core/system-branding ou
+    um config de sistema dedicado? >> DECIDIR local.
+
+----------------------------------------------------------------
+TECHDEB REGISTRADO NESTA FASE
+----------------------------------------------------------------
+TD1. buildBrandingCss (nucleo): radius-* duplicado (linhas 65-71).
+     Limpar na execucao. Inofensivo hoje.
+TD2. index.tsx: <main background:'#1a3a3a'> hardcoded -> deveria
+     ser var(--color-bg). techdeb do SITE.
+TD3. Sites styles: base.css.err / base.csse (lixo, Doc 01). SITE.
+
+----------------------------------------------------------------
+ALVOS DA PROXIMA FASE (04 — ADMIN/LOGIN + API de head por rota)
+----------------------------------------------------------------
+- Ler AdminLayout, Topbar, Sidebar, LoginBrandPanel, LoginSplitLayout
+  INTEIROS: ver TODO uso de var(--color-*) e de branding/identity.
+- Confirmar API de head() por rota no TanStack Start (Q1).
+- Mapear exatamente o que admin/login precisam de "marca" pra
+  fechar DF1/DF2.
+
+----------------------------------------------------------------
+FIM DOC 03
+================================================================

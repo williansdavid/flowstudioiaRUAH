@@ -1,0 +1,92 @@
+================================================================
+FLOWSTUDIO AI — INVESTIGACAO DE DESVINCULO SITE x SISTEMA
+DOC 00 — MISSAO E REGRAS TRAVADAS
+================================================================
+Data: 2026-06-09
+Status: BASE IMUTAVEL (nao muda entre rodadas)
+
+----------------------------------------------------------------
+MISSAO
+----------------------------------------------------------------
+Desvincular o SISTEMA do SITE.
+Hoje o nucleo (__root.tsx) importa de @/config/active-studio, que
+reexporta de @/sites/ruah/studio. Isso acopla nucleo ao site e
+fere a regra de ouro do projeto (Sistema NUNCA importa de sites/).
+Objetivo: nucleo 100% neutro, site isolado, zero acoplamento.
+
+----------------------------------------------------------------
+VERDADES TRAVADAS (confirmadas pelo Willians)
+----------------------------------------------------------------
+1. src/sites/** e INTOCAVEL. Esta em producao. Nada la dentro muda.
+
+2. Qualquer alteracao que TENHA que tocar o site = PRIORIDADE e
+   testada em DEV antes, pra nao quebrar producao.
+
+3. Todo o resto e fase de criacao e pode ser reconstruido do zero:
+   - src/routes/ (exceto a landing index.tsx, que renderiza o site)
+   - src/features/
+   - src/lib/
+   - src/components/
+   - src/server/
+   Nada no sistema esta em producao. Nao ha "quebra" a temer no sistema.
+
+4. __root.tsx PODE ser reescrito. E o ponto de separacao site x sistema.
+
+5. SISTEMA tem 2 TEMAS: dark e light. Default: DARK.
+   Direcao visual: PREMIUM.
+
+----------------------------------------------------------------
+FATOS TECNICOS JA CONFIRMADOS (investigacao parcial anterior)
+----------------------------------------------------------------
+A. active-studio.ts = "export * from '@/sites/ruah/studio'".
+   Exporta: branding, content, identity, brandingCss, themeClass,
+   seo, buildLocalBusinessJsonLd, styleHrefs.
+
+B. __root.tsx HOJE consome todos esses exports do site:
+   - <html className={themeClass}> (classe de tema do site)
+   - <style id="studio-branding-vars">{brandingCss}</style>
+   - SEO completo (title, description, OG, Twitter, keywords)
+   - favicon + theme-color (de branding.logo / branding.colors.accent)
+   - Google Fonts (Playfair Display, Montserrat, Lato)
+   - styleHrefs (CSS do studio)
+   - JSON-LD LocalBusiness
+   - Toaster theme="dark", GlobalLoadingIndicator, Outlet, Scripts
+   - Boundaries Error/NotFound usando var(--color-*)
+
+C. src/styles/app.css = SO tem @tailwind base/components/utilities.
+   NAO existe CSS de sistema ainda.
+
+D. buildBrandingCss (nucleo) gera ".theme-<mode> { --color-*; --font-*;
+   --radius-*; --shadow-*; --gradient-app }" — tokens DO SITE,
+   namespace --color-*, seletor por CLASSE .theme-dark.
+
+E. index.tsx (landing) renderiza componentes de @/sites/ruah/components
+   + loader fetchPublicServices(). Tem background '#1a3a3a' hardcoded
+   no <main>. E arquivo de nucleo (pode reescrever) mas RENDERIZA o site.
+
+----------------------------------------------------------------
+DECISOES DE ARQUITETURA (a validar/registrar nas proximas fases)
+----------------------------------------------------------------
+D1. Namespace de tokens do SISTEMA: --fs-* (evita colisao com --color-*
+    do site). Seletor por ATRIBUTO [data-theme] (site usa CLASSE).
+    >> PENDENTE: confirmar na Fase 5.
+
+D2. Tema do site (themeClass + brandingCss) sai do <html> do __root e
+    vai pra um wrapper na rota / (index.tsx), pois __root neutro nao
+    aplica mais classe de site no <html>.
+    >> PENDENTE: confirmar na Fase 5.
+
+D3. SEO/Fontes/JSON-LD do site descem do __root pra index.tsx (head()).
+    __root passa a ter SEO neutro de sistema.
+    >> PENDENTE: confirmar na Fase 5.
+
+----------------------------------------------------------------
+STACK (referencia)
+----------------------------------------------------------------
+TanStack Start (SSR) + TanStack Router + React Query + TypeScript
+estrito (noUncheckedIndexedAccess) + Supabase + Tailwind + Vite +
+Netlify + Lucide + Sonner + Zod + framer-motion.
+
+----------------------------------------------------------------
+FIM DOC 00
+================================================================

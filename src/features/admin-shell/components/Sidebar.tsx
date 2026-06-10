@@ -1,7 +1,7 @@
 import { LogOut } from 'lucide-react';
 import { SidebarItem } from './SidebarItem';
 import { getGroupedNavItemsForRole } from '../config/nav-items';
-import { branding } from '@/sites/ruah/config/branding';
+import { branding } from '@/config/active-studio';
 import type { SessionData } from '@/features/auth/types';
 
 interface SidebarProps {
@@ -26,8 +26,8 @@ export function Sidebar({
   return (
     <div
       className="flex h-full flex-col border-r"
-      style={{
-        backgroundColor: 'var(--color-surface)',
+      // dentro do <div> raiz da Sidebar
+      style={{       
         borderColor: 'var(--color-border)',
       }}
     >

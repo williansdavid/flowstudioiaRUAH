@@ -59,7 +59,11 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.25 }}
-              className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-64 backdrop-blur-xl lg:hidden"
+              style={{
+                backgroundColor:
+                  'color-mix(in srgb, var(--color-surface) 95%, transparent)',
+              }}
             >
               <button
                 onClick={() => setMobileOpen(false)}
@@ -83,8 +87,13 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar title={title} onOpenMenu={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <div className="mx-auto h-full max-w-7xl">
+        <main className="relative flex-1 overflow-y-auto p-4 lg:p-6">
+          {/* Camada de escurecimento — só sobre a área de conteúdo. Calibrar /30. */}
+          <div
+            className="pointer-events-none absolute inset-0 bg-black/30"
+            aria-hidden
+          />
+          <div className="relative mx-auto h-full max-w-7xl">
             <Outlet />
           </div>
         </main>

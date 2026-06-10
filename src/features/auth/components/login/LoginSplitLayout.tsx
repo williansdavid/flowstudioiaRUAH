@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import { LoginBrandPanel } from './LoginBrandPanel';
 import { LoginForm } from '../LoginForm';
 
@@ -7,7 +7,7 @@ import { LoginForm } from '../LoginForm';
  * Desktop (lg+): 2 colunas (brand | form). Mobile: brand vira header + form.
  *
  * Fundo UNICO em mesh sobrio (1 linear base + 2 radiais difusos) cobrindo
- * a tela inteira — elimina o vinco entre colunas. Camada de dither
+ * a tela inteira â€” elimina o vinco entre colunas. Camada de dither
  * (feTurbulence) em overlay quebra o banding 8-bit. SSR-safe (strings estaticas).
  */
 
@@ -19,10 +19,10 @@ const NOISE_SVG =
 const MESH_BACKGROUND = [
   'radial-gradient(ellipse 120% 90% at 20% -10%, color-mix(in srgb, var(--color-accent) 9%, transparent) 0%, transparent 60%)',
   'radial-gradient(ellipse 100% 90% at 110% 110%, color-mix(in srgb, var(--color-accent-bright) 8%, transparent) 0%, transparent 65%)',
-  'linear-gradient(160deg, var(--color-primary) 0%, var(--color-surface-dark) 100%)',
+  'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface-dark) 100%)',
 ].join(', ');
 
-// Divisoria dourada vertical — trecho central (so desktop). Gradiente
+// Divisoria dourada vertical â€” trecho central (so desktop). Gradiente
 // some nas pontas para dar o efeito "linha curta no meio".
 const DIVIDER_GRADIENT =
   'linear-gradient(to bottom, transparent 0%, var(--color-accent) 50%, transparent 100%)';
@@ -49,7 +49,7 @@ export function LoginSplitLayout() {
         }}
       />
 
-      {/* Divisoria dourada vertical — trecho central (so desktop) */}
+      {/* Divisoria dourada vertical â€” trecho central (so desktop) */}
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-1/2 hidden h-[40vh] w-px -translate-x-1/2 -translate-y-1/2 lg:block"
@@ -59,7 +59,7 @@ export function LoginSplitLayout() {
       {/* Lado brand */}
       <LoginBrandPanel />
 
-      {/* Lado form — card glass */}
+      {/* Lado form â€” card glass */}
       <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-12 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

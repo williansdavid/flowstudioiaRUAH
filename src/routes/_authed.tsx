@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { getSession } from '@/server/auth/getSession';
 import { canAccessAdmin } from '@/features/auth/types';
 import type { SessionData } from '@/features/auth/types';
+import { systemThemeClass } from '@/lib/core/system';
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async (): Promise<{ session: SessionData }> => {
@@ -16,5 +17,13 @@ export const Route = createFileRoute('/_authed')({
 
     return { session };
   },
-  component: () => <Outlet />,
+  component: AuthedLayout,
 });
+
+function AuthedLayout() {
+  return (
+    <div className={systemThemeClass}>
+      <Outlet />
+    </div>
+  );
+}

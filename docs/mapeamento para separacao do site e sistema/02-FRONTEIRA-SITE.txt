@@ -1,0 +1,141 @@
+================================================================
+FLOWSTUDIO AI — INVESTIGACAO DE DESVINCULO SITE x SISTEMA
+DOC 02 — FRONTEIRA SITE x SISTEMA (caca-acoplamento)
+================================================================
+Data: 2026-06-09
+Status: MAPEADO E COMPLETO. Fronteira fechada, zero ambiguidade.
+
+----------------------------------------------------------------
+RESUMO EXECUTIVO
+----------------------------------------------------------------
+O sistema toca o site em EXATAMENTE 5 arquivos.
+Existe 1 canal OFICIAL (active-studio.ts) e 2 VAZAMENTOS que furam
+o canal importando direto de @/sites/ruah/**.
+Nenhum import relativo suspeito (../sites) — [2C] veio limpo.
+
+>> Os 2 vazamentos sao a CAUSA RAIZ da memoria ciclica: ao consertar
+   so o __root, esses dois ficam pra tras e reacoplam o sistema.
+
+----------------------------------------------------------------
+MAPA COMPLETO DOS 5 CONSUMIDORES
+----------------------------------------------------------------
+
+[1] config/active-studio.ts                    -> CANAL OFICIAL
+    Linha 17: export * from '@/sites/ruah/studio'
+    Papel: switch unico de studio. E O PONTO que deve concentrar
+    TODO o acoplamento. Por design, ele PODE importar de sites/.
+
+[2] routes/__root.tsx                           -> CANAL OFICIAL (ok)
+    Linha 40: import {...} from '@/config/active-studio'
+    Linha 135: usa active-studio.styleHrefs
+    Papel: nucleo consome via canal correto. ESTE e o alvo de
+    reescrita (ponto de separacao). Hoje injeta tema/SEO/fonts/
+    JSON-LD/styleHrefs do site no <html>.
+
+[3] routes/index.tsx                            -> VAZAMENTO #1 (aceitavel*)
+    Linha 27: import {...} from '@/sites/ruah/components'
+    Papel: landing renderiza os componentes visuais do site.
+    *Aceitavel PORQUE: index.tsx E a rota que renderiza o site.
+    Faz sentido ela conhecer os componentes do site. POReM importa
+    DIRETO de @/sites/ruah (hardcoded no studio "ruah"), nao via
+    canal. Decisao na Fase 5: manter direto (index = fronteira do
+    site) ou rotear via canal. Tende a MANTER direto — index.tsx e
+    a borda legitima site/sistema.
+
+[4] features/admin-shell/components/Sidebar.tsx -> VAZAMENTO #2 (CORRIGIR)
+    Linha 4: import { branding } from '@/sites/ruah/config/branding'
+    Papel: Sidebar do ADMIN (sistema puro!) importa branding do site
+    HARDCODADO no caminho 'ruah'. ISSO E ACOPLAMENTO ERRADO.
+    O admin-shell e nucleo compartilhado — NAO pode conhecer "ruah".
+    >> ALVO DE CORRECAO na execucao.
+
+[5] features/auth/components/login/LoginBrandPanel.tsx -> VAZAMENTO #3 (avaliar)
+    Linha 2: import { branding, identity } from '@/config/active-studio'
+    Papel: painel de marca da tela de login usa branding+identity.
+    Importa via CANAL (melhor que o Sidebar), mas mesmo assim:
+    o LOGIN e sistema. Deveria usar tema/identidade do SISTEMA,
+    nao do site. Confirmado o cenario: login premium dark/light de
+    sistema, sem marca do studio? >> DECISAO Fase 4/5.
+
+----------------------------------------------------------------
+CONTRATO TRAVADO (active-studio.ts -> ruah/studio.ts)
+----------------------------------------------------------------
+active-studio.ts = APENAS:  export * from '@/sites/ruah/studio'
+(zero logica propria — puro switch)
+
+studio.ts EXPORTA (a superficie completa que o nucleo consome):
+
+  DADOS CRUS:
+    - branding          (objeto de marca do site)
+    - content           (textos/conteudo do site)
+    - identity          (identidade: nome, contato, etc)
+    - buildLocalBusinessJsonLd   (funcao pura -> JSON-LD)
+
+  VALORES COMPUTADOS:
+    - brandingCss : string   = buildBrandingCss(branding)
+                                gera ".theme-<mode> { --color-*; ... }"
+    - themeClass  : string   = `theme-${branding.theme}`  (ex "theme-dark")
+    - seo : ResolvedSeo      = buildSeo(content.seo, identity)
+
+  ASSETS DE ESTILO (Vite ?url, ORDEM IMPORTA):
+    - styleHrefs : readonly string[] = [
+        themeCss, baseCss, animationsCss, galleryCss, testimonialsCss
+      ]
+
+----------------------------------------------------------------
+OBSERVACOES CRITICAS
+----------------------------------------------------------------
+C1. O contrato e LIMPO e bem desenhado. studio.ts ja isola tudo do
+    site numa unica superficie. O problema NAO e o contrato — e que
+    3 arquivos de SISTEMA consomem coisa de SITE quando nao deveriam.
+
+C2. CLASSIFICACAO DOS TOQUES:
+    LEGITIMO (site renderizando site):
+      - index.tsx (renderiza componentes do site) — borda natural
+    ERRADO (sistema consumindo marca do site):
+      - Sidebar.tsx        -> branding do site no admin
+      - LoginBrandPanel.tsx -> branding+identity do site no login
+      - __root.tsx         -> tema/SEO/fonts/JSON-LD do site no <html>
+
+C3. O __root injeta no <html> coisas que sao 100% do SITE:
+    themeClass, brandingCss, seo, fonts Google, JSON-LD, styleHrefs.
+    No desvinculo, isso DESCE para index.tsx (rota do site), e o
+    __root vira NEUTRO (tema de sistema --fs-*, SEO de sistema).
+
+C4. SISTEMA NAO TEM TEMA PROPRIO AINDA. Hoje o unico tema visual
+    aplicado no app inteiro vem do SITE (themeClass no <html>).
+    Ao neutralizar __root, o admin/login ficam SEM tema ate criarmos
+    o tema de sistema (dark default + light, premium). Isso e ESCOPO
+    da fase de execucao, nao um risco — sistema nao esta em producao.
+
+----------------------------------------------------------------
+DECISOES A FECHAR NA FASE 5 (registradas, nao decididas ainda)
+----------------------------------------------------------------
+DF1. Sidebar.tsx: remover branding do site. Usar identidade/logo de
+     SISTEMA (ou prop injetada). Como o admin deve exibir a marca?
+     >> PRECISA DECIDIR: admin mostra marca do studio ou marca neutra
+        FlowStudio? (provavel: marca do studio via prop/config de
+        sistema, NAO import direto de sites/)
+
+DF2. LoginBrandPanel.tsx: idem. Login usa marca de quem?
+     >> PRECISA DECIDIR.
+
+DF3. index.tsx: mantem import direto de @/sites/ruah/components?
+     >> Tende a SIM (e a rota-fronteira do site).
+
+DF4. __root.tsx: neutralizar. Tema de sistema --fs-* + [data-theme].
+     SEO/fonts/JSON-LD do site descem pra index.tsx.
+
+----------------------------------------------------------------
+ALVOS DA PROXIMA FASE (03 — NUCLEO: __root, entry, router, env)
+----------------------------------------------------------------
+- Ler __root.tsx INTEIRO (e o coracao da separacao).
+- Ler index.tsx INTEIRO (rota do site).
+- Ler router.tsx, app.css, env.ts.
+- Ler buildBrandingCss do NUCLEO (lib/core) vs do SITE (entender o
+  formato de token que o sistema vai usar pro tema premium).
+- Entender exatamente o que sai do <html> e pra onde vai.
+
+----------------------------------------------------------------
+FIM DOC 02
+================================================================

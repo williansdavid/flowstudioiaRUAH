@@ -1,5 +1,4 @@
 import { Link } from '@tanstack/react-router';
-import { motion } from 'framer-motion';
 import type { NavItem } from '../types';
 
 interface SidebarItemProps {
@@ -7,8 +6,32 @@ interface SidebarItemProps {
   onNavigate?: () => void;
 }
 
-const baseClass =
-  'group relative flex items-center gap-3 rounded-[var(--radius-button)] px-3 py-2.5 text-sm font-medium transition-all duration-200';
+/**
+ * Estilo via classes Tailwind + data-[status=active] (setado pelo
+ * TanStack Router). Sem manipulacao imperativa de style no mouse:
+ * Router governa o ativo, CSS governa o hover. Os dois nao brigam.
+ *
+ * Camadas:
+ *  - idle  : texto muted, fundo transparente
+ *  - hover : texto heading, fundo surface-alt (camada leve)
+ *  - active: texto heading, fundo surface-2 (camada elevada)
+ *            + barra dourada + shadow-sm + translateX
+ */
+const itemClass = [
+  'group relative flex items-center gap-3 rounded-[var(--radius-button)]',
+  'px-3 py-2.5 text-sm font-medium',
+  // normal: cinza-quente #8A857C — blindado contra .theme-*-dark a { color }
+  'text-[var(--color-sidebar-text)]!',
+  'transition-all duration-200',
+  // hover (nao ativo): fundo discreto branco + clareia o texto
+  'hover:bg-white/5',
+  'hover:text-[var(--color-text-heading)]!',
+  'hover:translate-x-0.5',
+  // active: texto + icone dourados, fundo dourado discreto
+  'data-[status=active]:text-[var(--color-sidebar-active)]!',
+  'data-[status=active]:bg-[color-mix(in_srgb,var(--color-sidebar-active)_10%,transparent)]',
+  'data-[status=active]:translate-x-0.5',
+].join(' ');
 
 export function SidebarItem({ item, onNavigate }: SidebarItemProps) {
   const Icon = item.icon;
@@ -18,37 +41,12 @@ export function SidebarItem({ item, onNavigate }: SidebarItemProps) {
       to={item.to}
       onClick={onNavigate}
       activeOptions={{ exact: item.to === '/admin' }}
-      className={baseClass}
-      style={{ color: 'var(--color-text-muted)' }}
-      activeProps={{
-        className: baseClass,
-        style: {
-          color: 'var(--color-text-heading)',
-          backgroundColor: 'var(--color-surface-2)',
-          boxShadow: 'var(--shadow-sm)',
-        },
-      }}
-      // hover via inline handlers (mantém tokens, sem CSS extra)
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = 'var(--color-text-heading)';
-        e.currentTarget.style.backgroundColor = 'var(--color-surface-2)';
-        e.currentTarget.style.transform = 'translateX(2px)';
-      }}
-      onMouseLeave={(e) => {
-        // só limpa se não for o item ativo
-        const active = e.currentTarget.dataset.status === 'active';
-        if (!active) {
-          e.currentTarget.style.color = 'var(--color-text-muted)';
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }
-        e.currentTarget.style.transform = 'translateX(0)';
-      }}
+      className={itemClass}
     >
-      {/* Barra dourada lateral — visível só no active via group */}
+      {/* Barra dourada lateral — visivel so no ativo */}
       <span
         aria-hidden
-        className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full opacity-0 transition-opacity group-[.active]:opacity-100"
-        style={{ backgroundColor: 'var(--color-accent)' }}
+        className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[var(--color-sidebar-active)] opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100"
       />
       <Icon className="h-[18px] w-[18px] shrink-0" />
       <span className="truncate">{item.label}</span>

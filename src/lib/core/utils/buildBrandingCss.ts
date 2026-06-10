@@ -1,4 +1,4 @@
-﻿/**
+/**
  * buildBrandingCss (NUCLEO)
  * ----------------------------------------------------------------
  * Converte um objeto BrandIdentity em uma string CSS contendo
@@ -56,15 +56,15 @@ export function buildBrandingCss(branding: BrandIdentity): string {
     ['--color-border', ui.border],
     ['--color-border-accent', ui.borderAccent],
 
+    // Feedback semantico (derivado — fixo nos 2 temas, KPIs/finance)
+    ['--color-success', '#15803D'],
+    ['--color-danger', '#B91C1C'],    
+
     // Typography
     ['--font-display', typography.display],
     ['--font-heading', typography.heading],
     ['--font-body', typography.body],
 
-    // Shape
-    ['--radius-card', shape.card],
-    ['--radius-button', shape.button],
-    ['--radius-pill', shape.pill],
     // Shape
     ['--radius-card', shape.card],
     ['--radius-button', shape.button],
@@ -84,6 +84,13 @@ export function buildBrandingCss(branding: BrandIdentity): string {
     // Gradiente diagonal do app — mesmo efeito da tela de login.
     ['--gradient-app', `radial-gradient(120% 120% at 0% 0%, ${surfaces.surface} 0%, ${surfaces.background} 45%, ${surfaces.surfaceDark} 100%)`],
 
+    // ── Sidebar (derivada — shell escuro coeso nos 2 temas) ───────
+    // bg: surfaceDark levemente tingido pela cor primaria do tema.
+    // text: reaproveita text.muted (no dark e identico ao legado #8A857C).
+    // active: accentBright (champagne) — destaque do item ativo.
+    ['--color-sidebar-bg', `color-mix(in srgb, ${surfaces.surfaceDark} 88%, ${colors.primary})`],
+    ['--color-sidebar-text', text.muted],
+    ['--color-sidebar-active', colors.accentBright],
   ]
 
   const body = vars.map(([k, v]) => `  ${k}: ${v};`).join('\n')
