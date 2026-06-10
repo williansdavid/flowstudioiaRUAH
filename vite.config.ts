@@ -1,10 +1,13 @@
 import { defineConfig } from "vite";
+import path from 'node:path'
+import os from 'node:os'
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import netlify from "@netlify/vite-plugin-tanstack-start";
 import viteReact from "@vitejs/plugin-react";
 import tsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  cacheDir: path.join(os.tmpdir(), 'flowstudio-vite-cache'),
   server: { port: 3000 },
   resolve: {
     dedupe: ["react", "react-dom"],

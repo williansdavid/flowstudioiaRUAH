@@ -1,5 +1,11 @@
-
 // src/features/dashboard/types.ts
+
+export interface RevenueByStaffItem {
+  staffId: string | null;
+  staffName: string;
+  total: number;
+}
+
 
 export interface DashboardLeadItem {
   id: string;

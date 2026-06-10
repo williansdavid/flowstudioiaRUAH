@@ -1,3 +1,4 @@
+import { RevenueByStaffChart } from '@/features/dashboard/components/RevenueByStaffChart';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +29,7 @@ function DashboardPage() {
       {data.role === 'admin' ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <RecentLeads leads={data.recentLeads} />
+          <RevenueByStaffChart />
         </div>
       ) : null}
     </div>

@@ -1,0 +1,133 @@
+================================================================
+FLOWSTUDIO AI - PLANO-MASTER
+MISSAO: DESVINCULO SITE x SISTEMA
+================================================================
+Criado: 2026-06-09
+Status global: [ ] EM ANDAMENTO (F1-F4 concluidas | F5-F6 pendentes)
+Ultima atualizacao: 2026-06-10 (F1-F4 concluidas via marco unico; DF1=A fechado)
+
+----------------------------------------------------------------
+PREMISSA TECNICA REVISADA (Willians)
+----------------------------------------------------------------
+(inalterada - tema por zona de rota; .theme-* escopado em classe;
+ __root neutro; cada zona injeta e escopa o seu proprio tema.)
+
+DESVIOS CONFIRMADOS NA EXECUCAO (marco unico 2026-06-10):
+  D-A. "_app.tsx" do plano foi implementado como "_auth.tsx"
+       (nome reflete a zona de autenticacao). Pathless, sem guard,
+       aplica systemThemeClass. URLs inalteradas.
+  D-B. Tema de sistema NAO e unico. Foram criados DOIS BrandIdentity:
+       systemDark  -> ".theme-system-dark"
+       systemLight -> ".theme-system-light"
+       (coerente com DOC 00: sistema tem 2 temas, dark default).
+       Classes isoladas das do studio (.theme-dark/.theme-light).
+  D-C. DF1 FECHADO = (A) admin/sidebar exibe a MARCA DO STUDIO,
+       consumida via fachada @/config/active-studio. Por DF1=A, o
+       import de branding no Sidebar e CANAL OFICIAL LEGITIMO
+       (deixa de ser "vazamento #2"). FASE 4 muda de "corrigir"
+       para "validado".
+
+----------------------------------------------------------------
+ESTRUTURA DE ROTAS (REAL, pos-execucao)
+----------------------------------------------------------------
+routes/
+  __root.tsx              -> shell neutro (systemThemeClass no body p/ boundaries)
+  index.tsx               -> tema + identidade do SITE (head + wrapper)
+  _auth.tsx               -> tema SISTEMA (wrapper, SEM guard)   [ex-_app]
+    _auth/login.tsx           -> guard proprio preservado
+    _auth/forgot-password.tsx -> guard proprio preservado
+    _auth/reset-password.tsx  -> SEM guard (recovery)
+  _authed.tsx             -> tema SISTEMA (wrapper + guard)
+    _authed/admin/...     -> telas admin
+
+----------------------------------------------------------------
+REGRA DO DOCUMENTO
+----------------------------------------------------------------
+(inalterada)
+
+================================================================
+FASE 0 - PRE-VOO  [x] CONCLUIDA
+================================================================
+(inalterada)
+
+================================================================
+FASE 1 - BRANDING DE SISTEMA  [x] CONCLUIDA
+================================================================
+[x] Criado src/lib/core/system/branding.ts (systemDark + systemLight)
+[x] systemBrandingCss exportado (buildBrandingCss reusado sem alterar)
+[x] systemThemeClass exportado
+[x] systemThemeCssHref (theme.css de sistema no nucleo) - opcao (b) adotada
+[x] SEO neutro de sistema no __root (title FlowStudio/charset/viewport)
+[x] Garantido: sistema nao importa de sites/
+NOTA: adotada opcao (b) - theme.css de sistema dedicado no nucleo.
+      Tipografia: stack nativa system-ui (zero Google Fonts no shell).
+
+================================================================
+FASE 2 - __root NEUTRO + LAYOUT ROUTES DE SISTEMA  [x] CONCLUIDA
+================================================================
+[x] __root: removida toda injecao de identidade do SITE
+[x] __root: <html> sem classe de site; <body> com systemThemeClass
+[x] __root: SEO neutro de sistema mantido
+[x] __root: HeadContent/Scripts/Toaster/GlobalLoadingIndicator mantidos
+[x] __root: Error/NotFound envolvidos em systemThemeClass + systemBrandingCss
+[x] Criado _auth.tsx (pathless, sem guard) com systemThemeClass
+[x] login/forgot/reset movidos para _auth/ (guards preservados)
+[x] _authed.tsx: systemThemeClass + guard existente
+
+================================================================
+FASE 3 - IDENTIDADE DO SITE NA ZONA '/'  [x] CONCLUIDA
+================================================================
+[x] index.tsx ganhou head() com SEO/OG/JSON-LD/fonts/styleHrefs/favicon do site
+[x] index.tsx envolve landing no themeClass do site (wrapper, nao no <html>)
+[x] Sem vazamento de tema sistema<->site (escopos de classe distintos)
+
+================================================================
+FASE 4 - IMPORTS DE MARCA  [x] CONCLUIDA (via DF1=A)
+================================================================
+[x] DF1=A: admin exibe marca do studio. Sidebar consome branding via
+    fachada @/config/active-studio - CANAL OFICIAL LEGITIMO.
+[x] LoginBrandPanel usa @/config/active-studio - OK
+[x] Forgot/Reset reusam LoginBrandPanel (TD4) - nada a fazer
+RESULTADO grep: unico import @/sites/ fora de sites/ e fachada e
+    index.tsx (componentes do site) - VAZAMENTO #1 LEGITIMO (borda).
+
+================================================================
+FASE 5 - LIMPEZA DE TECHDEB  [ ] PENDENTE
+================================================================
+[ ] TD1: buildBrandingCss nucleo - remover radius-* duplicado
+[ ] TD2: index.tsx - <main> background '#1a3a3a' -> var(--color-bg)
+[ ] TD3: sites/ruah/styles - remover base.css.err e base.csse (confirmar)
+
+================================================================
+FASE 6 - VALIDACAO FINAL  [ ] PENDENTE
+================================================================
+[ ] /login: tema sistema + marca do studio (DF1=A) - visual OK
+[ ] /admin: tema sistema + logo do studio na sidebar - visual OK
+[ ] /: tema do site + SEO/OG/JSON-LD (view-source confere)
+[x] grep: nenhum import @/sites/ fora de sites/ e fachada (so index, legitimo)
+[ ] build/SSR sem erro [tsc --noEmit VERDE em 2026-06-10; falta build full]
+[ ] (futuro) trocar active-studio -> outra landing herda sistema intacto
+
+----------------------------------------------------------------
+TECHDEB VIVO
+----------------------------------------------------------------
+TD1 [ ] radius-* duplicado no buildBrandingCss
+TD2 [ ] main background hardcoded em index.tsx
+TD3 [ ] base.css.err / base.csse - confirmar na FASE 5
+TD4 [x] Forgot/Reset reusam LoginBrandPanel - resolvido
+
+----------------------------------------------------------------
+LOG DE EXECUCAO
+----------------------------------------------------------------
+2026-06-09 - Plano criado. Premissa inicial aprovada.
+2026-06-09 - FASE 0 concluida. Tema escopado em classe -> arquitetura
+             "tema por zona de rota". __root neutro. Premissa revisada.
+2026-06-10 - MARCO UNICO. F1-F4 executadas e validadas:
+             __root neutro; _auth.tsx (ex-_app); dois temas de sistema
+             (system-dark/light); index.tsx absorve identidade do site;
+             Sidebar via fachada (DF1=A, marca do studio). tsc --noEmit
+             verde; grep limpo (so index.tsx legitimo). Commit consolidado
+             junto com feature appointments. F5/F6 seguem pendentes.
+================================================================
+FIM PLANO-MASTER
+================================================================
