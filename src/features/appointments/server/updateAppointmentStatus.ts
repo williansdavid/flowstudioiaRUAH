@@ -19,8 +19,7 @@ export type UpdateAppointmentStatusInput = z.infer<typeof updateStatusSchema>;
 
 /**
  * Atualiza o status de um agendamento.
- * Admin atualiza qualquer um; staff só os próprios.
- * RLS no banco é a defesa real — este gate é UX/early-fail.
+ * RLS no banco é a defesa: admin/staff alteram qualquer um; client só o dele.
  */
 export const updateAppointmentStatus = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => updateStatusSchema.parse(data))
@@ -35,35 +34,10 @@ export const updateAppointmentStatus = createServerFn({ method: 'POST' })
       throw new Error('[appointments] Sessão inválida.');
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    if (profileError || !profile) {
-      throw new Error('[appointments] Perfil não encontrado.');
-    }
-
-    let query = supabase
+    const { data: updated, error } = await supabase
       .from('appointments')
       .update({ status: data.status })
-      .eq('id', data.id);
-
-    // Staff só altera agendamento dele.
-    if (profile.role === 'staff') {
-      const { data: staffRow, error: staffError } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('profile_id', user.id)
-        .maybeSingle();
-      if (staffError) throw staffError;
-      if (!staffRow) {
-        throw new Error('[appointments] Acesso negado.');
-      }
-      query = query.eq('staff_id', staffRow.id);
-    }
-
-    const { data: updated, error } = await query
+      .eq('id', data.id)
       .select('id, status')
       .single();
     if (error) throw error;

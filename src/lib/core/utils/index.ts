@@ -5,7 +5,8 @@
  * Sempre importar via: `@/lib/core/utils`
  * ----------------------------------------------------------------
  */
-
+export { normalizePhoneBR, PhoneNormalizeError } from './phone'
+export { phoneBRSchema, phoneBROptionalSchema } from './phone'
 export { buildBrandingCss } from './buildBrandingCss'
 
 export { buildSeo } from './buildSeo'

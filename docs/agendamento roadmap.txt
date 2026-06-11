@@ -1,0 +1,338 @@
+================================================================
+DOCUMENTO DE CONCEITO — IDENTIDADE, CADASTRO & VINCULO DE CLIENTE
+================================================================
+Studio: ruah  •  Data: 11/06/2026  •  Status: em execucao
+Versao: 2.3 (banco como fonte viva — match por phone canonico no trigger)
+
+----------------------------------------------------------------
+0. POSICAO ATUAL (verificado no banco em 11/06/2026)
+----------------------------------------------------------------
+Modelo de identidade v2.0 JA ESTA MATERIALIZADO no schema.
+FASE 0 (fundacao) CONCLUIDA — ver roadmap secao 10.
+FASE 1 (TD-02) RESOLVIDA NO BANCO — falta so aplicacao nos forms (1.3).
+
+  Tabela    | Estado real (colunas-chave)              | Status v2
+  ----------|------------------------------------------|----------
+  profiles  | id, email(NOT NULL), full_name, role,    | OK
+            | is_active, avatar_url, created_at,        | (ja MAGRA:
+            | updated_at  — SEM phone                   |  sem phone)
+  clients   | full_name, phone, email (todos nullable),| OK (fonte
+            | profile_id(null), birth_date, notes,     |  unica do
+            | preferences, totals, last_visit_at        |  telefone)
+  staff     | full_name, phone (todos nullable),        | OK (movidos
+            | specialty, bio, commission_rate,          |  pra ca)
+            | is_bookable, working_hours, profile_id    |
+
+  Trigger handle_new_user .......... EXISTE e VALIDADO (ver secao 0-A/0-C).
+  clients_view ..................... ATUALIZADA + types confirmados (0-D).
+  RLS profiles/clients/staff ....... NAO referenciam phone nem full_name.
+  Pendencia de limpeza ............. policy duplicada em profiles
+       (select_own == users read own profile) -> TD-05.
+
+CONCLUSAO: FASE 0 fechada (0.1 a 0.7). FASE 1 fechada no banco
+           (1.1, 1.2, 1.4). Resta 1.3 (forms) -> FASE 2/3.
+
+----------------------------------------------------------------
+0-A. ESTRATEGIA DE BANCO (substitui decisao #7 — migrations) [v2.2]
+----------------------------------------------------------------
+DEPRECATED: migrations versionadas (supabase/migrations/*.sql).
+   Os arquivos 0001, 0002, 20260521_*, 20260522_AJUSTE*, 009, XXXX_*
+   permanecem no repo como HISTORICO MORTO — NAO sao fonte de verdade,
+   NAO devem ser aplicados nem editados.
+
+ESTRATEGIA ATUAL — Banco como fonte viva:
+   Todo trabalho de banco (DDL, funcoes, triggers, RLS, views,
+   correcoes, TESTES) e feito via SQL DIRETO no Supabase (SQL Editor).
+
+REGRAS:
+1. FONTE DE VERDADE = estado atual do banco, NUNCA os arquivos .sql.
+2. Inspecionar o que esta vivo via catalogo:
+   - funcoes:  pg_proc                 (where proname = '...')
+   - triggers: pg_trigger
+   - policies: pg_policies
+   - colunas:  information_schema.columns
+   - views:    pg_get_viewdef('public.<view>'::regclass, true)
+3. Antes de QUALQUER alteracao de banco: ler o estado real via SQL e
+   confirmar. Nunca chutar pelo arquivo legado.
+4. Funcoes/views entregues prontas pra colar: idempotentes
+   (create or replace / drop if exists), search_path fixado em
+   SECURITY DEFINER quando aplicavel.
+
+----------------------------------------------------------------
+0-B. ESTADO VALIDADO DO BANCO (verificado via pg_proc) [v2.3]
+----------------------------------------------------------------
+handle_new_user() — VALIDADO (estado correto, equivale ao 0.4):
+  - profiles: insert idempotente (on conflict id do nothing), role 'client'
+  - caminho CONVERSAO: metadata.client_id -> liga ficha existente sem dono
+  - caminho SIGNUP A1: match por email (lower) com prioridade sobre phone
+  - match por phone: usa forma CANONICA via normalize_phone_br
+    (v_phone_norm), espelhando src/lib/core/utils/phone.ts -> TD-02 OK
+  - sem match: cria client novo (phone gravado canonico)
+  - NAO duplica ficha (decisao #6 respeitada)
+  - trigger on_auth_user_created: after insert on auth.users
+
+  normalize_phone_br() — VALIDADO (espelha phone.ts, 7 casos cobertos).
+
+----------------------------------------------------------------
+0-C. TESTES DE BANCO (sem interface ainda) [v2.2]
+----------------------------------------------------------------
+Enquanto o sistema nao tem UI de signup/conversao, os fluxos de banco
+sao testados via SQL direto no Supabase, simulando insert em
+auth.users e verificando o efeito do trigger.
+
+VALIDADO via SQL direto (equivale ao smoke test 0.7):
+  1. Conversao (metadata.client_id) -> ligou ficha existente
+     (ex.: "Maria Teste", profile_id preenchido, total_clients_match=1,
+      sem duplicar).
+  2. Signup A1 sem match -> criou client novo
+     (ex.: "novoemailteste", full_name/phone null, client novo gerado).
+  (Signup A1 com match email/phone coberto pela mesma logica validada.)
+
+PENDENTE quando a UI existir:
+  - Re-testar os mesmos fluxos ponta-a-ponta pela interface (signup
+    real via Supabase Auth). Verificacao de regressao, nao retrabalho.
+
+----------------------------------------------------------------
+0-D. clients_view + TYPES (equivale ao 0.6) [v2.2]
+----------------------------------------------------------------
+clients_view VALIDADA (19 colunas, coerente com modelo magro):
+  - display_name / display_phone / display_email  (fachada resolvida)
+  - origin                                          (walk-in vs account)
+  - raw_full_name / raw_phone / raw_email           (fonte: clients)
+  - profile_full_name / profile_email              (fonte: profiles magra)
+  - profile_id, birth_date, notes, preferences,
+    total_appointments, total_spent, last_visit_at,
+    created_at, updated_at, id
+  - SEM phone vindo de profiles (respeita profiles MAGRA).
+  - raw_* (client) separado de profile_* (conta): respeita
+    "profiles.email != clients.email coexistem".
+
+TYPES confirmados em src/lib/supabase/types.ts:
+  - clients_view presente no Database types (bloco Row ~L477).
+  - display_name / profile_email / raw_phone tipados (string | null).
+  - relacionamentos referenciam "clients_view" (L81, L299).
+  => View e types em sincronia. 0.6 fechado.
+
+----------------------------------------------------------------
+1. OBJETIVO
+----------------------------------------------------------------
+Definir o modelo de identidade do cliente e do staff, permitir que
+clientes se cadastrem pelo portal (landing) criando conta
+(auth.user + profiles + clients) e permitir que o salao converta
+walk-ins em contas — tudo sem nunca duplicar fichas nem misturar
+historico.
+
+----------------------------------------------------------------
+2. CONTEXTO / PREMISSAS
+----------------------------------------------------------------
+- Banco e descartavel (exceto tabela `services`). Nenhum dado e real.
+  Estrategia de banco: SQL DIRETO no Supabase (ver secao 0-A).
+  [migration ADITIVA -> ABANDONADA em v2.2]
+- ~50% dos clientes terao login; o restante e walk-in puro.
+- Cadastro na recepcao tem email opcional -> walk-in pode ter email NULL.
+- Telefone e o elo confiavel entre walk-in e conta do portal.
+- Login e somente por email + senha (Supabase Auth nativo).
+- Identidade/contato do studio (inclusive no WhatsApp) mora em
+  src/sites/<studio>/config/.
+
+----------------------------------------------------------------
+3. MODELO DE IDENTIDADE (DECISAO ESTRUTURAL — v2.0)  [JA NO BANCO]
+----------------------------------------------------------------
+profiles MAGRA — so dados de autenticacao/conta:
+  profiles = id, email (login, unique), full_name, role, is_active,
+             avatar_url, created_at, updated_at
+  (SEM phone. full_name mantido como nome de exibicao da conta.)
+
+  Tabela    | Quem                            | Identidade
+  ----------|---------------------------------|----------------------
+  clients   | clientes (walk-in E com login)  | full_name, phone, email
+  staff     | funcionarios                    | full_name, phone
+  profiles  | elo de auth                     | email de login + role
+
+REGRA DE OURO: fonte unica de verdade por entidade.
+  - Telefone de cliente -> clients
+  - Telefone de staff   -> staff
+  - Email de login      -> profiles.email (unique, so quem tem conta)
+  - Email de contato    -> clients.email (opcional, livre)
+  profiles.email e clients.email sao COISAS DIFERENTES e coexistem.
+
+Cliente que loga: ganha profile_id preenchido em clients.
+A ficha SEMPRE mora em clients, tenha conta ou nao.
+
+----------------------------------------------------------------
+4. DECISOES TRAVADAS
+----------------------------------------------------------------
+  #  | Tema                    | Decisao
+  ---|-------------------------|--------------------------------------
+  1  | Login                   | Somente email + senha.
+  2  | Telefone duplicado      | Eliminado. clients e fonte unica do
+     |                         | telefone do cliente; staff o do staff.
+     |                         | Normalizacao canonica RESOLVIDA no banco
+     |                         | (normalize_phone_br + trigger). Aplicacao
+     |                         | nos forms = item 1.3.
+  3  | Conflito no portal      | Sem merge automatico. Barra e
+     |                         | redireciona pro WhatsApp (wa.me).
+  4  | Esqueci senha           | Reset padrao Supabase — so account.
+  5  | Conversao walk-in->conta| Admin dispara CONVITE por email
+     |                         | (Supabase inviteUserByEmail). Admin
+     |                         | NUNCA define a senha. Cliente define
+     |                         | a propria senha no 1o acesso.
+  6  | Trigger de signup       | LIGA conta a clients existente (match
+     |                         | por email/phone). NAO cria clients
+     |                         | duplicado.
+  7  | Estrategia de banco     | SQL DIRETO no Supabase (banco = fonte
+     |                         | viva). Migrations versionadas
+     |                         | ABANDONADAS. [revisado v2.2]
+
+----------------------------------------------------------------
+5. FLUXO DO CADASTRO PELO PORTAL (A1)
+----------------------------------------------------------------
+Cliente preenche: nome, telefone, email (obrigatorio),
+                  aniversario (opcional)
+  |
+  +-- telefone OU email JA existe como ACCOUNT (tem login)
+  |     -> "Voce ja tem conta" -> recuperar senha (decisao #4)
+  |
+  +-- telefone JA existe como WALKIN (sem login)
+  |     -> "Esse telefone ja esta cadastrado. Fale com a gente"
+  |        -> botao wa.me com mensagem pre-preenchida
+  |
+  +-- nada existe -> cria conta nova -> confirmacao Supabase
+                     -> cliente define senha
+
+Mensagem pre-preenchida do wa.me:
+"Ola! Quero agendar um horario e nao consegui pelo portal. Pode
+buscar um horario pra mim e liberar meu cadastro para agendamento
+pelo portal? Meu nome e [nome], telefone [telefone]."
+
+----------------------------------------------------------------
+6. PROCEDIMENTOS DO ADMIN (X2)
+----------------------------------------------------------------
+X2.1 — CADASTRAR WALK-IN
+  - Admin abre /clients -> "Novo cliente".
+  - Preenche: full_name, phone (obrigatorio), email (opcional),
+    aniversario (opcional).
+  - Sistema grava em `clients` SEM profile_id (sem conta, sem auth).
+  - Telefone normalizado canonico (+55DDDNUMERO) na gravacao (item 1.3).
+  - Resultado: ficha apta a agendamentos presenciais, sem login.
+
+X2.2 — CONVERTER WALK-IN EM CONTA
+  Gatilho: cliente pede acesso ao portal (via WhatsApp do passo 5)
+  OU admin decide liberar.
+
+  Pre-condicao: clients.email PREENCHIDO e valido. Se nao tiver,
+                admin coleta e atualiza a ficha antes.
+
+  Passos:
+  1. Admin abre a ficha em /clients.
+  2. Botao "Convidar para o portal" (visivel so se email preenchido
+     e profile_id ainda NULL).
+  3. Sistema chama Supabase inviteUserByEmail(email) com metadata
+     contendo o client_id alvo.
+  4. Supabase cria auth.user (sem senha) e envia email com link de
+     definicao de senha.
+  5. Cliente clica, define a propria senha, confirma email.
+  6. Trigger handle_new_user detecta metadata.client_id e LIGA:
+     - cria profiles (role=client)
+     - UPDATE clients SET profile_id = novo profile
+       (NAO cria clients novo — usa o existente, preserva historico).
+  7. Resultado: walk-in vira account, historico intacto.
+
+  Admin NUNCA conhece/define a senha. Seguranca preservada.
+
+----------------------------------------------------------------
+7. REGRA DE MATCHING
+----------------------------------------------------------------
+- Por email (com lower()) e por telefone em forma canonica.
+- Telefone normalizado via normalize_phone_br (+55DDDNUMERO) ->
+  RESOLVIDO no banco. Trigger ja faz match canonico.
+- No signup do portal e na conversao X2.2, a trigger procura clients
+  existente por email/phone antes de criar qualquer coisa.
+- Prioridade implementada: email-match > phone-match.
+- Aplicacao da normalizacao nos forms (entrada do usuario) = item 1.3.
+
+----------------------------------------------------------------
+8. TECHDEBS GERADOS/RELACIONADOS
+----------------------------------------------------------------
+  ID    | Descricao                                   | Bloqueia
+  ------|---------------------------------------------|------------------
+  TD-01 | Modulo de Disponibilidade (horario staff,   | Agendamento real
+        | duracao, conflito, slots)                   | no portal
+  TD-02 | Normalizacao telefone (+55 canonico) + match| RESOLVIDO NO BANCO
+        | confiavel por phone + unique parcial.       | (1.1/1.2/1.4).
+        | RESOLVIDO: phone.ts, clients_phone_unique_  | Resta aplicacao
+        | idx, normalize_phone_br + trigger canonico. | nos forms = 1.3.
+        | Aplicacao nos forms pendente (item 1.3).    |
+  TD-03 | Painel de conflitos de cadastro (handoff    | Nada (futuro)
+        | interno ao admin)                           |
+  TD-04 | Convite via WhatsApp (magic link) como      | Nada (futuro)
+        | alternativa ao email                        |
+  TD-05 | Limpeza de RLS legada: policy duplicada em  | Nada
+        | profiles (select_own == users read own      | (higiene)
+        | profile)                                    |
+
+----------------------------------------------------------------
+9. ESTADOS DE UI EXIGIDOS
+----------------------------------------------------------------
+A1 (portal):  loading - error - empty - sucesso ("confira seu email
+              pra confirmar"). SSR-safe, mobile-first.
+X2 (admin):   loading - error - empty - sucesso ("convite enviado").
+              Botao de convite desabilitado quando sem email ou ja
+              convertido.
+
+================================================================
+10. ROADMAP / CHECKLIST DE EXECUCAO (atualizado v2.3)
+================================================================
+FASE 0 — REESTRUTURACAO DE IDENTIDADE (fundacao) -> CONCLUIDA
+  [x] 0.1  profiles MAGRA  -> JA NO BANCO (sem phone; full_name mantido)
+  [x] 0.2  staff full_name + phone  -> JA NO BANCO
+  [x] 0.3  clients fonte unica (full_name, phone, email) -> JA NO BANCO
+  [x] 0.4  trigger handle_new_user (LIGA, nao duplica) -> VALIDADO via
+           pg_proc + testes SQL no Supabase
+  [x] 0.5  RLS afetadas por colunas -> nenhuma policy depende de
+           phone/full_name (verificado). Nada a fazer.
+  [x] 0.6  clients_view atualizada + types confirmados (ver 0-D)
+  [x] 0.7  Smoke test signup novo / conversao walk-in -> feito via SQL
+           direto no Supabase (ver 0-C)
+
+  >>> FASE 0 FECHADA.
+
+FASE 1 — TD-02 (normalizacao + match por phone) -> RESOLVIDA NO BANCO
+  [x] 1.1  Util de normalizacao +55DDDNUMERO (Zod) -> ENTREGUE
+           (src/lib/core/utils/phone.ts + barrel core/utils).
+  [x] 1.2  SQL direto: unique parcial em clients.phone -> APLICADO.
+           Indice: clients_phone_unique_idx (where phone is not null).
+           Pre-req: 8 fichas existentes normalizadas p/ +55 (UPDATE),
+           0 duplicatas confirmadas antes de criar o indice.
+  [ ]  1.3 Aplicar normalizacao na gravacao (portal + admin) -> junto
+           dos forms (FASE 2/3); usar phoneBRSchema.
+  [x]  1.4 Ajustar match por phone na handle_new_user (canonico) ->
+           VALIDADO. normalize_phone_br espelha phone.ts; trigger usa
+           v_phone_norm em match e insert. Constraints profiles OK.
+
+  >>> FASE 1 FECHADA NO BANCO. Resta 1.3 (forms) -> FASE 2/3.
+
+FASE 2 — A1 (cadastro pelo portal)
+  [ ] 2.1  Form de cadastro (nome, telefone, email, aniversario)
+  [ ] 2.2  Matching pre-submit (account / walk-in / novo)
+  [ ] 2.3  Bloqueio + redirect wa.me (mensagem pre-preenchida)
+  [ ] 2.4  Fluxo de confirmacao Supabase + define senha
+  [ ] 2.5  Estados de UI (loading/error/empty/sucesso) SSR-safe
+
+FASE 3 — X2 (procedimentos admin)
+  [ ] 3.1  X2.1 Cadastrar walk-in (form admin em /clients)
+  [ ] 3.2  X2.2 Botao "Convidar para o portal"
+  [ ] 3.3  Server fn: inviteUserByEmail + metadata client_id
+  [ ] 3.4  Trigger trata metadata.client_id -> JA IMPLEMENTADO no
+           trigger atual (validar ponta-a-ponta quando UI existir)
+  [ ] 3.5  Estados de UI do admin
+
+FASE 4 — DESBLOQUEIO DE AGENDAMENTO (depende de TD-01)
+  [ ] 4.1  TD-01 Modulo de Disponibilidade
+  [ ] 4.2  Agendamento real pelo portal
+
+FUTURO (sem bloqueio)
+  [ ] TD-03 Painel de conflitos de cadastro
+  [ ] TD-04 Convite via WhatsApp (magic link)
+  [ ] TD-05 Limpeza de RLS legada (policy duplicada profiles)
+================================================================
