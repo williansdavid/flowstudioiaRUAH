@@ -1,0 +1,40 @@
+WITH params AS (
+  -- 👇 ÚNICA linha que você mexe pra reusar: data base (meia-noite SP)
+  SELECT (CURRENT_DATE AT TIME ZONE 'America/Sao_Paulo') AS base
+  -- ex p/ data fixa:  SELECT (DATE '2026-06-20' AT TIME ZONE 'America/Sao_Paulo') AS base
+)
+INSERT INTO appointments (client_id, staff_id, service_id, starts_at, ends_at, status, price, notes)
+SELECT client_id, staff_id, service_id,
+       base + s, base + e, status, price, '[SEED]'
+FROM params, (VALUES
+  -- ===== HOJE =====
+  -- João = 06c2b6f1
+  ('3fbcb6b1-adfe-430f-bc7f-6aa0993659f3'::uuid,'06c2b6f1-b9ea-4469-8e6b-dce6f9573133'::uuid,'3db93a7a-cbf1-477a-b40f-b599217d1ce5'::uuid, INTERVAL '9 hours 30 min', INTERVAL '10 hours','confirmed'::appointment_status,55.00),
+  ('a57981e4-9491-4190-a5ba-2805687068f9','06c2b6f1-b9ea-4469-8e6b-dce6f9573133','3c2a1f46-be84-47c8-9379-b87cc7226eed', INTERVAL '10 hours', INTERVAL '11 hours','pending',100.00),
+  ('db00db16-4c2c-49be-b9c9-1a547aeec59b','06c2b6f1-b9ea-4469-8e6b-dce6f9573133','ea1670e3-9cfe-4ad1-b61c-4d502957a8d8', INTERVAL '12 hours', INTERVAL '12 hours 20 min','confirmed',25.00),
+  -- Pedro = 720d51d6
+  ('efedb91d-dfed-4df2-8e16-46b03ca6ee8b','720d51d6-604e-4a13-8d53-589a3a5c3193','25808bf1-2059-48c5-9eb6-ac59e5e4b6c7', INTERVAL '9 hours 30 min', INTERVAL '10 hours','confirmed',55.00),
+  ('6b163a30-a948-4a96-a915-c5d0e2fc1919','720d51d6-604e-4a13-8d53-589a3a5c3193','55106175-d457-4ad9-9f27-185a46874478', INTERVAL '10 hours 30 min', INTERVAL '11 hours','pending',35.00),
+  ('4feec63e-71b8-44d5-9533-889a157fb8eb','720d51d6-604e-4a13-8d53-589a3a5c3193','3db93a7a-cbf1-477a-b40f-b599217d1ce5', INTERVAL '13 hours', INTERVAL '13 hours 30 min','confirmed',55.00),
+  -- Renato = c3251464
+  ('804a4e8b-727c-4472-9b56-6b23d17e8503','c3251464-b246-4383-8d5b-960e47fa9199','3c2a1f46-be84-47c8-9379-b87cc7226eed', INTERVAL '10 hours', INTERVAL '11 hours','confirmed',100.00),
+  ('31c2835d-4d5f-46ba-af36-e0210289a7d1','c3251464-b246-4383-8d5b-960e47fa9199','ea1670e3-9cfe-4ad1-b61c-4d502957a8d8', INTERVAL '11 hours 30 min', INTERVAL '11 hours 50 min','pending',25.00),
+  -- nano = c7e9038e
+  ('0f5b5ff9-6712-4ba9-b689-bab4c061b880','c7e9038e-dce5-448e-9974-5d9015fee823','3db93a7a-cbf1-477a-b40f-b599217d1ce5', INTERVAL '12 hours', INTERVAL '12 hours 30 min','confirmed',55.00),
+  ('7e0b841d-acc1-457f-ae33-014c27e375ad','c7e9038e-dce5-448e-9974-5d9015fee823','55106175-d457-4ad9-9f27-185a46874478', INTERVAL '13 hours', INTERVAL '13 hours 30 min','pending',35.00),
+  -- ===== AMANHÃ =====
+  -- João
+  ('f1f119f9-b3e3-430b-accc-964aaa676dda','06c2b6f1-b9ea-4469-8e6b-dce6f9573133','3c2a1f46-be84-47c8-9379-b87cc7226eed', INTERVAL '1 day 9 hours', INTERVAL '1 day 10 hours','confirmed',100.00),
+  ('06673f14-64fe-4587-ac6b-b968c81176de','06c2b6f1-b9ea-4469-8e6b-dce6f9573133','25808bf1-2059-48c5-9eb6-ac59e5e4b6c7', INTERVAL '1 day 11 hours', INTERVAL '1 day 11 hours 30 min','pending',55.00),
+  ('08e56152-6aa5-497a-984c-1afaeb09d8c2','06c2b6f1-b9ea-4469-8e6b-dce6f9573133','ea1670e3-9cfe-4ad1-b61c-4d502957a8d8', INTERVAL '1 day 12 hours', INTERVAL '1 day 12 hours 20 min','confirmed',25.00),
+  -- Pedro
+  ('3e973bc1-7e5a-41b5-b91c-a17f37d4e09b','720d51d6-604e-4a13-8d53-589a3a5c3193','3db93a7a-cbf1-477a-b40f-b599217d1ce5', INTERVAL '1 day 9 hours 30 min', INTERVAL '1 day 10 hours','confirmed',55.00),
+  ('cff0ada1-ce76-46ed-9005-5d9669a3f895','720d51d6-604e-4a13-8d53-589a3a5c3193','3c2a1f46-be84-47c8-9379-b87cc7226eed', INTERVAL '1 day 11 hours', INTERVAL '1 day 12 hours','pending',100.00),
+  -- Renato
+  ('ebb5fc73-23af-4a32-9e32-a32c07b911d4','c3251464-b246-4383-8d5b-960e47fa9199','55106175-d457-4ad9-9f27-185a46874478', INTERVAL '1 day 9 hours 30 min', INTERVAL '1 day 10 hours','confirmed',35.00),
+  ('3f351fa7-1132-4a80-99a4-47c82d2e0702','c3251464-b246-4383-8d5b-960e47fa9199','25808bf1-2059-48c5-9eb6-ac59e5e4b6c7', INTERVAL '1 day 10 hours 30 min', INTERVAL '1 day 11 hours','pending',55.00),
+  ('abf5f403-5dcf-4612-9c9c-d66df6812a34','c3251464-b246-4383-8d5b-960e47fa9199','3db93a7a-cbf1-477a-b40f-b599217d1ce5', INTERVAL '1 day 12 hours', INTERVAL '1 day 12 hours 30 min','confirmed',55.00),
+  -- nano
+  ('d66155ef-4109-476f-bc5c-cd54a93a2647','c7e9038e-dce5-448e-9974-5d9015fee823','3c2a1f46-be84-47c8-9379-b87cc7226eed', INTERVAL '1 day 10 hours', INTERVAL '1 day 11 hours','confirmed',100.00),
+  ('3fbcb6b1-adfe-430f-bc7f-6aa0993659f3','c7e9038e-dce5-448e-9974-5d9015fee823','ea1670e3-9cfe-4ad1-b61c-4d502957a8d8', INTERVAL '1 day 12 hours', INTERVAL '1 day 12 hours 20 min','pending',25.00)
+) AS v(client_id, staff_id, service_id, s, e, status, price);

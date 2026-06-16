@@ -7,7 +7,6 @@
     email: string | null;
     phone: string | null;
     specialty: string | null;
-    avatarUrl: string | null;
     isBookable: boolean;
     displayOrder: number;
     /** true => usuário logado pode editar este profissional (admin OU dono). */

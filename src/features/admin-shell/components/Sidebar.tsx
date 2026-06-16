@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { SidebarItem } from './SidebarItem';
 import { getGroupedNavItemsForRole } from '../config/nav-items';
@@ -22,12 +23,16 @@ export function Sidebar({
   const role = session.profile.role;
   const groups = getGroupedNavItemsForRole(role);
   const displayName = session.profile.full_name ?? session.email;
+  const avatarUrl = session.profile.avatar_url;
+
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = Boolean(avatarUrl) && !imgFailed;
+  const initial = (displayName ?? '?').charAt(0).toUpperCase();
 
   return (
     <div
       className="flex h-full flex-col border-r"
-      // dentro do <div> raiz da Sidebar
-      style={{       
+      style={{
         borderColor: 'var(--color-border)',
       }}
     >
@@ -82,15 +87,25 @@ export function Sidebar({
         className="flex items-center gap-3 border-t p-3"
         style={{ borderColor: 'var(--color-border)' }}
       >
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-          style={{
-            backgroundColor: 'var(--color-surface-alt)',
-            color: 'var(--color-text-heading)',
-          }}
-        >
-          {(displayName ?? '?').charAt(0).toUpperCase()}
-        </div>
+        {showImage ? (
+          <img
+            src={avatarUrl ?? undefined}
+            alt={displayName ?? 'Avatar'}
+            onError={() => setImgFailed(true)}
+            className="h-9 w-9 shrink-0 rounded-full object-cover"
+            style={{ backgroundColor: 'var(--color-surface-alt)' }}
+          />
+        ) : (
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+            style={{
+              backgroundColor: 'var(--color-surface-alt)',
+              color: 'var(--color-text-heading)',
+            }}
+          >
+            {initial}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p
             className="truncate text-sm font-medium"

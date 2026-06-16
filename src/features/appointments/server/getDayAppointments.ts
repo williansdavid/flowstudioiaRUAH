@@ -5,15 +5,12 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 import type { AppointmentItem, AppointmentStatus } from '../types';
 
 const inputSchema = z.object({
-  // 'YYYY-MM-DD' no fuso local do studio
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use YYYY-MM-DD)'),
 });
 
 export type GetDayAppointmentsInput = z.infer<typeof inputSchema>;
 
-/** Range UTC [00:00, 24h) do dia informado, interpretado em America/Sao_Paulo (UTC-3). */
 function dayRangeISO(date: string): { start: string; end: string } {
-  // Studio opera em UTC-3 fixo. 00:00 local = 03:00 UTC.
   const start = new Date(`${date}T00:00:00-03:00`);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
@@ -21,7 +18,7 @@ function dayRangeISO(date: string): { start: string; end: string } {
 }
 
 const APPT_SELECT =
-  'id, starts_at, ends_at, status, price, notes, client_id, service_id, clients(full_name, phone), services(name), staff(id, profiles(full_name))';
+  'id, starts_at, ends_at, status, price, notes, client_id, service_id, clients(full_name, phone), services(name), staff(id, profiles(full_name, avatar_url))';
 
 interface RawRow {
   id: string;
@@ -34,7 +31,10 @@ interface RawRow {
   service_id: string;
   clients: { full_name: string | null; phone: string | null } | null;
   services: { name: string } | null;
-  staff: { id: string; profiles: { full_name: string | null } | null } | null;
+  staff: {
+    id: string;
+    profiles: { full_name: string | null; avatar_url: string | null } | null;
+  } | null;
 }
 
 function mapRow(row: RawRow): AppointmentItem {
@@ -50,6 +50,7 @@ function mapRow(row: RawRow): AppointmentItem {
     serviceName: row.services?.name ?? 'Serviço',
     staffId: row.staff?.id ?? 'unknown',
     staffName: row.staff?.profiles?.full_name ?? 'Profissional',
+    staffAvatarUrl: row.staff?.profiles?.avatar_url ?? null,
     price: Number(row.price),
     notes: row.notes,
   };

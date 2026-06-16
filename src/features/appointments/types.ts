@@ -1,5 +1,11 @@
 // src/features/appointments/types.ts
-
+export interface AppointmentItem {
+  // ...campos existentes...
+  staffId: string;
+  staffName: string;
+  staffAvatarUrl: string | null; // ← novo
+  // ...resto...
+}
 export type AppointmentStatus =
   | 'pending'
   | 'confirmed'

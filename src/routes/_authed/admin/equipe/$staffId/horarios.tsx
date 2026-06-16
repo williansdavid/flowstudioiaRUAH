@@ -1,6 +1,6 @@
 // src/routes/_authed/admin/equipe/$staffId/horarios.tsx
-import { createFileRoute } from '@tanstack/react-router';
-import { CalendarRange } from 'lucide-react';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { ArrowLeft, CalendarRange } from 'lucide-react';
 import {
   staffWorkingHoursQuery,
   WorkingHoursEditor,
@@ -26,6 +26,16 @@ function HorariosPage() {
     <div className="mx-auto max-w-2xl space-y-8 p-4 xl:max-w-6xl">
       {/* Header da página */}
       <header className="space-y-1">
+        {/* Voltar para Equipe */}
+        <Link
+          to="/admin/equipe"
+          className="mb-4 inline-flex items-center gap-1.5 rounded-md text-sm font-medium transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Voltar para Equipe
+        </Link>
+
         <div className="flex items-center gap-2.5">
           <span
             className="shrink-0 rounded-xl p-2"
@@ -57,7 +67,6 @@ function HorariosPage() {
                 {data.fullName}
               </p>
             )}
-
           </div>
         </div>
         <p
@@ -75,10 +84,7 @@ function HorariosPage() {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[3fr_2fr] xl:items-start xl:gap-6">
         {/* Seção 1 — Recorrente */}
         <section className="order-2 space-y-3 xl:order-1">
-          <SectionLabel
-            title="Horário de trabalho"
-            hint="Repete toda semana"
-          />
+          <SectionLabel title="Horário de trabalho" hint="Repete toda semana" />
           <WorkingHoursEditor
             staffId={data.staffId}
             initial={data.workingHours ?? buildDefaultWorkingHours()}

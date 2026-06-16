@@ -33,10 +33,6 @@ const STATUS_CLASS: Record<Status, string> = {
   no_show: 'bg-red-100 text-red-700',
 };
 
-/**
- * Paleta fixa de cores distintas para diferenciar profissionais.
- * Tons bem separados no espectro para máxima distinção visual.
- */
 const STAFF_PALETTE = [
   '#6366f1', // indigo
   '#14b8a6', // teal
@@ -48,7 +44,6 @@ const STAFF_PALETTE = [
   '#ec4899', // pink
 ] as const;
 
-/** Hash estável (djb2) do staffId → índice na paleta. Mesmo staff = mesma cor sempre. */
 function staffColor(staffId: string): string {
   let hash = 5381;
   for (let i = 0; i < staffId.length; i++) {
@@ -58,13 +53,21 @@ function staffColor(staffId: string): string {
   return STAFF_PALETTE[index]!;
 }
 
+/** Iniciais do nome para fallback do avatar (máx. 2 letras). */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  const first = parts[0]![0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1]![0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
 const timeFmt = new Intl.DateTimeFormat('pt-BR', {
   hour: '2-digit',
   minute: '2-digit',
   timeZone: 'America/Sao_Paulo',
 });
 
-/** Mensagem padrão de confirmação enviada ao cliente via WhatsApp. */
 function buildWhatsAppMessage(a: AppointmentItem): string {
   const hora = timeFmt.format(new Date(a.startsAt));
   return `Olá ${a.clientName}! Passando pra confirmar seu horário das ${hora} para ${a.serviceName}. Está tudo certo?`;
@@ -77,16 +80,21 @@ interface Props {
 interface StaffGroup {
   staffId: string;
   staffName: string;
+  staffAvatarUrl: string | null;
   appointments: AppointmentItem[];
 }
 
-/** Agrupa por staffId preservando a ordem cronológica original dos itens. */
 function groupByStaff(items: AppointmentItem[]): StaffGroup[] {
   const groups = new Map<string, StaffGroup>();
   for (const a of items) {
     let group = groups.get(a.staffId);
     if (!group) {
-      group = { staffId: a.staffId, staffName: a.staffName, appointments: [] };
+      group = {
+        staffId: a.staffId,
+        staffName: a.staffName,
+        staffAvatarUrl: a.staffAvatarUrl,
+        appointments: [],
+      };
       groups.set(a.staffId, group);
     }
     group.appointments.push(a);
@@ -149,6 +157,40 @@ export function AppointmentsList({ items }: Props) {
   );
 }
 
+function StaffAvatar({
+  name,
+  avatarUrl,
+  color,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  color: string;
+}) {
+  const ring = { boxShadow: `0 0 0 2px ${color}` };
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        loading="lazy"
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+        style={ring}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+      style={{ backgroundColor: color, ...ring }}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
 function StaffCard({ group }: { group: StaffGroup }) {
   const color = staffColor(group.staffId);
 
@@ -158,13 +200,13 @@ function StaffCard({ group }: { group: StaffGroup }) {
       style={{ borderLeftColor: color }}
     >
       <h3
-        className="mb-3 flex items-center gap-2 text-lg font-bold tracking-tight"
+        className="mb-3 flex items-center gap-2.5 text-lg font-bold tracking-tight"
         style={{ color }}
       >
-        <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: color }}
-          aria-hidden
+        <StaffAvatar
+          name={group.staffName}
+          avatarUrl={group.staffAvatarUrl}
+          color={color}
         />
         {group.staffName}
       </h3>
