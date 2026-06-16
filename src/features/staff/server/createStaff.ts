@@ -17,7 +17,9 @@ const createStaffSchema = z.object({
     .or(z.literal('')),
   specialty: z.string().trim().optional().or(z.literal('')),
   is_bookable: z.boolean().default(true),
+  role: z.enum(['staff', 'admin']).default('staff'),
 });
+
 
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 
@@ -62,13 +64,12 @@ export const createStaff = createServerFn({ method: 'POST' })
     const specialty = data.specialty?.trim() ? data.specialty.trim() : null;
 
     // PASSO 3 — Criar Auth user via CONVITE (sem senha; dispara e-mail)
-    // PASSO 3 — Criar Auth user via CONVITE (sem senha; dispara e-mail)
+    // is_staff_invite: true => o trigger handle_new_user NÃO cria/vincula clients
     const { data: invited, error: inviteErr } =
       await admin.auth.admin.inviteUserByEmail(email, {
-        data: { full_name: data.full_name },
-        redirectTo: `${env.VITE_APP_URL}/primeiro-acesso`, 
+        data: { full_name: data.full_name, is_staff_invite: true },
+        redirectTo: `${env.VITE_APP_URL}/primeiro-acesso`,
       });
-
 
     if (inviteErr || !invited?.user) {
       const msg = inviteErr?.message ?? '';
@@ -80,17 +81,18 @@ export const createStaff = createServerFn({ method: 'POST' })
 
     const newUserId = invited.user.id;
 
-    // PASSO 4 — Upsert profile (idempotente; sem phone — coluna não existe)
+    // PASSO 4 — Upsert profile (idempotente; sem phone — coluna não existe)   
     const { error: profileErr } = await admin.from('profiles').upsert(
       {
         id: newUserId,
         email,
         full_name: data.full_name,
-        role: 'staff',
+        role: data.role,
         is_active: true,
       },
       { onConflict: 'id' },
     );
+
 
     if (profileErr) {
       // ROLLBACK: remove o Auth user recém-criado

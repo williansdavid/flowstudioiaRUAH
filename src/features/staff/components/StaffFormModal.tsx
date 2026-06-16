@@ -22,6 +22,7 @@ interface FormState {
   phone: string;
   specialty: string;
   is_bookable: boolean;
+  role: 'staff' | 'admin';
 }
 
 const EMPTY: FormState = {
@@ -30,6 +31,7 @@ const EMPTY: FormState = {
   phone: '',
   specialty: '',
   is_bookable: true,
+  role: 'staff',
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,6 +73,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         phone: staff.phone ?? '',
         specialty: staff.specialty ?? '',
         is_bookable: staff.isBookable,
+        role: 'staff',
       });
     } else {
       setForm(EMPTY);
@@ -196,6 +199,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         phone: form.phone.trim(),
         specialty: form.specialty.trim(),
         is_bookable: form.is_bookable,
+        role: form.role,
       };
       const res = await createMut.mutateAsync(input);
       if (res.ok) {
@@ -255,7 +259,6 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
                   )}
                   <label
                     className="absolute -bottom-1 -right-1 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-pill bg-primary text-white shadow-md transition-colors hover:bg-primary-hover"
-
                     title="Trocar foto"
                   >
                     <Camera className="h-4 w-4" aria-hidden="true" />
@@ -323,6 +326,25 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
               )}
             </label>
 
+            {!isEdit && (
+              <label className="flex flex-col gap-1">
+                <span className={fieldLabel}>Função</span>
+                <select
+                  className={fieldInput}
+                  value={form.role}
+                  onChange={(e) => set('role', e.target.value as FormState['role'])}
+                >
+                  <option value="staff">Profissional</option>
+                  <option value="admin">Administrador</option>
+                </select>
+                {form.role === 'admin' && (
+                  <span className="text-xs text-text-muted">
+                    Administradores têm acesso total ao painel.
+                  </span>
+                )}
+              </label>
+            )}
+
             <label className="flex flex-col gap-1">
               <span className={fieldLabel}>Telefone</span>
               <input
@@ -372,16 +394,14 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
             )}
 
             <div className="mt-1 flex items-center justify-end">
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-
-            >
-              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isEdit ? 'Salvar' : 'Cadastrar'}
-            </button>
-
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isEdit ? 'Salvar' : 'Cadastrar'}
+              </button>
             </div>
           </form>
         </Dialog.Content>

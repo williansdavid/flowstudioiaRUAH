@@ -1,4 +1,11 @@
 // src/features/staff/hooks.ts
+
+import {
+  resendStaffInvite,
+  type ResendStaffInviteInput,
+  type ResendStaffInviteResult,
+} from './server/resendStaffInvite';
+
 import {
   queryOptions,
   useMutation,
@@ -177,6 +184,27 @@ export function useUpdateStaff() {
     onError: (err) =>
       toast.error(
         err instanceof Error ? err.message : 'Falha ao atualizar profissional.',
+      ),
+  });
+}
+// ===== resend invite =====
+export function useResendStaffInvite() {
+  return useMutation<ResendStaffInviteResult, Error, ResendStaffInviteInput>({
+    mutationFn: (input) => resendStaffInvite({ data: input }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success('Convite reenviado.');
+      } else if (res.reason === 'ALREADY_ACTIVE') {
+        toast.info('Este profissional já ativou o acesso.');
+      } else if (res.reason === 'FORBIDDEN') {
+        toast.error('Você não tem permissão para reenviar convites.');
+      } else {
+        toast.error(res.message || 'Falha ao reenviar convite.');
+      }
+    },
+    onError: (err) =>
+      toast.error(
+        err instanceof Error ? err.message : 'Falha ao reenviar convite.',
       ),
   });
 }

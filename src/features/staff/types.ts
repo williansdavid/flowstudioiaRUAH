@@ -12,6 +12,7 @@
     displayOrder: number;
     /** true => usuário logado pode editar este profissional (admin OU dono). */
     canEdit: boolean;
+    role: 'admin' | 'staff' | null;
   }
 
 export type {
@@ -40,3 +41,18 @@ export const WEEKDAY_LABEL: Record<string, string> = {
 // ----------------------------------------------------------------
 export type { CreateStaffInput as CreateStaffFormValues } from './server/createStaff';
 export type { UpdateStaffInput } from './server/updateStaff';
+/** Item da listagem de equipe (admin). */
+export interface StaffListItem {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  specialty: string | null;
+  avatarUrl: string | null;
+  isBookable: boolean;
+  displayOrder: number;
+  /** true => usuário logado pode editar este profissional (admin OU dono). */
+  canEdit: boolean;
+  /** false => nunca fez o 1º acesso (last_sign_in_at == null). */
+  hasAccess: boolean;
+}

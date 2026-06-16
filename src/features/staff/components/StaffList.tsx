@@ -12,9 +12,10 @@ import {
   CalendarRange,
   AlertCircle,
   Users,
+  Send,
 } from 'lucide-react';
 import { staffColor } from '../../appointments/components/DayCalendar/staffColor';
-import { useStaffList } from '../hooks';
+import { useStaffList, useResendStaffInvite } from '../hooks';
 import type { StaffListItem } from '../types';
 
 
@@ -29,6 +30,23 @@ function getInitials(name: string): string {
   if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase();
   return (parts[0]!.charAt(0) + parts[parts.length - 1]!.charAt(0)).toUpperCase();
+}
+
+/** Badge de role do profissional (Admin destaque, Profissional neutro). */
+function RoleBadge({ role }: { role: StaffListItem['role'] }) {
+  if (!role) return null;
+  const isAdmin = role === 'admin';
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ${
+        isAdmin
+          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+          : 'bg-muted text-muted-foreground'
+      }`}
+    >
+      {isAdmin ? 'Admin' : 'Profissional'}
+    </span>
+  );
 }
 
 function Avatar({
@@ -115,6 +133,10 @@ function StaffCard({
   onEdit?: (id: string) => void;
 }) {
   const color = staffColor(staff.id);
+  const resendInvite = useResendStaffInvite();
+
+  // Convite pendente: só relevante p/ quem pode editar e tem e-mail.
+  const showPending = staff.canEdit && !staff.hasAccess && Boolean(staff.email);
 
   return (
     <li
@@ -125,12 +147,16 @@ function StaffCard({
         <Avatar name={staff.name} url={staff.avatarUrl} color={color} />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold leading-tight">{staff.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="truncate font-semibold leading-tight">{staff.name}</p>
+            <RoleBadge role={staff.role} />
+          </div>
           {staff.specialty && (
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {staff.specialty}
             </p>
           )}
+
 
           {/* Linha do badge: status à esquerda, botão Horários à direita */}
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -173,7 +199,7 @@ function StaffCard({
         )}
       </div>
 
-      {(staff.email || staff.phone) && (
+      {(staff.email || staff.phone || showPending) && (
         <div className="space-y-1.5 border-t pt-3">
           {staff.email && (
             <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
@@ -186,6 +212,27 @@ function StaffCard({
               <Phone className="size-3.5 shrink-0" />
               {staff.phone}
             </p>
+          )}
+
+          {showPending && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
+                <AlertCircle className="size-3.5 shrink-0" />
+                Convite pendente
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  resendInvite.mutate({ email: staff.email as string })
+                }
+                disabled={resendInvite.isPending}
+                aria-label={`Reenviar convite para ${staff.name}`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium text-amber-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-500 dark:hover:bg-amber-950/30"
+              >
+                <Send className="size-3.5" />
+                {resendInvite.isPending ? 'Enviando…' : 'Reenviar'}
+              </button>
+            </div>
           )}
         </div>
       )}
