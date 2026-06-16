@@ -1,5 +1,4 @@
 ﻿// src/features/staff/components/StaffList.tsx
-
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
@@ -13,11 +12,13 @@ import {
   AlertCircle,
   Users,
   Send,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { staffColor } from '../../appointments/components/DayCalendar/staffColor';
-import { useStaffList, useResendStaffInvite } from '../hooks';
+import { useStaffList, useResendStaffInvite, useArchiveStaff } from '../hooks';
 import type { StaffListItem } from '../types';
-
 
 interface StaffListProps {
   onCreate?: () => void;
@@ -32,23 +33,6 @@ function getInitials(name: string): string {
   return (parts[0]!.charAt(0) + parts[parts.length - 1]!.charAt(0)).toUpperCase();
 }
 
-/** Badge de role do profissional (Admin destaque, Profissional neutro). */
-function RoleBadge({ role }: { role: StaffListItem['role'] }) {
-  if (!role) return null;
-  const isAdmin = role === 'admin';
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ${
-        isAdmin
-          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-          : 'bg-muted text-muted-foreground'
-      }`}
-    >
-      {isAdmin ? 'Admin' : 'Profissional'}
-    </span>
-  );
-}
-
 function Avatar({
   name,
   url,
@@ -58,7 +42,6 @@ function Avatar({
   url: string | null;
   color: string;
 }) {
-  // onError defensivo: bucket privado / URL quebrada cai pra inicial.
   const [failed, setFailed] = useState(false);
   const showImg = Boolean(url) && !failed;
 
@@ -67,8 +50,6 @@ function Avatar({
       className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2"
       style={{
         backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
-        // ring-color via boxShadow não — usamos a prop ring com cor custom abaixo.
-        // Tailwind ring usa --tw-ring-color; setamos direto.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ['--tw-ring-color' as any]: `color-mix(in srgb, ${color} 30%, transparent)`,
       }}
@@ -97,7 +78,6 @@ function CreateButton({ onCreate }: { onCreate?: () => void }) {
       type="button"
       onClick={onCreate}
       className="inline-flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-semibold text-neutral-900 shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-
     >
       <Plus className="size-4" />
       Novo profissional
@@ -128,14 +108,18 @@ function StaffCardSkeleton() {
 function StaffCard({
   staff,
   onEdit,
+  onArchive,
+  archivePending,
 }: {
   staff: StaffListItem;
   onEdit?: (id: string) => void;
+  onArchive: (id: string, name: string, archive: boolean) => void;
+  archivePending: boolean;
 }) {
   const color = staffColor(staff.id);
   const resendInvite = useResendStaffInvite();
 
-  // Convite pendente: só relevante p/ quem pode editar e tem e-mail.
+  const isAdmin = staff.role === 'admin';
   const showPending = staff.canEdit && !staff.hasAccess && Boolean(staff.email);
 
   return (
@@ -147,60 +131,90 @@ function StaffCard({
         <Avatar name={staff.name} url={staff.avatarUrl} color={color} />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate font-semibold leading-tight">{staff.name}</p>
-            <RoleBadge role={staff.role} />
-          </div>
+          <p className="truncate font-semibold leading-tight">{staff.name}</p>
           {staff.specialty && (
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {staff.specialty}
             </p>
           )}
 
-
-          {/* Linha do badge: status à esquerda, botão Horários à direita */}
           <div className="mt-2 flex items-center justify-between gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                staff.isBookable
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {staff.isBookable ? (
-                <CalendarCheck2 className="size-3" />
-              ) : (
-                <CalendarX2 className="size-3" />
-              )}
-              {staff.isBookable ? 'Agendável' : 'Indisponível'}
-            </span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              staff.isBookable
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                : 'bg-red-500 text-white dark:bg-red-600 dark:text-white'
+            }`}
+          >
+            {staff.isBookable ? (
+              <CalendarCheck2 className="size-3" />
+            ) : (
+              <CalendarX2 className="size-3" />
+            )}
+            {staff.isBookable ? 'Agendável' : 'Indisponível'}
+          </span>
 
-            <Link
-              to="/admin/equipe/$staffId/horarios"
-              params={{ staffId: staff.id }}
-              aria-label={`Horários de ${staff.name}`}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-            >
-              <CalendarRange className="size-3.5" />
-              Horários
-            </Link>
+
+            {!staff.isArchived && (
+              <Link
+                to="/admin/equipe/$staffId/horarios"
+                params={{ staffId: staff.id }}
+                aria-label={`Horários de ${staff.name}`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              >
+                <CalendarRange className="size-3.5" />
+                Horários
+              </Link>
+            )}
           </div>
         </div>
 
-        {staff.canEdit && onEdit && (
-          <button
-            type="button"
-            onClick={() => onEdit(staff.id)}
-            aria-label={`Editar ${staff.name}`}
-            className="shrink-0 rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-          >
-            <Pencil className="size-4" />
-          </button>
+        {/* Ações no topo direito: editar (só ativos) + arquivar/reativar */}
+        {staff.canEdit && (
+          <div className="flex shrink-0 items-center gap-1">
+            {onEdit && !staff.isArchived && (
+              <button
+                type="button"
+                onClick={() => onEdit(staff.id)}
+                aria-label={`Editar ${staff.name}`}
+                className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+              >
+                <Pencil className="size-4" />
+              </button>
+            )}
+
+            {staff.isArchived ? (
+              <button
+                type="button"
+                disabled={archivePending}
+                onClick={() => onArchive(staff.id, staff.name, false)}
+                aria-label={`Reativar ${staff.name}`}
+                className="inline-flex items-center gap-1.5 rounded-lg p-2 text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ArchiveRestore className="size-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={archivePending}
+                onClick={() => onArchive(staff.id, staff.name, true)}
+                aria-label={`Arquivar ${staff.name}`}
+                className="inline-flex items-center gap-1.5 rounded-lg p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
+              >
+                <Archive className="size-4" />
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      {(staff.email || staff.phone || showPending) && (
+      {(isAdmin || staff.email || staff.phone || showPending) && (
         <div className="space-y-1.5 border-t pt-3">
+          {isAdmin && (
+            <span className="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              Admin
+            </span>
+          )}
           {staff.email && (
             <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
               <Mail className="size-3.5 shrink-0" />
@@ -214,7 +228,8 @@ function StaffCard({
             </p>
           )}
 
-          {showPending && (
+          {/* Convite pendente só faz sentido em ativos. */}
+          {showPending && !staff.isArchived && (
             <div className="flex items-center justify-between gap-2 pt-1">
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
                 <AlertCircle className="size-3.5 shrink-0" />
@@ -240,67 +255,84 @@ function StaffCard({
   );
 }
 
-
 export function StaffList({ onCreate, onEdit }: StaffListProps) {
-  const { data, isLoading, isError } = useStaffList();
+  const [showArchived, setShowArchived] = useState(false);
+  const { data: staff, isLoading, isError } = useStaffList(showArchived);
+  const archiveMut = useArchiveStaff();
 
-  // Loading.
-  if (isLoading) {
-    return (
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <StaffCardSkeleton key={i} />
-        ))}
-      </ul>
-    );
+  async function handleArchive(id: string, name: string, archive: boolean) {
+    try {
+      await archiveMut.mutateAsync({ id, archive });
+      toast.success(
+        archive ? `${name} foi arquivado.` : `${name} foi reativado.`,
+      );
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'Falha ao atualizar profissional.',
+      );
+    }
   }
 
-  // Error.
-  if (isError) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 py-16 text-center">
-        <AlertCircle className="mb-3 size-8 text-destructive" />
-        <p className="text-sm font-medium">Não foi possível carregar a equipe</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tente recarregar a página em instantes.
-        </p>
-      </div>
-    );
-  }
-
-  const items = data ?? [];
-
-  // Empty.
-  if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
-        <Users className="mb-3 size-8 text-muted-foreground" />
-        <p className="text-sm font-medium">Nenhum profissional cadastrado</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Adicione o primeiro membro da equipe para começar.
-        </p>
-        {onCreate && (
-          <div className="mt-4">
-            <CreateButton onCreate={onCreate} />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Lista.
   return (
     <div className="space-y-4">
-      {onCreate && (
-        <div className="flex justify-end">
-          <CreateButton onCreate={onCreate} />
+      {/* Header: criar + toggle ativos/arquivados */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setShowArchived((v) => !v)}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Archive className="size-4" />
+          {showArchived ? 'Ver ativos' : 'Ver arquivados'}
+        </button>
+
+        {!showArchived && <CreateButton onCreate={onCreate} />}
+      </div>
+
+      {/* Loading */}
+      {isLoading && (
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <StaffCardSkeleton key={i} />
+          ))}
+        </ul>
+      )}
+
+      {/* Error */}
+      {isError && !isLoading && (
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0" />
+          Falha ao carregar profissionais.
         </div>
       )}
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {items.map((staff) => (
-          <StaffCard key={staff.id} staff={staff} onEdit={onEdit} />
-        ))}
-      </ul>
+
+      {/* Empty */}
+      {!isLoading && !isError && (staff?.length ?? 0) === 0 && (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
+          <Users className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {showArchived
+              ? 'Nenhum profissional arquivado.'
+              : 'Nenhum profissional cadastrado.'}
+          </p>
+          {!showArchived && <CreateButton onCreate={onCreate} />}
+        </div>
+      )}
+
+      {/* Lista */}
+      {!isLoading && !isError && (staff?.length ?? 0) > 0 && (
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {staff!.map((s) => (
+            <StaffCard
+              key={s.id}
+              staff={s}
+              onEdit={onEdit}
+              onArchive={handleArchive}
+              archivePending={archiveMut.isPending}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

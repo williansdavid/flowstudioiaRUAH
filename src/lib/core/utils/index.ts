@@ -7,6 +7,7 @@
  */
 export { normalizePhoneBR, PhoneNormalizeError } from './phone'
 export { phoneBRSchema, phoneBROptionalSchema } from './phone'
+export { formatPhoneBR, maskPhoneBRInput } from './phone'
 export { buildBrandingCss } from './buildBrandingCss'
 
 export { buildSeo } from './buildSeo'

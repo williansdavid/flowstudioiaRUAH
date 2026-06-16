@@ -13,6 +13,7 @@
     /** true => usuário logado pode editar este profissional (admin OU dono). */
     canEdit: boolean;
     role: 'admin' | 'staff' | null;
+    isArchived: boolean;
   }
 
 export type {

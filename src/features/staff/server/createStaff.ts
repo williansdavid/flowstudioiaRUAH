@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { phoneBRSchema } from '@/lib/core/utils';
 import { env } from '@/lib/env';
 // ----------------------------------------------------------------
 // Input schema (Opção B / B1 — sem password)
@@ -9,19 +10,15 @@ import { env } from '@/lib/env';
 const createStaffSchema = z.object({
   full_name: z.string().trim().min(2, 'Nome muito curto'),
   email: z.string().trim().email('Email inválido'),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[\d\s()+-]{8,20}$/, 'Telefone inválido')
-    .optional()
-    .or(z.literal('')),
+  // obrigatório; chega mascarado/sujo e sai canônico +55DDDNUMERO
+  phone: phoneBRSchema,
   specialty: z.string().trim().optional().or(z.literal('')),
   is_bookable: z.boolean().default(true),
   role: z.enum(['staff', 'admin']).default('staff'),
 });
 
 
-export type CreateStaffInput = z.infer<typeof createStaffSchema>;
+export type CreateStaffInput = z.input<typeof createStaffSchema>;
 
 // ----------------------------------------------------------------
 // Retorno discriminado
@@ -60,7 +57,8 @@ export const createStaff = createServerFn({ method: 'POST' })
 
     const admin = createSupabaseAdmin();
     const email = data.email.toLowerCase();
-    const phone = data.phone?.trim() ? data.phone.trim() : null;
+    // phone já chega canônico (+55DDDNUMERO) via phoneBRSchema
+    const phone = data.phone;
     const specialty = data.specialty?.trim() ? data.specialty.trim() : null;
 
     // PASSO 3 — Criar Auth user via CONVITE (sem senha; dispara e-mail)
@@ -81,7 +79,7 @@ export const createStaff = createServerFn({ method: 'POST' })
 
     const newUserId = invited.user.id;
 
-    // PASSO 4 — Upsert profile (idempotente; sem phone — coluna não existe)   
+    // PASSO 4 — Upsert profile (idempotente; sem phone — coluna não existe)
     const { error: profileErr } = await admin.from('profiles').upsert(
       {
         id: newUserId,

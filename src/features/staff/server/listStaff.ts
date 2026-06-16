@@ -3,6 +3,12 @@ import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import type { StaffListItem } from '../types';
+import { z } from 'zod';
+
+const listSchema = z.object({
+  includeArchived: z.boolean().optional(), // default false
+});
+
 
 interface RawRow {
   id: string;
@@ -12,6 +18,7 @@ interface RawRow {
   is_bookable: boolean;
   display_order: number;
   profile_id: string | null;
+  archived_at: string | null; // <-- novo
   profiles: {
     full_name: string | null;
     email: string | null;
@@ -28,41 +35,46 @@ interface RawRow {
  *  - client => barrado.
  * Nome: profiles.full_name (vínculo) -> staff.full_name (fallback).
  */
-export const listStaff = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<StaffListItem[]> => {
+export const listStaff = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => listSchema.parse(data ?? {}))
+  .handler(async ({ data }): Promise<StaffListItem[]> => {
+    const includeArchived = data?.includeArchived ?? false;
     const supabase = createSupabaseServer();
 
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('[staff] Sessão inválida.');
-    }
+    if (userError || !user) throw new Error('[staff] Sessão inválida.');
 
     const { data: role, error: roleError } =
       await supabase.rpc('current_user_role');
     if (roleError) throw roleError;
-    if (role === 'client') {
-      throw new Error('[staff] Acesso negado.');
-    }
+    if (role === 'client') throw new Error('[staff] Acesso negado.');
 
     let query = supabase
       .from('staff')
       .select(
-        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, profiles(full_name, email, avatar_url, role)',
+        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, profiles(full_name, email, avatar_url, role)',
       )
       .order('display_order', { ascending: true });
 
-    // staff só enxerga o próprio registro.
     if (role === 'staff') {
       query = query.eq('profile_id', user.id);
     }
 
-    const { data, error } = await query;
+    // Filtro de arquivamento. includeArchived=true => SÓ arquivados (tela dedicada).
+    if (includeArchived) {
+      query = query.not('archived_at', 'is', null);
+    } else {
+      query = query.is('archived_at', null);
+    }
+
+    const { data: rowsData, error } = await query;
     if (error) throw error;
 
-    const rows = data as unknown as RawRow[];
+    const rows = rowsData as unknown as RawRow[];
+
 
     // Mapa profile_id -> hasAccess (last_sign_in_at != null).
     // Admin: cruza via listUsers. Staff: usa a própria sessão (sem chamada admin).
@@ -98,10 +110,12 @@ export const listStaff = createServerFn({ method: 'GET' }).handler(
         avatarUrl: r.profiles?.avatar_url ?? null,
         isBookable: r.is_bookable,
         displayOrder: r.display_order,
-        canEdit: role === 'admin' || isOwner, // role = sessão (inalterado)
+        canEdit: role === 'admin' || isOwner,
         hasAccess,
         role: staffRole,
+        isArchived: r.archived_at != null, // <-- novo
       };
+
     });
 
 

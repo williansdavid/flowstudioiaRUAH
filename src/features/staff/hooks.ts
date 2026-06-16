@@ -1,4 +1,5 @@
 // src/features/staff/hooks.ts
+import { archiveStaff, type ArchiveStaffResult } from './server/archiveStaff';
 
 import {
   resendStaffInvite,
@@ -40,6 +41,27 @@ import {
   type CreateStaffInput,
   type CreateStaffResult,
 } from './server/createStaff';
+
+// chave de query passa a considerar o escopo
+export const staffKeys = {
+  all: ['staff'] as const,
+  list: (includeArchived: boolean) =>
+    ['staff', 'list', { includeArchived }] as const,
+};
+
+
+
+// nova mutation
+export function useArchiveStaff() {
+  const qc = useQueryClient();
+  return useMutation<ArchiveStaffResult, Error, { id: string; archive: boolean }>({
+    mutationFn: ({ id, archive }) => archiveStaff({ data: { id, archive } }),
+    onSuccess: () => {
+      // invalida ambas as listas (ativos e arquivados)
+      qc.invalidateQueries({ queryKey: staffKeys.all });
+    },
+  });
+}
 
 // ===== query =====
 export const staffTimeOffQuery = (staffId: string) =>
@@ -117,10 +139,13 @@ export const staffListQuery = () =>
     queryFn: () => listStaff(),
   });
 
-export function useStaffList() {
-  return useQuery(staffListQuery());
+// useStaffList aceita o escopo
+export function useStaffList(includeArchived = false) {
+  return useQuery({
+    queryKey: staffKeys.list(includeArchived),
+    queryFn: () => listStaff({ data: { includeArchived } }),
+  });
 }
-
 export const staffWorkingHoursQuery = (staffId: string) =>
   queryOptions({
     queryKey: ['staff', staffId, 'working-hours'],

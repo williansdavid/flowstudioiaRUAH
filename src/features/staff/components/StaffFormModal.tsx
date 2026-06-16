@@ -4,6 +4,8 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Loader2, AlertTriangle, Camera } from 'lucide-react';
 import { useCreateStaff, useUpdateStaff } from '../hooks';
 import { uploadAvatar, validateAvatarFile } from '../utils/uploadAvatar';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { phoneBRSchema, formatPhoneBR } from '@/lib/core/utils';
 import type { CreateStaffInput } from '../server/createStaff';
 import type { UpdateStaffInput } from '../server/updateStaff';
 import type { StaffListItem } from '../types';
@@ -35,7 +37,6 @@ const EMPTY: FormState = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_RE = /^[\d\s()+-]{8,20}$/;
 
 const fieldLabel = 'text-xs font-medium text-text-muted';
 const fieldInput =
@@ -70,7 +71,8 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
       setForm({
         full_name: staff.name,
         email: staff.email ?? '',
-        phone: staff.phone ?? '',
+        // dado canônico/legado vira máscara pra exibir
+        phone: formatPhoneBR(staff.phone),
         specialty: staff.specialty ?? '',
         is_bookable: staff.isBookable,
         role: 'staff',
@@ -97,8 +99,16 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
     if (form.full_name.trim().length < 2) e.push('Informe o nome completo.');
     // email só é validado no create (no edit é read-only)
     if (!isEdit && !EMAIL_RE.test(form.email.trim())) e.push('Email inválido.');
-    if (form.phone.trim() && !PHONE_RE.test(form.phone.trim()))
-      e.push('Telefone inválido.');
+
+    const phone = form.phone.trim();
+    if (!phone) {
+      e.push('Informe o telefone.');
+    } else {
+      const parsed = phoneBRSchema.safeParse(phone);
+      if (!parsed.success) {
+        e.push(parsed.error.issues[0]?.message ?? 'Telefone inválido.');
+      }
+    }
     return e;
   }, [form, isEdit]);
 
@@ -145,6 +155,14 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
     setEmailError(null);
     setFormError(null);
 
+    // Normaliza o phone (mascarado -> canônico) antes de enviar.
+    const phoneParsed = phoneBRSchema.safeParse(form.phone.trim());
+    if (!phoneParsed.success) {
+      setFormError(phoneParsed.error.issues[0]?.message ?? 'Telefone inválido.');
+      return;
+    }
+    const phoneCanonical = phoneParsed.data;
+
     try {
       if (isEdit) {
         if (!staff) return;
@@ -168,7 +186,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         const input: UpdateStaffInput = {
           id: staff.id,
           full_name: form.full_name.trim(),
-          phone: form.phone.trim(),
+          phone: phoneCanonical,
           specialty: form.specialty.trim(),
           is_bookable: form.is_bookable,
           ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
@@ -196,7 +214,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
       const input: CreateStaffInput = {
         full_name: form.full_name.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim(),
+        phone: phoneCanonical,
         specialty: form.specialty.trim(),
         is_bookable: form.is_bookable,
         role: form.role,
@@ -295,7 +313,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
                 className={fieldInput}
                 value={form.full_name}
                 onChange={(e) => set('full_name', e.target.value)}
-                placeholder="Ex: Maria Silva"
+                placeholder="Ex: João da Silva"
               />
             </label>
 
@@ -311,7 +329,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
                   set('email', e.target.value);
                   if (emailError) setEmailError(null);
                 }}
-                placeholder="profissional@email.com"
+                placeholder="obrigatório para login "
                 disabled={isEdit}
                 readOnly={isEdit}
                 aria-invalid={emailError ? true : undefined}
@@ -347,13 +365,11 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
 
             <label className="flex flex-col gap-1">
               <span className={fieldLabel}>Telefone</span>
-              <input
-                type="tel"
-                autoComplete="tel"
+              <PhoneInput
                 className={fieldInput}
                 value={form.phone}
-                onChange={(e) => set('phone', e.target.value)}
-                placeholder="Opcional"
+                onChange={(masked) => set('phone', masked)}
+                placeholder="(14) 99999-9999"
               />
             </label>
 
@@ -364,7 +380,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
                 className={fieldInput}
                 value={form.specialty}
                 onChange={(e) => set('specialty', e.target.value)}
-                placeholder="Opcional (ex: Cabeleireira, Manicure)"
+                placeholder="Opcional (ex: Cabelo, Barba)"
               />
             </label>
 

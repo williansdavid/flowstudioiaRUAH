@@ -105,3 +105,59 @@ export const phoneBROptionalSchema = z
       return z.NEVER
     }
   })
+
+// ================================================================
+// EXIBICAO / MASCARA (UI) — adicionado para o PhoneInput
+// ================================================================
+
+/**
+ * Extrai ate 11 digitos nacionais de qualquer entrada (mascarada,
+ * com +55, com 55 colado). Nao valida — so limpa pra mascarar.
+ * Usado pelo input controlado enquanto o usuario digita.
+ */
+function toNationalDigits(input: string): string {
+  let digits = (input ?? '').replace(/\D/g, '')
+  // Descola um 55 inicial so quando sobra tamanho de numero nacional.
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    digits = digits.slice(2)
+  }
+  return digits.slice(0, 11)
+}
+
+/**
+ * Mascara progressiva para input enquanto digita.
+ *   ""            -> ""
+ *   "14"          -> "(14"
+ *   "1499"        -> "(14) 99"
+ *   "14999998888" -> "(14) 99999-8888"   (celular, 11 dig)
+ *   "1433334444"  -> "(14) 3333-4444"     (fixo, 10 dig)
+ *
+ * Nao lanca erro: serve so pra UX. A validacao real e o phoneBRSchema.
+ */
+export function maskPhoneBRInput(input: string): string {
+  const d = toNationalDigits(input)
+  if (d.length === 0) return ''
+
+  const ddd = d.slice(0, 2)
+  if (d.length <= 2) return `(${ddd}`
+
+  const rest = d.slice(2)
+  // Celular (>= 11 dig totais): split 5-4. Fixo: split 4-4.
+  const isMobile = d.length > 10
+  const splitAt = isMobile ? 5 : 4
+
+  if (rest.length <= splitAt) return `(${ddd}) ${rest}`
+  return `(${ddd}) ${rest.slice(0, splitAt)}-${rest.slice(splitAt)}`
+}
+
+/**
+ * Formata para EXIBICAO um telefone ja canonico (+55DDDNUMERO) ou
+ * uma entrada qualquer. Retorna mascarado, ou a entrada crua se nao
+ * der pra mascarar (ex: numero incompleto vindo de dado legado).
+ *   "+5514999998888" -> "(14) 99999-8888"
+ *   "+551433334444"  -> "(14) 3333-4444"
+ */
+export function formatPhoneBR(input: string | null | undefined): string {
+  if (!input) return ''
+  return maskPhoneBRInput(input) || input
+}

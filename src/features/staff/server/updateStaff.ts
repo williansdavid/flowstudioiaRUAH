@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { phoneBRSchema } from '@/lib/core/utils';
 
 const BUCKET = 'avatars';
 
@@ -12,19 +13,15 @@ const BUCKET = 'avatars';
 const updateStaffSchema = z.object({
   id: z.string().uuid('ID inválido'),
   full_name: z.string().trim().min(2, 'Nome muito curto'),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[\d\s()+-]{8,20}$/, 'Telefone inválido')
-    .optional()
-    .or(z.literal('')),
+  // obrigatório; chega mascarado/sujo e sai canônico +55DDDNUMERO
+  phone: phoneBRSchema,
   specialty: z.string().trim().optional().or(z.literal('')),
   is_bookable: z.boolean().default(true),
   // null = remover avatar; undefined = não mexe; string = nova URL
   avatar_url: z.string().url('URL inválida').nullable().optional(),
 });
 
-export type UpdateStaffInput = z.infer<typeof updateStaffSchema>;
+export type UpdateStaffInput = z.input<typeof updateStaffSchema>;
 
 export type UpdateStaffResult =
   | { ok: true }
@@ -100,7 +97,8 @@ export const updateStaff = createServerFn({ method: 'POST' })
     }
 
     // PASSO 4 — Update staff
-    const phone = data.phone?.trim() ? data.phone.trim() : null;
+    // phone já chega canônico (+55DDDNUMERO) via phoneBRSchema
+    const phone = data.phone;
     const specialty = data.specialty?.trim() ? data.specialty.trim() : null;
 
     const { error: updErr } = await supabase

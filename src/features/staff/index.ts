@@ -23,3 +23,4 @@ export type {
   WeekdayKey,
   StaffListItem,
 } from './types';
+export { useArchiveStaff } from './hooks';
