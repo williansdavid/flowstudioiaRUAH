@@ -1,21 +1,21 @@
-﻿/**
- * ServicesSection â€” Ruah Barber Lounge
+/**
+ * ServicesSection — Ruah Barber Lounge
  * ----------------------------------------------------------------
- * Section "ServiÃ§os" da landing pÃºblica.
+ * Section "Serviços" da landing pública.
  *
  * Layout:
- *   - Header: eyebrow + tÃ­tulo + subtÃ­tulo (centralizado)
- *   - Grid:   1 col (mobile) â†’ 2 (md) â†’ 3 (lg)
+ *   - Header: eyebrow + título + subtítulo (centralizado)
+ *   - Grid:   1 col (mobile) → 2 (md) → 3 (lg)
  *
  * Dados:
- *   - Header textual: content.services (estÃ¡tico, /config/content.ts)
- *   - CatÃ¡logo:       prop `services` (SSR loader â†’ Supabase)
+ *   - Header textual: content.services (estático, /config/content.ts)
+ *   - Catálogo:       prop `services` (SSR loader → Supabase)
  *
  * Estados:
- *   - Lista vazia / undefined â†’ empty state discreto
- *   - Sem flicker: SSR jÃ¡ entrega HTML com os cards renderizados
+ *   - Lista vazia / undefined → empty state discreto
+ *   - Sem flicker: SSR já entrega HTML com os cards renderizados
  *
- * AnimaÃ§Ã£o:
+ * Animação:
  *   - useReveal() no header + grid com stagger via .ruah-delay-*
  *
  * SSR-safe:
@@ -29,7 +29,7 @@ import type { PublicServiceItem } from '@/lib/public'
 
 
 interface ServicesSectionProps {
-  /** Lista de serviÃ§os ativos vinda do SSR loader da rota. */
+  /** Lista de serviços ativos vinda do SSR loader da rota. */
   services: PublicServiceItem[]
 }
 
@@ -93,7 +93,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
         ) : (
           <div className="ruah-services__empty" role="status">
             <Scissors size={24} strokeWidth={1.5} aria-hidden="true" />
-            <p>Em breve, nosso menu completo de serviÃ§os.</p>
+            <p>Em breve, nosso menu completo de serviços.</p>
           </div>
         )}
       </div>
@@ -101,9 +101,9 @@ export function ServicesSection({ services }: ServicesSectionProps) {
   )
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ServiceCard â€” card individual do grid
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
+// ServiceCard — card individual do grid
+// ─────────────────────────────────────────────────────────────────
 
 function ServiceCard({ service }: { service: PublicServiceItem }) {
   return (

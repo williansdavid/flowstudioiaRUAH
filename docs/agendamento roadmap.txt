@@ -1,338 +1,337 @@
 ================================================================
-DOCUMENTO DE CONCEITO — IDENTIDADE, CADASTRO & VINCULO DE CLIENTE
+FLOWSTUDIO AI — DOCUMENTO DE CONCEITO E ROADMAP
+Módulo de Agendamento + Disponibilidade
+Versão: 2.3 | Atualizado: 12/06/2026
+Studio de referência: ruah
 ================================================================
-Studio: ruah  •  Data: 11/06/2026  •  Status: em execucao
-Versao: 2.3 (banco como fonte viva — match por phone canonico no trigger)
 
 ----------------------------------------------------------------
-0. POSICAO ATUAL (verificado no banco em 11/06/2026)
+1. VISÃO GERAL
 ----------------------------------------------------------------
-Modelo de identidade v2.0 JA ESTA MATERIALIZADO no schema.
-FASE 0 (fundacao) CONCLUIDA — ver roadmap secao 10.
-FASE 1 (TD-02) RESOLVIDA NO BANCO — falta so aplicacao nos forms (1.3).
+Plataforma white-label para studios de beleza. Arquitetura isolada
+por studio (1 Netlify + 1 Supabase + 1 banco + 1 landing por studio).
 
-  Tabela    | Estado real (colunas-chave)              | Status v2
-  ----------|------------------------------------------|----------
-  profiles  | id, email(NOT NULL), full_name, role,    | OK
-            | is_active, avatar_url, created_at,        | (ja MAGRA:
-            | updated_at  — SEM phone                   |  sem phone)
-  clients   | full_name, phone, email (todos nullable),| OK (fonte
-            | profile_id(null), birth_date, notes,     |  unica do
-            | preferences, totals, last_visit_at        |  telefone)
-  staff     | full_name, phone (todos nullable),        | OK (movidos
-            | specialty, bio, commission_rate,          |  pra ca)
-            | is_bookable, working_hours, profile_id    |
+Dois módulos mentais:
+- MÓDULO SISTEMA  : núcleo compartilhado (src/lib, src/routes, core).
+- MÓDULO SITE     : landing/config individual (src/sites/<studio>).
 
-  Trigger handle_new_user .......... EXISTE e VALIDADO (ver secao 0-A/0-C).
-  clients_view ..................... ATUALIZADA + types confirmados (0-D).
-  RLS profiles/clients/staff ....... NAO referenciam phone nem full_name.
-  Pendencia de limpeza ............. policy duplicada em profiles
-       (select_own == users read own profile) -> TD-05.
-
-CONCLUSAO: FASE 0 fechada (0.1 a 0.7). FASE 1 fechada no banco
-           (1.1, 1.2, 1.4). Resta 1.3 (forms) -> FASE 2/3.
+Regra de ouro:
+- Sistema NUNCA importa de sites/.
+- Sites consomem lib/core via fachadas.
+- Fonte ÚNICA de verdade por entidade (nada de cache materializado).
 
 ----------------------------------------------------------------
-0-A. ESTRATEGIA DE BANCO (substitui decisao #7 — migrations) [v2.2]
+2. STACK TRAVADA
 ----------------------------------------------------------------
-DEPRECATED: migrations versionadas (supabase/migrations/*.sql).
-   Os arquivos 0001, 0002, 20260521_*, 20260522_AJUSTE*, 009, XXXX_*
-   permanecem no repo como HISTORICO MORTO — NAO sao fonte de verdade,
-   NAO devem ser aplicados nem editados.
-
-ESTRATEGIA ATUAL — Banco como fonte viva:
-   Todo trabalho de banco (DDL, funcoes, triggers, RLS, views,
-   correcoes, TESTES) e feito via SQL DIRETO no Supabase (SQL Editor).
-
-REGRAS:
-1. FONTE DE VERDADE = estado atual do banco, NUNCA os arquivos .sql.
-2. Inspecionar o que esta vivo via catalogo:
-   - funcoes:  pg_proc                 (where proname = '...')
-   - triggers: pg_trigger
-   - policies: pg_policies
-   - colunas:  information_schema.columns
-   - views:    pg_get_viewdef('public.<view>'::regclass, true)
-3. Antes de QUALQUER alteracao de banco: ler o estado real via SQL e
-   confirmar. Nunca chutar pelo arquivo legado.
-4. Funcoes/views entregues prontas pra colar: idempotentes
-   (create or replace / drop if exists), search_path fixado em
-   SECURITY DEFINER quando aplicavel.
+TanStack Start (SSR) + TanStack Router + React Query + TypeScript
+(estrito, noUncheckedIndexedAccess) + Supabase (Auth+Postgres+RLS)
++ Tailwind + Vite + Netlify + Lucide + Sonner + Zod + framer-motion.
 
 ----------------------------------------------------------------
-0-B. ESTADO VALIDADO DO BANCO (verificado via pg_proc) [v2.3]
+3. SCHEMA DO BANCO
 ----------------------------------------------------------------
-handle_new_user() — VALIDADO (estado correto, equivale ao 0.4):
-  - profiles: insert idempotente (on conflict id do nothing), role 'client'
-  - caminho CONVERSAO: metadata.client_id -> liga ficha existente sem dono
-  - caminho SIGNUP A1: match por email (lower) com prioridade sobre phone
-  - match por phone: usa forma CANONICA via normalize_phone_br
-    (v_phone_norm), espelhando src/lib/core/utils/phone.ts -> TD-02 OK
-  - sem match: cria client novo (phone gravado canonico)
-  - NAO duplica ficha (decisao #6 respeitada)
-  - trigger on_auth_user_created: after insert on auth.users
+TABELAS EXISTENTES (services é a ÚNICA com dados reais; resto = teste):
+- profiles (id, email, role, full_name, phone, avatar_url, is_active)
+- clients (profile_id opcional)
+- staff (profile_id, working_hours jsonb)
+- services (id, name, description, duration_minutes INT NOT NULL,
+            price, category, image_url, is_active, display_order, ...)
+- appointments (client_id, staff_id, service_id, status enum, ...)
+- finance_transactions (type income/expense + category enum)
+- leads (status + source enums)
+- staff_time_off (NOVA — CRIADA e ativa. Folgas/bloqueios pontuais.
+                  Ver DDL real na seção 5.3.)
 
-  normalize_phone_br() — VALIDADO (espelha phone.ts, 7 casos cobertos).
+VIEW: clients_view (cliente + profile)
 
-----------------------------------------------------------------
-0-C. TESTES DE BANCO (sem interface ainda) [v2.2]
-----------------------------------------------------------------
-Enquanto o sistema nao tem UI de signup/conversao, os fluxos de banco
-sao testados via SQL direto no Supabase, simulando insert em
-auth.users e verificando o efeito do trigger.
+ENUMS:
+- appointment_status: pending | confirmed | completed | cancelled | no_show
+- lead_source, lead_status, transaction_category, transaction_type
+- user_role: admin | staff | client
 
-VALIDADO via SQL direto (equivale ao smoke test 0.7):
-  1. Conversao (metadata.client_id) -> ligou ficha existente
-     (ex.: "Maria Teste", profile_id preenchido, total_clients_match=1,
-      sem duplicar).
-  2. Signup A1 sem match -> criou client novo
-     (ex.: "novoemailteste", full_name/phone null, client novo gerado).
-  (Signup A1 com match email/phone coberto pela mesma logica validada.)
+FUNCTION: current_user_role() — usar em RLS.
 
-PENDENTE quando a UI existir:
-  - Re-testar os mesmos fluxos ponta-a-ponta pela interface (signup
-    real via Supabase Auth). Verificacao de regressao, nao retrabalho.
+REGRA DE OCUPAÇÃO DE AGENDA:
+- OCUPAM slot  : pending, confirmed, completed
+- NÃO ocupam   : cancelled, no_show
+
+TABELAS PLANEJADAS (não existem ainda):
+- whatsapp_messages, whatsapp_settings, ai_messages, user_roles
 
 ----------------------------------------------------------------
-0-D. clients_view + TYPES (equivale ao 0.6) [v2.2]
+4. DECISÕES TRAVADAS
 ----------------------------------------------------------------
-clients_view VALIDADA (19 colunas, coerente com modelo magro):
-  - display_name / display_phone / display_email  (fachada resolvida)
-  - origin                                          (walk-in vs account)
-  - raw_full_name / raw_phone / raw_email           (fonte: clients)
-  - profile_full_name / profile_email              (fonte: profiles magra)
-  - profile_id, birth_date, notes, preferences,
-    total_appointments, total_spent, last_visit_at,
-    created_at, updated_at, id
-  - SEM phone vindo de profiles (respeita profiles MAGRA).
-  - raw_* (client) separado de profile_* (conta): respeita
-    "profiles.email != clients.email coexistem".
-
-TYPES confirmados em src/lib/supabase/types.ts:
-  - clients_view presente no Database types (bloco Row ~L477).
-  - display_name / profile_email / raw_phone tipados (string | null).
-  - relacionamentos referenciam "clients_view" (L81, L299).
-  => View e types em sincronia. 0.6 fechado.
-
-----------------------------------------------------------------
-1. OBJETIVO
-----------------------------------------------------------------
-Definir o modelo de identidade do cliente e do staff, permitir que
-clientes se cadastrem pelo portal (landing) criando conta
-(auth.user + profiles + clients) e permitir que o salao converta
-walk-ins em contas — tudo sem nunca duplicar fichas nem misturar
-historico.
-
-----------------------------------------------------------------
-2. CONTEXTO / PREMISSAS
-----------------------------------------------------------------
-- Banco e descartavel (exceto tabela `services`). Nenhum dado e real.
-  Estrategia de banco: SQL DIRETO no Supabase (ver secao 0-A).
-  [migration ADITIVA -> ABANDONADA em v2.2]
-- ~50% dos clientes terao login; o restante e walk-in puro.
-- Cadastro na recepcao tem email opcional -> walk-in pode ter email NULL.
-- Telefone e o elo confiavel entre walk-in e conta do portal.
-- Login e somente por email + senha (Supabase Auth nativo).
-- Identidade/contato do studio (inclusive no WhatsApp) mora em
-  src/sites/<studio>/config/.
-
-----------------------------------------------------------------
-3. MODELO DE IDENTIDADE (DECISAO ESTRUTURAL — v2.0)  [JA NO BANCO]
-----------------------------------------------------------------
-profiles MAGRA — so dados de autenticacao/conta:
-  profiles = id, email (login, unique), full_name, role, is_active,
-             avatar_url, created_at, updated_at
-  (SEM phone. full_name mantido como nome de exibicao da conta.)
-
-  Tabela    | Quem                            | Identidade
-  ----------|---------------------------------|----------------------
-  clients   | clientes (walk-in E com login)  | full_name, phone, email
-  staff     | funcionarios                    | full_name, phone
-  profiles  | elo de auth                     | email de login + role
-
-REGRA DE OURO: fonte unica de verdade por entidade.
-  - Telefone de cliente -> clients
-  - Telefone de staff   -> staff
-  - Email de login      -> profiles.email (unique, so quem tem conta)
-  - Email de contato    -> clients.email (opcional, livre)
-  profiles.email e clients.email sao COISAS DIFERENTES e coexistem.
-
-Cliente que loga: ganha profile_id preenchido em clients.
-A ficha SEMPRE mora em clients, tenha conta ou nao.
+#1  Arquitetura isolada por studio (nunca multi-tenant).
+#2  Stack travada (nova lib só com justificativa forte).
+#3  Identidade do studio mora em src/sites/<studio>/config, não em env.
+#4  Validação de env via Zod em src/lib/env.ts.
+#5  role vive em profiles hoje (user_roles é futuro).
+#6  Fachadas em sites/<studio>/utils (buildBrandingCss, buildSeo).
+#7  Mobile-first + SSR-safe + loading/error/empty states.
+#8  Granularidade de slot: FIXA, 30 em 30 minutos.
+#9  Disponibilidade é DERIVADA (calculada em server fn).
+    SEM tabela materializada de slots — evita dessincronização,
+    overbooking e explosão de linhas. Fonte única preservada.
+#10 Disponibilidade mora em 3 fatos:
+    - staff.working_hours (grade recorrente + almoço)
+    - staff_time_off (folgas / bloqueios pontuais)
+    - appointments (ocupação real)
+#11 OVERRIDE ADMIN: admin/staff podem agendar FORA do horário do
+    salão e fora da grade (ignora validação de disponibilidade).
+    Cliente no portal NÃO pode — só vê slots válidos.
+#12 RLS de staff_time_off (TRAVADA 12/06/2026):
+    - admin: acesso total (policy ALL).
+    - staff: CRUD COMPLETO sobre as PRÓPRIAS folgas
+      (insert/update/delete/select), vínculo via
+      staff.profile_id = auth.uid().
+    - 5 policies ativas em produção:
+      staff_time_off_admin_all (ALL),
+      staff_time_off_self_select (SELECT),
+      staff_time_off_self_insert (INSERT),
+      staff_time_off_self_update (UPDATE),
+      staff_time_off_self_delete (DELETE).
+#13 RLS de appointments (TRAVADA 12/06/2026):
+    - admin/staff: acesso total (select/insert/update/delete) via
+      current_user_role() IN (admin, staff).
+    - client: SELECT/UPDATE apenas dos PRÓPRIOS appointments
+      (client_id IN clients WHERE profile_id = auth.uid()).
+    - client: INSERT permitido só com status = 'pending' (forçado no
+      with_check) — cliente nunca cria confirmado/completed.
+    - client SEM permissão de DELETE.
+    - 7 policies ativas em produção.
+#14 Leitura da agenda do dia (getDayAppointments):
+    - Busca o DIA INTEIRO em uma query (range UTC-3) e particiona
+      por staff no client (DayCalendar/StaffColumn). Sem N requests.
+    - Exclui 'cancelled' fixo no server fn.
+    - Filtro server-side por staff/status NÃO existe por design
+      (não é lista paginada). Seletor de status na UI -> TD-06.
 
 ----------------------------------------------------------------
-4. DECISOES TRAVADAS
+5. MÓDULO DE DISPONIBILIDADE (TD-01) — ESPECIFICAÇÃO
 ----------------------------------------------------------------
-  #  | Tema                    | Decisao
-  ---|-------------------------|--------------------------------------
-  1  | Login                   | Somente email + senha.
-  2  | Telefone duplicado      | Eliminado. clients e fonte unica do
-     |                         | telefone do cliente; staff o do staff.
-     |                         | Normalizacao canonica RESOLVIDA no banco
-     |                         | (normalize_phone_br + trigger). Aplicacao
-     |                         | nos forms = item 1.3.
-  3  | Conflito no portal      | Sem merge automatico. Barra e
-     |                         | redireciona pro WhatsApp (wa.me).
-  4  | Esqueci senha           | Reset padrao Supabase — so account.
-  5  | Conversao walk-in->conta| Admin dispara CONVITE por email
-     |                         | (Supabase inviteUserByEmail). Admin
-     |                         | NUNCA define a senha. Cliente define
-     |                         | a propria senha no 1o acesso.
-  6  | Trigger de signup       | LIGA conta a clients existente (match
-     |                         | por email/phone). NAO cria clients
-     |                         | duplicado.
-  7  | Estrategia de banco     | SQL DIRETO no Supabase (banco = fonte
-     |                         | viva). Migrations versionadas
-     |                         | ABANDONADAS. [revisado v2.2]
 
-----------------------------------------------------------------
-5. FLUXO DO CADASTRO PELO PORTAL (A1)
-----------------------------------------------------------------
-Cliente preenche: nome, telefone, email (obrigatorio),
-                  aniversario (opcional)
-  |
-  +-- telefone OU email JA existe como ACCOUNT (tem login)
-  |     -> "Voce ja tem conta" -> recuperar senha (decisao #4)
-  |
-  +-- telefone JA existe como WALKIN (sem login)
-  |     -> "Esse telefone ja esta cadastrado. Fale com a gente"
-  |        -> botao wa.me com mensagem pre-preenchida
-  |
-  +-- nada existe -> cria conta nova -> confirmacao Supabase
-                     -> cliente define senha
+5.1 CONDIÇÕES
+COND. 1 — Staff define disponibilidade:
+  - Grade recorrente (dias da semana + faixa de trabalho + almoço)
+    em staff.working_hours.
+  - Folgas e bloqueios pontuais (data/range específico) em
+    staff_time_off.
 
-Mensagem pre-preenchida do wa.me:
-"Ola! Quero agendar um horario e nao consegui pelo portal. Pode
-buscar um horario pra mim e liberar meu cadastro para agendamento
-pelo portal? Meu nome e [nome], telefone [telefone]."
+COND. 2 — Sistema mostra só slots livres:
+  disponivel = (businessHours_do_dia ∩ working_hours_staff)
+               − almoço
+               − staff_time_off
+               − appointments_que_ocupam
 
-----------------------------------------------------------------
-6. PROCEDIMENTOS DO ADMIN (X2)
-----------------------------------------------------------------
-X2.1 — CADASTRAR WALK-IN
-  - Admin abre /clients -> "Novo cliente".
-  - Preenche: full_name, phone (obrigatorio), email (opcional),
-    aniversario (opcional).
-  - Sistema grava em `clients` SEM profile_id (sem conta, sem auth).
-  - Telefone normalizado canonico (+55DDDNUMERO) na gravacao (item 1.3).
-  - Resultado: ficha apta a agendamentos presenciais, sem login.
+COND. 3 — Slot respeita duração do serviço:
+  Slot só é ofertado se houver BLOCO CONTÍNUO LIVRE >= duration_minutes.
+  Ex.: serviço 60min nunca aparece em janela livre de 30min.
 
-X2.2 — CONVERTER WALK-IN EM CONTA
-  Gatilho: cliente pede acesso ao portal (via WhatsApp do passo 5)
-  OU admin decide liberar.
+5.2 SCHEMA — staff.working_hours (jsonb, definido do zero)
+  {
+    "0": null,                              // domingo = folga fixa
+    "1": { "start": "09:00", "end": "19:00",
+           "breaks": [{ "start": "12:00", "end": "13:00" }] },
+    "2": { "start": "09:00", "end": "19:00", "breaks": [...] },
+    ...
+    "6": { "start": "09:00", "end": "14:00", "breaks": [] }
+  }
+  - Chave = dia da semana (0=dom ... 6=sáb).
+  - null  = staff não trabalha nesse dia (folga fixa).
+  - breaks = lista de bloqueios recorrentes (ex.: almoço).
+  - Validado com Zod (schema em src/lib).
 
-  Pre-condicao: clients.email PREENCHIDO e valido. Se nao tiver,
-                admin coleta e atualiza a ficha antes.
+5.3 DDL — staff_time_off (REAL — aplicada em produção 12/06/2026)
+  create table public.staff_time_off (
+    id          uuid primary key default gen_random_uuid(),
+    staff_id    uuid not null references public.staff(id) on delete cascade,
+    starts_at   timestamptz not null,
+    ends_at     timestamptz not null,
+    reason      text,
+    created_at  timestamptz not null default now(),
+    updated_at  timestamptz not null default now(),
+    constraint staff_time_off_range_chk check (ends_at > starts_at)
+  );
+  create index staff_time_off_staff_idx
+    on public.staff_time_off (staff_id, starts_at, ends_at);
 
-  Passos:
-  1. Admin abre a ficha em /clients.
-  2. Botao "Convidar para o portal" (visivel so se email preenchido
-     e profile_id ainda NULL).
-  3. Sistema chama Supabase inviteUserByEmail(email) com metadata
-     contendo o client_id alvo.
-  4. Supabase cria auth.user (sem senha) e envia email com link de
-     definicao de senha.
-  5. Cliente clica, define a propria senha, confirma email.
-  6. Trigger handle_new_user detecta metadata.client_id e LIGA:
-     - cria profiles (role=client)
-     - UPDATE clients SET profile_id = novo profile
-       (NAO cria clients novo — usa o existente, preserva historico).
-  7. Resultado: walk-in vira account, historico intacto.
+  RLS ATIVO — 5 policies (ver decisão #12):
+    - staff_time_off_admin_all   (ALL)    via current_user_role() = admin
+    - staff_time_off_self_select (SELECT) via staff.profile_id = auth.uid()
+    - staff_time_off_self_insert (INSERT) idem
+    - staff_time_off_self_update (UPDATE) idem
+    - staff_time_off_self_delete (DELETE) idem
 
-  Admin NUNCA conhece/define a senha. Seguranca preservada.
+  OBS: coluna updated_at existe mas SEM trigger de atualização
+       automática ainda -> ver TD-05.
 
-----------------------------------------------------------------
-7. REGRA DE MATCHING
-----------------------------------------------------------------
-- Por email (com lower()) e por telefone em forma canonica.
-- Telefone normalizado via normalize_phone_br (+55DDDNUMERO) ->
-  RESOLVIDO no banco. Trigger ja faz match canonico.
-- No signup do portal e na conversao X2.2, a trigger procura clients
-  existente por email/phone antes de criar qualquer coisa.
-- Prioridade implementada: email-match > phone-match.
-- Aplicacao da normalizacao nos forms (entrada do usuario) = item 1.3.
+5.4 ALGORITMO (server fn — TanStack Start, lado servidor)
+  Entrada: { staffId, serviceId, dateRange (ex. 14 dias) }
+  Passos (por dia do range):
+    1. Lê duration_minutes do serviço.
+    2. Janela base = businessHours[dia] ∩ working_hours[staff][dia].
+       Se working_hours[dia] == null -> dia sem slots.
+    3. Subtrai breaks (almoço) da working_hours.
+    4. Subtrai intervalos de staff_time_off no dia.
+    5. Subtrai appointments do staff no dia com status
+       IN (pending, confirmed, completed).
+    6. Fatia em slots de 30min; mantém só slots onde
+       [slot, slot + duration_minutes] está 100% livre.
+  Queries: appointments (range/staff) + staff_time_off (range/staff).
+  Config (businessHours) lida do arquivo, não do banco.
+  Resultado: grade por dia com horários iniciais válidos.
 
-----------------------------------------------------------------
-8. TECHDEBS GERADOS/RELACIONADOS
-----------------------------------------------------------------
-  ID    | Descricao                                   | Bloqueia
-  ------|---------------------------------------------|------------------
-  TD-01 | Modulo de Disponibilidade (horario staff,   | Agendamento real
-        | duracao, conflito, slots)                   | no portal
-  TD-02 | Normalizacao telefone (+55 canonico) + match| RESOLVIDO NO BANCO
-        | confiavel por phone + unique parcial.       | (1.1/1.2/1.4).
-        | RESOLVIDO: phone.ts, clients_phone_unique_  | Resta aplicacao
-        | idx, normalize_phone_br + trigger canonico. | nos forms = 1.3.
-        | Aplicacao nos forms pendente (item 1.3).    |
-  TD-03 | Painel de conflitos de cadastro (handoff    | Nada (futuro)
-        | interno ao admin)                           |
-  TD-04 | Convite via WhatsApp (magic link) como      | Nada (futuro)
-        | alternativa ao email                        |
-  TD-05 | Limpeza de RLS legada: policy duplicada em  | Nada
-        | profiles (select_own == users read own      | (higiene)
-        | profile)                                    |
-
-----------------------------------------------------------------
-9. ESTADOS DE UI EXIGIDOS
-----------------------------------------------------------------
-A1 (portal):  loading - error - empty - sucesso ("confira seu email
-              pra confirmar"). SSR-safe, mobile-first.
-X2 (admin):   loading - error - empty - sucesso ("convite enviado").
-              Botao de convite desabilitado quando sem email ou ja
-              convertido.
+5.5 FLUXO DE UI (2 janelas)
+  JANELA 1 — Seleção:
+    cliente -> serviço -> profissional -> [Avançar]
+  JANELA 2 — Horários:
+    - Grade de slots livres do profissional, já filtrada pela
+      duração do serviço.
+    - Navegação entre dias.
+    - Mostra SOMENTE o disponível.
+    - ADMIN/STAFF: toggle "Agendar fora do horário" (override #11),
+      liberando entrada manual de data/hora sem validação de slot.
+    - CLIENTE: sem toggle; só slots válidos.
+  Estados: loading / error / empty ("sem horários neste dia").
+  Mobile-first.
 
 ================================================================
-10. ROADMAP / CHECKLIST DE EXECUCAO (atualizado v2.3)
+FLOWSTUDIO AI — ROADMAP DETALHADO (ACOMPANHAMENTO)
+Versão: 2.3 | Atualizado: 12/06/2026 | Studio: ruah
 ================================================================
-FASE 0 — REESTRUTURACAO DE IDENTIDADE (fundacao) -> CONCLUIDA
-  [x] 0.1  profiles MAGRA  -> JA NO BANCO (sem phone; full_name mantido)
-  [x] 0.2  staff full_name + phone  -> JA NO BANCO
-  [x] 0.3  clients fonte unica (full_name, phone, email) -> JA NO BANCO
-  [x] 0.4  trigger handle_new_user (LIGA, nao duplica) -> VALIDADO via
-           pg_proc + testes SQL no Supabase
-  [x] 0.5  RLS afetadas por colunas -> nenhuma policy depende de
-           phone/full_name (verificado). Nada a fazer.
-  [x] 0.6  clients_view atualizada + types confirmados (ver 0-D)
-  [x] 0.7  Smoke test signup novo / conversao walk-in -> feito via SQL
-           direto no Supabase (ver 0-C)
 
-  >>> FASE 0 FECHADA.
+LEGENDA DE STATUS:
+  [✓] CONFIRMADO  — feito e validado
+  [~] EM ANDAMENTO — iniciado, não concluído
+  [ ] ABERTO       — não iniciado
+  [!] BLOQUEADO    — depende de algo pendente
 
-FASE 1 — TD-02 (normalizacao + match por phone) -> RESOLVIDA NO BANCO
-  [x] 1.1  Util de normalizacao +55DDDNUMERO (Zod) -> ENTREGUE
-           (src/lib/core/utils/phone.ts + barrel core/utils).
-  [x] 1.2  SQL direto: unique parcial em clients.phone -> APLICADO.
-           Indice: clients_phone_unique_idx (where phone is not null).
-           Pre-req: 8 fichas existentes normalizadas p/ +55 (UPDATE),
-           0 duplicatas confirmadas antes de criar o indice.
-  [ ]  1.3 Aplicar normalizacao na gravacao (portal + admin) -> junto
-           dos forms (FASE 2/3); usar phoneBRSchema.
-  [x]  1.4 Ajustar match por phone na handle_new_user (canonico) ->
-           VALIDADO. normalize_phone_br espelha phone.ts; trigger usa
-           v_phone_norm em match e insert. Constraints profiles OK.
+================================================================
+FASE 0 — FUNDAÇÃO
+================================================================
+[✓] 0.1  Arquitetura isolada por studio (1 Netlify + 1 Supabase)
+[✓] 0.2  Stack travada definida
+[✓] 0.3  Validação de env via Zod (src/lib/env.ts)
+[✓] 0.4  Config do studio em src/sites/<studio>/config
+[✓] 0.5  Fachadas (buildBrandingCss, buildSeo)
+STATUS FASE: [✓] CONFIRMADA
 
-  >>> FASE 1 FECHADA NO BANCO. Resta 1.3 (forms) -> FASE 2/3.
+================================================================
+FASE 1 — NÚCLEO / AUTH / LAYOUT
+================================================================
+[✓] 1.1  Auth SSR
+[✓] 1.2  Guards de rota por role
+[✓] 1.3  Clients Supabase (anon + service role)
+[✓] 1.4  Layout base + navegação
+STATUS FASE: [✓] CONFIRMADA
 
-FASE 2 — A1 (cadastro pelo portal)
-  [ ] 2.1  Form de cadastro (nome, telefone, email, aniversario)
-  [ ] 2.2  Matching pre-submit (account / walk-in / novo)
-  [ ] 2.3  Bloqueio + redirect wa.me (mensagem pre-preenchida)
-  [ ] 2.4  Fluxo de confirmacao Supabase + define senha
-  [ ] 2.5  Estados de UI (loading/error/empty/sucesso) SSR-safe
+================================================================
+FASE 2 — CRUDs BASE
+================================================================
+[~] 2.1  CRUD services
+[~] 2.2  CRUD clients
+[~] 2.3  CRUD staff
+[~] 2.4  CRUD/admin profiles
+[~] 2.5  Revisão de RLS de cada tabela acima
+         (appointments revisado e travado — decisão #13;
+          services/clients/staff/profiles ainda pendentes)
+STATUS FASE: [~] EM ANDAMENTO
 
-FASE 3 — X2 (procedimentos admin)
-  [ ] 3.1  X2.1 Cadastrar walk-in (form admin em /clients)
-  [ ] 3.2  X2.2 Botao "Convidar para o portal"
-  [ ] 3.3  Server fn: inviteUserByEmail + metadata client_id
-  [ ] 3.4  Trigger trata metadata.client_id -> JA IMPLEMENTADO no
-           trigger atual (validar ponta-a-ponta quando UI existir)
-  [ ] 3.5  Estados de UI do admin
+================================================================
+FASE 3 — APPOINTMENTS BÁSICO
+================================================================
+[✓] 3.1  CRUD de appointments (sem validação de disponibilidade)
+         server/: createAppointment, updateAppointment,
+         deleteAppointment, updateAppointmentStatus + hooks RQ.
+[✓] 3.2  Listagem / calendário admin
+         AppointmentsList + DayCalendar completo (geometry,
+         StaffColumn, TimeAxis, AppointmentBlock, staffColor)
+         + rota agendamentos.tsx.
+[✓] 3.3  Filtros (por staff, por dia, por status)
+         getDayAppointments: filtro por DIA (server, range UTC-3,
+         exclui cancelled) + particionamento por STAFF no client
+         (DayCalendar). Seletor de STATUS na UI -> TD-06.
+[✓] 3.4  RLS de appointments
+         7 policies em produção (decisão #13), validado 12/06/2026.
+STATUS FASE: [✓] CONFIRMADA (12/06/2026)
 
-FASE 4 — DESBLOQUEIO DE AGENDAMENTO (depende de TD-01)
-  [ ] 4.1  TD-01 Modulo de Disponibilidade
-  [ ] 4.2  Agendamento real pelo portal
+================================================================
+FASE 4 — DISPONIBILIDADE + AGENDAMENTO INTELIGENTE (TD-01)
+================================================================
+PRÉ-REQUISITOS:
+[✓] PR.1  services.duration_minutes existe (INT NOT NULL)
+[✓] PR.2  staff.working_hours vazio -> schema definido (livre p/ criar)
+[✓] PR.3  appointment_status mapeado
+          (ocupa: pending/confirmed/completed | livre: cancelled/no_show)
 
-FUTURO (sem bloqueio)
-  [ ] TD-03 Painel de conflitos de cadastro
-  [ ] TD-04 Convite via WhatsApp (magic link)
-  [ ] TD-05 Limpeza de RLS legada (policy duplicada profiles)
+ENTREGÁVEIS:
+[✓] 4.1  DDL staff_time_off + índice + RLS
+         (aplicado e validado em produção 12/06/2026 — 5 policies)
+[✓] 4.2  Schema Zod de working_hours (grade + breaks/almoço)
++ [✓]  4.3  UI staff configurar grade recorrente + almoço
++          (smoketest validado 12/06/2026 — telas criadas )
+[ ] 4.4  UI staff/admin gerenciar folgas/bloqueios (staff_time_off)
+[✓] 4.5  Server fn de cálculo de slots (derivado)
+         getAvailableSlots.ts + hook useAvailableSlots — entregue.
+[ ] 4.6  UI agendamento — Janela 1 (cliente/serviço/profissional)
+[~] 4.7  UI agendamento — Janela 2 (grade de slots filtrada p/ duração)
+         SlotsStep.tsx existe; integração no AppointmentFormModal
+         ainda PENDENTE de confirmação.
+[ ] 4.8  Override admin "agendar fora do horário" (decisão #11)
+[ ] 4.9  Revalidação anti-overbooking no INSERT (server-side)
+[ ] 4.10 Tratamento de fuso (timestamptz + conversão no server fn)
+[ ] 4.11 Estados loading/error/empty na grade
+STATUS FASE: [~] EM ANDAMENTO (3/11 — banco da folga + schema + slot fn)
+
+================================================================
+FASE 5 — PORTAL DO CLIENTE
+================================================================
+[!] 5.1  Cliente agenda sozinho (consome FASE 4, sem override)
+         BLOQUEADO por FASE 4
+[ ] 5.2  Histórico de agendamentos do cliente
+[ ] 5.3  Cancelamento pelo cliente (regras a definir)
+STATUS FASE: [!] BLOQUEADA (depende FASE 4)
+
+================================================================
+FASE 6 — FINANCE / LEADS DASHBOARDS
+================================================================
+[ ] 6.1  Dashboard finance_transactions (income/expense)
+[ ] 6.2  Dashboard leads (funil por status/source)
+[ ] 6.3  Relatórios / filtros por período
+STATUS FASE: [ ] ABERTA
+
+================================================================
+FASE 7 — WHATSAPP + IA (FUTURO)
+================================================================
+[ ] 7.1  DDL whatsapp_settings
+[ ] 7.2  DDL whatsapp_messages
+[ ] 7.3  DDL ai_messages
+[ ] 7.4  Integração de envio/recebimento
+[ ] 7.5  Camada de IA sobre mensagens
+STATUS FASE: [ ] ABERTA (futuro)
+
+================================================================
+TECHDEBS
+================================================================
+[✓] TD-01  Disponibilidade -> promovido e especificado (FASE 4)
+[ ] TD-02  Criar user_roles dedicada (role hoje em profiles)
+[ ] TD-03  Backfill de full_name em staff (hoje null)
+[ ] TD-04  Anti-overbooking no insert -> mapeado em 4.9
+[ ] TD-05  Trigger set_updated_at em staff_time_off
+           (coluna updated_at existe mas não atualiza sozinha)
+[ ] TD-06  Seletor de status na agenda (UI)
+           getDayAppointments hoje exclui só 'cancelled' fixo.
+           Falta UI p/ ver cancelled/no_show quando necessário.
+
+================================================================
+RESUMO DE PROGRESSO
+================================================================
+Fase 0 ........ [✓] 100% (5/5)
+Fase 1 ........ [✓] 100% (4/4)
+Fase 2 ........ [~]  ~40% (0 confirmados / 5 itens; RLS parcial)
+Fase 3 ........ [✓] 100% (4/4) — CONFIRMADA 12/06/2026
+Fase 4 ........ [~]  ~27% (3/11) — pré-reqs 100%
+Fase 5 ........ [!]   0% (0/3) — bloqueada
+Fase 6 ........ [ ]   0% (0/3)
+Fase 7 ........ [ ]   0% (0/5)
 ================================================================

@@ -94,3 +94,9 @@ _agent-v2-context/
 # Backups/dumps de migracao Supabase - nunca versionar
 supabase/migrations/*.dump
 supabase/migrations/restore*.list
+
+# === temporarios / diagnostico (nao versionar) ===
+tmp_*.txt
+diagnostico-*.txt
+_hook_antigo.txt
+_mojibake_backup/

@@ -1,4 +1,4 @@
-﻿import { motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { LoginBrandPanel } from './LoginBrandPanel';
 import { ForgotPasswordForm } from '../ForgotPasswordForm';
 
@@ -58,7 +58,7 @@ export function ForgotPasswordLayout() {
               className="mt-2 text-sm text-[var(--color-text-muted)]"
               style={{ fontFamily: 'var(--font-body)' }}
             >
-              Informe seu e-mail e enviaremos um link de redefiniÃ§Ã£o
+              Informe seu e-mail e enviaremos um link de redefinição
             </p>
           </div>
 

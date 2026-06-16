@@ -1,0 +1,446 @@
+GUIA PRÁTICO - COMO AGIR COM O AGENTE E OS ARQUIVOS docs/ai
+
+Objetivo:
+Usar o agente sem ele se perder, sem misturar tarefas e sem mexer fora do escopo.
+
+================================================================
+1. PRIMEIRO PASSO - CRIAR A PASTA
+================================================================
+
+Crie no projeto:
+
+docs/ai/
+
+Dentro dela coloque os arquivos:
+
+00_AGENT_RULES.md
+01_PROJECT_CONTEXT.md
+02_ARCHITECTURE_DECISIONS.md
+03_ROADMAP.md
+04_CURRENT_TASK.md
+05_SESSION_LOG.md
+06_CHANGELOG.md
+07_TECHDEBT.md
+MANUAL_DE_USO.md
+
+Opcional:
+04_CURRENT_TASK_EXEMPLO_F4_7.md
+
+================================================================
+2. NÃO USE MAIS UM ESCOPO GIGANTE COMO PROMPT PRINCIPAL
+================================================================
+
+O escopo gigante pode ficar como backup.
+
+Exemplo:
+
+docs/ai/_archive/escopo-original.md
+
+Mas no dia a dia, use principalmente:
+
+00_AGENT_RULES.md
+03_ROADMAP.md
+04_CURRENT_TASK.md
+05_SESSION_LOG.md
+07_TECHDEBT.md
+
+O arquivo mais importante é:
+
+04_CURRENT_TASK.md
+
+Ele define a missão atual.
+
+================================================================
+3. ANTES DE COMEÇAR QUALQUER TAREFA
+================================================================
+
+Você deve preencher ou revisar:
+
+docs/ai/04_CURRENT_TASK.md
+
+Esse arquivo precisa dizer claramente:
+
+- Qual é a missão ativa.
+- Qual item do roadmap ela atende.
+- Qual é o objetivo.
+- O que está fora de escopo.
+- Quais arquivos provavelmente serão mexidos.
+- Quais critérios definem que a missão terminou.
+
+Se esse arquivo estiver genérico, o agente vai se perder.
+
+================================================================
+4. COMO ESCREVER UMA MISSÃO BOA
+================================================================
+
+Missão boa:
+
+[MISSÃO] Confirmar e finalizar a integração do SlotsStep.tsx no AppointmentFormModal.
+
+Por que é boa:
+- Tem alvo claro.
+- Tem componente claro.
+- Tem escopo limitado.
+- Está ligada ao roadmap.
+
+Missão ruim:
+
+[MISSÃO] Melhorar agendamentos.
+
+Por que é ruim:
+- Muito aberta.
+- Permite mexer em UI, banco, RLS, server, portal, override etc.
+- Gera desvio e retrabalho.
+
+================================================================
+5. FLUXO CERTO DE TRABALHO
+================================================================
+
+Sempre siga este ciclo:
+
+1. Definir missão em 04_CURRENT_TASK.md
+2. Mandar o agente ler os arquivos docs/ai
+3. Pedir para investigar arquivos reais
+4. Pedir entendimento e plano
+5. Avaliar o plano
+6. Dar OK explícito
+7. Agente executa
+8. Agente atualiza logs
+9. Você valida
+10. Só depois muda roadmap ou próxima missão
+
+Nunca pule direto para "faz aí".
+
+================================================================
+6. PROMPT PARA INICIAR UMA SESSÃO
+================================================================
+
+Use este prompt no começo:
+
+----------------------------------------------------------------
+
+Leia obrigatoriamente:
+
+- docs/ai/00_AGENT_RULES.md
+- docs/ai/01_PROJECT_CONTEXT.md
+- docs/ai/02_ARCHITECTURE_DECISIONS.md
+- docs/ai/03_ROADMAP.md
+- docs/ai/04_CURRENT_TASK.md
+- docs/ai/05_SESSION_LOG.md
+- docs/ai/07_TECHDEBT.md
+
+A missão ativa está somente em docs/ai/04_CURRENT_TASK.md.
+
+Não execute nada ainda.
+
+Primeiro investigue os arquivos reais relacionados à missão ativa e me responda:
+
+1. qual é a missão ativa;
+2. o que encontrou nos arquivos reais;
+3. quais arquivos precisam mudar;
+4. qual abordagem recomenda;
+5. quais riscos existem;
+6. o que está fora de escopo.
+
+Depois aguarde meu OK explícito.
+
+----------------------------------------------------------------
+
+================================================================
+7. COMO DAR OK DO JEITO CERTO
+================================================================
+
+Só dê OK se o agente:
+
+- Entendeu a missão correta.
+- Leu arquivos reais.
+- Citou arquivos reais.
+- Explicou o que vai alterar.
+- Explicou o que NÃO vai alterar.
+- Não sugeriu coisas fora do escopo.
+- Não inventou tabela, função ou coluna.
+- Deixou riscos claros.
+
+Se estiver tudo certo, diga:
+
+----------------------------------------------------------------
+
+OK, pode executar conforme a abordagem proposta.
+
+Não altere arquivos fora do escopo.
+
+Ao final, atualize:
+
+- docs/ai/04_CURRENT_TASK.md
+- docs/ai/05_SESSION_LOG.md
+- docs/ai/06_CHANGELOG.md, se houver alteração de código
+- docs/ai/07_TECHDEBT.md, se encontrar pendências fora da missão
+
+----------------------------------------------------------------
+
+================================================================
+8. SE O AGENTE COMEÇAR A SE PERDER
+================================================================
+
+Se ele sugerir algo fora da missão, diga:
+
+----------------------------------------------------------------
+
+Isso está fora da missão ativa.
+
+Registre em docs/ai/07_TECHDEBT.md e volte para a missão atual de docs/ai/04_CURRENT_TASK.md.
+
+Não implemente nada fora da missão sem meu OK.
+
+----------------------------------------------------------------
+
+Se ele começar a chutar sem investigar, diga:
+
+----------------------------------------------------------------
+
+Pare.
+
+Você está inferindo sem investigar.
+
+Leia docs/ai/04_CURRENT_TASK.md e investigue os arquivos reais antes de propor qualquer alteração.
+
+Não execute nada.
+
+----------------------------------------------------------------
+
+Se ele tentar mudar de fase sozinho, diga:
+
+----------------------------------------------------------------
+
+Não avance roadmap.
+
+A missão ativa continua sendo a definida em docs/ai/04_CURRENT_TASK.md.
+
+Volte para ela.
+
+----------------------------------------------------------------
+
+================================================================
+9. COMO ENCERRAR UMA MISSÃO
+================================================================
+
+Depois que o agente entregar, você valida manualmente.
+
+Se estiver tudo certo, mande:
+
+----------------------------------------------------------------
+
+Validado.
+
+Atualize:
+
+- docs/ai/04_CURRENT_TASK.md
+- docs/ai/05_SESSION_LOG.md
+- docs/ai/06_CHANGELOG.md
+- docs/ai/03_ROADMAP.md, se o item foi concluído
+
+Depois me diga qual próximo item do roadmap recomenda, sem executar.
+
+----------------------------------------------------------------
+
+Importante:
+Não deixe o agente já sair executando a próxima tarefa.
+
+Primeiro ele recomenda.
+Você decide.
+
+================================================================
+10. QUANDO ATUALIZAR CADA ARQUIVO
+================================================================
+
+00_AGENT_RULES.md
+Atualizar quase nunca.
+Só muda se você quiser mudar o comportamento do agente.
+
+01_PROJECT_CONTEXT.md
+Atualizar quando mudar algo estrutural:
+- tabela nova real;
+- stack;
+- arquitetura;
+- módulo novo;
+- regra de negócio central.
+
+02_ARCHITECTURE_DECISIONS.md
+Atualizar quando uma decisão for travada.
+Exemplo:
+- "slots continuam de 30 minutos";
+- "não haverá multi-tenant";
+- "disponibilidade continua derivada".
+
+03_ROADMAP.md
+Atualizar quando status do projeto mudar.
+Exemplo:
+- item saiu de aberto para em andamento;
+- item foi concluído;
+- item ficou bloqueado.
+
+04_CURRENT_TASK.md
+Atualizar sempre que mudar a missão ou etapa atual.
+É o principal arquivo operacional.
+
+05_SESSION_LOG.md
+Atualizar depois de cada entrega ou sessão importante.
+
+06_CHANGELOG.md
+Atualizar quando houver mudança real em código, banco, configuração ou documentação.
+
+07_TECHDEBT.md
+Atualizar quando encontrar problema fora da missão atual.
+
+================================================================
+11. COMO AGIR NA PRÓXIMA MISSÃO REAL
+================================================================
+
+Pelo seu roadmap, a próxima missão recomendada parece ser:
+
+Fase 4 - item 4.7
+Integrar SlotsStep.tsx ao AppointmentFormModal.
+
+Então você faria assim:
+
+1. Copia o conteúdo de:
+   docs/ai/04_CURRENT_TASK_EXEMPLO_F4_7.md
+
+2. Cola dentro de:
+   docs/ai/04_CURRENT_TASK.md
+
+3. Abre o agente e manda:
+
+----------------------------------------------------------------
+
+Leia docs/ai antes de responder.
+
+A missão ativa está em docs/ai/04_CURRENT_TASK.md.
+
+Não execute nada ainda.
+
+Primeiro investigue os arquivos reais relacionados à missão ativa e me diga:
+
+1. o que encontrou;
+2. como o fluxo atual do AppointmentFormModal funciona;
+3. como o SlotsStep.tsx está estruturado;
+4. quais arquivos precisam mudar;
+5. qual abordagem recomenda;
+6. quais riscos existem.
+
+Aguarde meu OK explícito.
+
+----------------------------------------------------------------
+
+4. O agente vai investigar e propor.
+
+5. Se o plano estiver bom, você manda:
+
+----------------------------------------------------------------
+
+OK, pode executar.
+
+Não altere RLS.
+Não altere migrations.
+Não altere getAvailableSlots.ts sem me pedir antes.
+Não implemente override admin.
+Não mexa em portal do cliente.
+
+Ao final, atualize os logs.
+
+----------------------------------------------------------------
+
+================================================================
+12. O QUE VOCÊ NÃO DEVE FAZER
+================================================================
+
+Evite mandar:
+
+"continua"
+"faz aí"
+"resolve isso"
+"melhora essa parte"
+"termina agendamento"
+"arruma o fluxo"
+
+Esses comandos são vagos.
+
+Use sempre:
+
+- missão clara;
+- item do roadmap;
+- fora de escopo;
+- critérios de aceite;
+- OK explícito.
+
+================================================================
+13. CHECKLIST ANTES DE EXECUTAR
+================================================================
+
+Antes de aprovar uma execução, confira:
+
+[ ] A missão está clara?
+[ ] Está escrita no 04_CURRENT_TASK.md?
+[ ] O agente leu os arquivos docs/ai?
+[ ] O agente investigou arquivos reais?
+[ ] O agente citou os arquivos corretos?
+[ ] O plano está dentro do escopo?
+[ ] O agente disse o que não vai mexer?
+[ ] Não tem RLS/migration escondida no plano?
+[ ] Não tem refatoração desnecessária?
+[ ] O próximo passo é pequeno e validável?
+
+Se qualquer resposta for "não", não aprove ainda.
+
+================================================================
+14. CHECKLIST DEPOIS DA ENTREGA
+================================================================
+
+Depois da entrega, confira:
+
+[ ] Funcionou manualmente?
+[ ] TypeScript não quebrou?
+[ ] UI tem loading/error/empty se aplicável?
+[ ] O agente não mexeu fora do escopo?
+[ ] Session log foi atualizado?
+[ ] Changelog foi atualizado?
+[ ] Techdebt foi atualizado se apareceu algo fora da missão?
+[ ] Roadmap precisa mudar status?
+[ ] Current task mostra o próximo passo correto?
+
+================================================================
+15. REGRA MAIS IMPORTANTE
+================================================================
+
+O roadmap mostra o caminho geral.
+
+O 04_CURRENT_TASK.md mostra o passo atual.
+
+O agente deve obedecer ao passo atual, não ao roadmap inteiro.
+
+Se aparecer algo importante fora da missão:
+registrar como techdebt e continuar.
+
+Não deixar o agente trocar de foco sozinho.
+
+================================================================
+16. RESUMO CURTO PARA VOCÊ DECORAR
+================================================================
+
+1. Defina uma missão pequena.
+2. Escreva no 04_CURRENT_TASK.md.
+3. Peça investigação antes de código.
+4. Exija plano.
+5. Dê OK explícito.
+6. Execute só o escopo.
+7. Atualize logs.
+8. Valide.
+9. Só depois avance roadmap.
+
+================================================================
+17. FRASE PADRÃO DE CONTROLE
+================================================================
+
+Use sempre que precisar recentralizar o agente:
+
+"Pare. A missão ativa é a de docs/ai/04_CURRENT_TASK.md. Não avance nada fora dela. Se encontrou algo fora do escopo, registre em docs/ai/07_TECHDEBT.md e volte para a missão."

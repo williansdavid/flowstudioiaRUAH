@@ -1,4 +1,4 @@
-﻿// src/features/dashboard/server/getDashboardData.ts
+// src/features/dashboard/server/getDashboardData.ts
 import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import {
@@ -18,22 +18,22 @@ import type {
 } from '@/features/dashboard/types';
 
 // ============================================================
-// Helpers de data (UTC â€” consistente com o resto do arquivo)
+// Helpers de data (UTC — consistente com o resto do arquivo)
 // ============================================================
 
-/** InÃ­cio do mÃªs corrente em ISO (UTC). */
+/** Início do mês corrente em ISO (UTC). */
 function monthStartISO(): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
-/** InÃ­cio do mÃªs anterior em ISO (UTC). */
+/** Início do mês anterior em ISO (UTC). */
 function prevMonthStartISO(): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString();
 }
 
-/** InÃ­cio e fim do dia corrente em ISO (UTC). */
+/** Início e fim do dia corrente em ISO (UTC). */
 function todayRangeISO(): { start: string; end: string } {
   const now = new Date();
   const start = new Date(
@@ -51,10 +51,10 @@ function inactiveCutoffISO(): string {
   return d.toISOString();
 }
 
-/** InÃ­cio da semana atual (segunda) e inÃ­cio da prÃ³xima segunda, em UTC. */
+/** Início da semana atual (segunda) e início da próxima segunda, em UTC. */
 function weekRangeISO(): { start: Date; end: Date } {
   const now = new Date();
-  const dow = now.getUTCDay(); // 0=dom ... 6=sÃ¡b
+  const dow = now.getUTCDay(); // 0=dom ... 6=sáb
   const diffToMonday = dow === 0 ? -6 : 1 - dow;
   const start = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday),
@@ -64,7 +64,7 @@ function weekRangeISO(): { start: Date; end: Date } {
   return { start, end };
 }
 
-/** InÃ­cio do mÃªs N meses atrÃ¡s (para a sÃ©rie de faturamento). */
+/** Início do mês N meses atrás (para a série de faturamento). */
 function revenueSeriesStartISO(): string {
   const now = new Date();
   return new Date(
@@ -96,7 +96,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       error: userError,
     } = await supabase.auth.getUser();
     if (userError || !user) {
-      throw new Error('[dashboard] SessÃ£o invÃ¡lida.');
+      throw new Error('[dashboard] Sessão inválida.');
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -105,7 +105,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       .eq('id', user.id)
       .single();
     if (profileError || !profile) {
-      throw new Error('[dashboard] Perfil nÃ£o encontrado.');
+      throw new Error('[dashboard] Perfil não encontrado.');
     }
 
     const { start: todayStart, end: todayEnd } = todayRangeISO();
@@ -170,23 +170,23 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       ticketPrevRes,
       newClientsCurRes,
       newClientsPrevRes,
-      // taxa de conclusÃ£o (mÃªs):
+      // taxa de conclusão (mês):
       monthApptStatusRes,
-      // sÃ©ries:
+      // séries:
       revenueSeriesRes,
       weekApptRes,
-      // popular services (mÃªs, completed):
+      // popular services (mês, completed):
       popularRes,
       // recent clients:
       recentClientsRes,
     ] = await Promise.all([
-      // faturamento mÃªs atual (income)
+      // faturamento mês atual (income)
       supabase
         .from('finance_transactions')
         .select('amount')
         .eq('type', 'income')
         .gte('occurred_at', monthStart),
-      // faturamento mÃªs anterior
+      // faturamento mês anterior
       supabase
         .from('finance_transactions')
         .select('amount')
@@ -200,7 +200,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
         .gte('starts_at', todayStart)
         .lt('starts_at', todayEnd)
         .neq('status', 'cancelled'),
-      // leads novos no mÃªs
+      // leads novos no mês
       supabase
         .from('leads')
         .select('id', { count: 'exact', head: true })
@@ -212,55 +212,55 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
         .in('status', ['new', 'contacted'])
         .order('created_at', { ascending: false })
         .limit(5),
-      // ticket mÃ©dio mÃªs atual: appointments completed (price)
+      // ticket médio mês atual: appointments completed (price)
       supabase
         .from('appointments')
         .select('price')
         .eq('status', 'completed')
         .gte('starts_at', monthStart),
-      // ticket mÃ©dio mÃªs anterior
+      // ticket médio mês anterior
       supabase
         .from('appointments')
         .select('price')
         .eq('status', 'completed')
         .gte('starts_at', prevMonthStart)
         .lt('starts_at', monthStart),
-      // novos clientes mÃªs atual
+      // novos clientes mês atual
       supabase
         .from('clients')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', monthStart),
-      // novos clientes mÃªs anterior
+      // novos clientes mês anterior
       supabase
         .from('clients')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', prevMonthStart)
         .lt('created_at', monthStart),
-      // status dos appointments do mÃªs (p/ completion rate)
+      // status dos appointments do mês (p/ completion rate)
       supabase
         .from('appointments')
         .select('status')
         .gte('starts_at', monthStart),
-      // sÃ©rie de faturamento 6 meses
+      // série de faturamento 6 meses
       supabase
         .from('finance_transactions')
         .select('amount, occurred_at')
         .eq('type', 'income')
         .gte('occurred_at', seriesStart),
-      // agendamentos da semana (p/ sÃ©rie diÃ¡ria)
+      // agendamentos da semana (p/ série diária)
       supabase
         .from('appointments')
         .select('starts_at, status')
         .gte('starts_at', weekStart.toISOString())
         .lt('starts_at', weekEnd.toISOString())
         .neq('status', 'cancelled'),
-      // serviÃ§os populares (mÃªs, completed)
+      // serviços populares (mês, completed)
       supabase
         .from('appointments')
         .select('service_id, services(name)')
         .eq('status', 'completed')
         .gte('starts_at', monthStart),
-      // clientes recentes (por Ãºltima visita)
+      // clientes recentes (por última visita)
       supabase
         .from('clients')
         .select('id, full_name, total_spent, last_visit_at')
@@ -292,7 +292,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       sumAmount(revenuePrevRes.data ?? []),
     );
 
-    // ---- Ticket mÃ©dio (com delta) ----
+    // ---- Ticket médio (com delta) ----
     const avgOf = (rows: { price: number | string }[]) =>
       rows.length === 0
         ? 0
@@ -308,13 +308,13 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       newClientsPrevRes.count ?? 0,
     );
 
-    // ---- Taxa de conclusÃ£o do mÃªs ----
+    // ---- Taxa de conclusão do mês ----
     const statuses = monthApptStatusRes.data ?? [];
     const completedCount = statuses.filter((r) => r.status === 'completed').length;
     const denom = statuses.filter((r) => r.status !== 'cancelled').length;
     const completionRate = denom === 0 ? null : (completedCount / denom) * 100;
 
-    // ---- SÃ©rie de faturamento (6 meses) ----
+    // ---- Série de faturamento (6 meses) ----
     const revenueByMonth = new Map<string, number>();
     for (let i = 0; i < REVENUE_SERIES_MONTHS; i++) {
       const now = new Date();
@@ -334,7 +334,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       ([month, revenue]) => ({ month, revenue }),
     );
 
-    // ---- SÃ©rie semanal (segâ†’dom) ----
+    // ---- Série semanal (seg→dom) ----
     const weekByDay = new Map<string, { scheduled: number; completed: number }>();
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
@@ -356,7 +356,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       ([day, v]) => ({ day, scheduled: v.scheduled, completed: v.completed }),
     );
 
-    // ---- ServiÃ§os populares (contagem, completed) ----
+    // ---- Serviços populares (contagem, completed) ----
     interface RawPopularRow {
       service_id: string;
       services: { name: string } | null;
@@ -368,7 +368,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
         existing.count += 1;
       } else {
         popularMap.set(row.service_id, {
-          name: row.services?.name ?? 'ServiÃ§o',
+          name: row.services?.name ?? 'Serviço',
           count: 1,
         });
       }
@@ -378,7 +378,7 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
       .sort((a, b) => b.count - a.count)
       .slice(0, POPULAR_SERVICES_LIMIT);
 
-    // ---- Ãšltimo serviÃ§o concluÃ­do por cliente recente ----
+    // ---- Último serviço concluído por cliente recente ----
     const recentClientRows = recentClientsRes.data ?? [];
     const recentClientIds = recentClientRows.map((c) => c.id);
 
@@ -398,9 +398,9 @@ export const getDashboardData = createServerFn({ method: 'GET' }).handler(
         services: { name: string } | null;
       }
       for (const row of (lastApptData ?? []) as unknown as RawLastApptRow[]) {
-        // jÃ¡ vem ordenado desc â†’ primeiro de cada cliente Ã© o mais recente
+        // já vem ordenado desc → primeiro de cada cliente é o mais recente
         if (!lastServiceByClient.has(row.client_id)) {
-          lastServiceByClient.set(row.client_id, row.services?.name ?? 'ServiÃ§o');
+          lastServiceByClient.set(row.client_id, row.services?.name ?? 'Serviço');
         }
       }
     }

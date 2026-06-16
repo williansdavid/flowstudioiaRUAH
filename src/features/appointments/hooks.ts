@@ -1,5 +1,9 @@
 // src/features/appointments/hooks.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   updateAppointmentStatus,
@@ -17,6 +21,15 @@ import {
   deleteAppointment,
   type DeleteAppointmentInput,
 } from './server/deleteAppointment';
+import {
+  createQuickClient,
+  type CreateQuickClientInput,
+} from './server/createQuickClient';
+import {
+  getAvailableSlots,
+  type GetAvailableSlotsInput,
+  type DaySlots,
+} from './server/getAvailableSlots';
 
 const APPOINTMENTS_TODAY_KEY = ['appointments', 'today'] as const;
 
@@ -99,10 +112,6 @@ export function useCancelAppointment() {
     },
   });
 }
-import {
-  createQuickClient,
-  type CreateQuickClientInput,
-} from './server/createQuickClient';
 
 export function useCreateQuickClient() {
   const queryClient = useQueryClient();
@@ -119,5 +128,45 @@ export function useCreateQuickClient() {
     onError: (error: Error) => {
       toast.error(error.message || 'Não foi possível cadastrar o cliente.');
     },
+  });
+}
+
+interface UseAvailableSlotsParams {
+  staffId: string | null;
+  serviceId: string | null;
+  startDate: string; // 'YYYY-MM-DD'
+  days?: number;
+  businessHours: GetAvailableSlotsInput['businessHours'];
+}
+
+export function useAvailableSlots({
+  staffId,
+  serviceId,
+  startDate,
+  days = 14,
+  businessHours,
+}: UseAvailableSlotsParams) {
+  return useQuery<DaySlots[], Error>({
+    queryKey: [
+      'appointments',
+      'slots',
+      staffId,
+      serviceId,
+      startDate,
+      days,
+    ] as const,
+    queryFn: () =>
+      getAvailableSlots({
+        data: {
+          staffId: staffId!,
+          serviceId: serviceId!,
+          startDate,
+          days,
+          businessHours,
+        },
+      }),
+    enabled: Boolean(staffId && serviceId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }

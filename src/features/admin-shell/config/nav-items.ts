@@ -16,7 +16,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Agenda', to: '/admin/agenda', icon: CalendarDays, roles: ['admin', 'staff'], section: 'Operação' },
   { label: 'Clientes', to: '/admin/clientes', icon: Users, roles: ['admin', 'staff'], readonlyFor: ['staff'], section: 'Cadastros' },
   { label: 'Serviços', to: '/admin/servicos', icon: Scissors, roles: ['admin', 'staff'], readonlyFor: ['staff'], section: 'Cadastros' },
-  { label: 'Equipe', to: '/admin/equipe', icon: UserCog, roles: ['admin'], section: 'Gestão' },
+  { label: 'Equipe', to: '/admin/equipe', icon: UserCog, roles: ['admin', 'staff'], section: 'Gestão' },
   { label: 'Financeiro', to: '/admin/financeiro', icon: Wallet, roles: ['admin'], section: 'Gestão' },
 ] as const;
 

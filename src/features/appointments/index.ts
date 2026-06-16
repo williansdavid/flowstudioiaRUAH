@@ -12,7 +12,13 @@ export {
   updateAppointmentStatus,
   type UpdateAppointmentStatusInput,
 } from './server/updateAppointmentStatus';
-export { useUpdateAppointmentStatus } from './hooks';
+export {
+  getAvailableSlots,
+  type GetAvailableSlotsInput,
+  type DaySlots,
+  type SlotItem,
+} from './server/getAvailableSlots';
+export { useUpdateAppointmentStatus, useAvailableSlots } from './hooks';
 export { AppointmentsList } from './components/AppointmentsList';
 export type {
   AppointmentItem,

@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { QuickClientModal } from './QuickClientModal';
 import { ClientCombobox } from './ClientCombobox';
+import { Button } from '@/components/ui/Button';
 import type {
   AppointmentItem,
   BookableStaffItem,
@@ -15,6 +16,8 @@ import {
   useUpdateAppointment,
   useCancelAppointment,
 } from '../hooks';
+import type { BusinessHours } from '@/sites/ruah/types';
+import { validateAppointmentHours } from '@/sites/ruah/utils/validateAppointmentHours';
 
 type Mode =
   | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
@@ -26,6 +29,7 @@ interface Props {
   clients: ClientOption[];
   services: ServiceOption[];
   staff: BookableStaffItem[];
+  businessHours: BusinessHours;
   onClose: () => void;
 }
 
@@ -126,6 +130,7 @@ export function AppointmentFormModal({
   clients,
   services,
   staff,
+  businessHours,
   onClose,
 }: Props) {
   const isEdit = mode.kind === 'edit';
@@ -134,17 +139,16 @@ export function AppointmentFormModal({
   const [quickClientOpen, setQuickClientOpen] = useState(false);
   const [quickClientName, setQuickClientName] = useState('');
 
-
   // Re-sincroniza quando reabre com outro mode (slot diferente / outro appt).
-useEffect(() => {
-  if (open) {
-    setForm(buildInitialState(mode));
-    setConfirmCancel(false);
-    setQuickClientOpen(false);
-    setQuickClientName('');
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [open, mode]);
+  useEffect(() => {
+    if (open) {
+      setForm(buildInitialState(mode));
+      setConfirmCancel(false);
+      setQuickClientOpen(false);
+      setQuickClientName('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
 
   const createMut = useCreateAppointment();
   const updateMut = useUpdateAppointment();
@@ -183,8 +187,17 @@ useEffect(() => {
     if (!form.staffId) e.push('Selecione o profissional.');
     if (form.endTime <= form.startTime)
       e.push('Horário final deve ser após o inicial.');
+
+    const hoursError = validateAppointmentHours({
+      date: form.date,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      hours: businessHours,
+    });
+    if (hoursError) e.push(hoursError);
+
     return e;
-  }, [form]);
+  }, [form, businessHours]);
 
   const canSubmit = errors.length === 0 && !isSaving;
 
@@ -267,8 +280,6 @@ useEffect(() => {
                 }}
               />
             </div>
-
-
 
             {/* Serviço */}
             <label className="flex flex-col gap-1">
@@ -404,13 +415,13 @@ useEffect(() => {
               </button>
             </div>
           </form>
+
           <QuickClientModal
             open={quickClientOpen}
             initialName={quickClientName}
             onClose={() => setQuickClientOpen(false)}
             onCreated={(client) => set('clientId', client.id)}
           />
-     
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

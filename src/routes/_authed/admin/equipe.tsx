@@ -1,7 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { UserCog } from 'lucide-react';
-import { PlaceholderScreen } from '@/features/admin-shell';
+// src/routes/_authed/admin/equipe.tsx
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_authed/admin/equipe')({
-  component: () => <PlaceholderScreen title="Equipe" icon={UserCog} />,
+  component: EquipeLayout,
 });
+
+function EquipeLayout() {
+  return <Outlet />;
+}

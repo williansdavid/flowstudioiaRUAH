@@ -3,7 +3,7 @@ import { useIsFetching, useIsMutating } from '@tanstack/react-query'
 import { useRouterState } from '@tanstack/react-router'
 
 /**
- * useGlobalBusy â€” detector global de I/O do core.
+ * useGlobalBusy  detector global de I/O do core.
  * ----------------------------------------------------------------
  * Fonte de verdade do "sistema ocupado". Lê automaticamente:
  *   - React Query: queries em fetch + mutations em andamento

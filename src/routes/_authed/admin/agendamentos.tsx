@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/Button';
 import {
   getDayAppointments,
   listClientsForSelect,
@@ -13,6 +14,7 @@ import {
   AppointmentFormModal,
 } from '@/features/appointments';
 import { ErrorState } from '@/components/feedback';
+import { businessHours } from '@/sites/ruah/config/businessHours';
 import { Plus } from 'lucide-react';
 
 function dayQuery(date: string) {
@@ -65,14 +67,10 @@ function AgendamentosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-base font-semibold">Agendamentos de hoje</h1>
-<button
-  type="button"
-  onClick={() => setModalOpen(true)}
-  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
->
+<Button variant="primary" size="md" onClick={() => setModalOpen(true)}>
   <Plus className="size-4" />
-  Novo agendamento
-</button>
+  agendamento 
+</Button>
       </div>
 
       <AppointmentsList items={appointments} />
@@ -83,6 +81,7 @@ function AgendamentosPage() {
         clients={clients}
         services={services}
         staff={staff}
+        businessHours={businessHours}
         onClose={() => setModalOpen(false)}
       />
     </div>

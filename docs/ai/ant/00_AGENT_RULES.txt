@@ -1,0 +1,400 @@
+
+
+================================================================
+1. IDEIA CENTRAL
+================================================================
+
+Não usar um único escopo gigante para controlar tudo.
+
+Separar o projeto em camadas:
+
+1. Regras do agente
+2. Contexto base
+3. Decisões de arquitetura
+4. Roadmap
+5. Missão atual
+6. Log da sessão
+7. Changelog
+8. Techdebt
+
+Cada arquivo tem uma função.
+
+O arquivo mais importante para foco diário é:
+
+docs/ai/04_CURRENT_TASK.txt
+
+Ele manda mais que o roadmap.
+
+================================================================
+2. FUNÇÃO DE CADA ARQUIVO
+================================================================
+
+00_AGENT_RULES.txt
+
+Define como o agente deve se comportar.
+Muda raramente.
+
+----------------------------------------------------------------
+
+01_PROJECT_CONTEXT.txt
+
+Explica o projeto.
+Contém visão geral, stack, banco e regras de disponibilidade.
+Muda pouco.
+
+----------------------------------------------------------------
+
+02_ARCHITECTURE_DECISIONS.txt
+
+Guarda decisões travadas.
+Serve para impedir o agente de propor coisa fora da arquitetura.
+Muda somente quando Willians trava nova decisão.
+
+----------------------------------------------------------------
+
+03_ROADMAP.txt
+
+Mostra o caminho geral do projeto.
+Serve como mapa macro.
+Não deve ser usado como missão ativa.
+
+----------------------------------------------------------------
+
+04_CURRENT_TASK.txt
+
+Define a missão atual.
+É a fonte única de foco.
+Deve ser atualizado sempre que a missão mudar ou avançar.
+
+----------------------------------------------------------------
+
+05_SESSION_LOG.txt
+
+Registra o que aconteceu em cada sessão.
+Evita que o agente entregue algo e depois esqueça.
+
+----------------------------------------------------------------
+
+06_CHANGELOG.txt
+
+Registra alterações reais no código, banco ou configuração.
+
+----------------------------------------------------------------
+
+07_TECHDEBT.txt
+
+Guarda pendências fora da missão.
+Serve para não desviar o foco.
+
+================================================================
+3. COMO COMEÇAR UMA NOVA SESSÃO COM O AGENTE
+================================================================
+
+No começo da sessão, envie algo assim:
+
+----------------------------------------------------------------
+PROMPT PARA O AGENTE
+----------------------------------------------------------------
+
+Leia obrigatoriamente:
+
+- docs/ai/00_AGENT_RULES.md
+- docs/ai/01_PROJECT_CONTEXT.md
+- docs/ai/02_ARCHITECTURE_DECISIONS.md
+- docs/ai/03_ROADMAP.md
+- docs/ai/04_CURRENT_TASK.md
+- docs/ai/05_SESSION_LOG.md
+
+A missão ativa está somente em docs/ai/04_CURRENT_TASK.md
+
+Não execute nada ainda.
+
+Primeiro investigue os arquivos reais relacionados à missão e me responda:
+
+1. o que encontrou
+2. quais arquivos precisam mudar
+3. qual abordagem recomenda
+4. quais riscos existem
+
+Depois aguarde meu OK explícito.
+----------------------------------------------------------------
+
+================================================================
+4. COMO DEFINIR UMA MISSÃO NOVA
+================================================================
+
+Quando quiser trocar de foco, atualize:
+
+docs/ai/04_CURRENT_TASK.txt
+
+Depois mande para o agente:
+
+----------------------------------------------------------------
+PROMPT
+----------------------------------------------------------------
+
+[MISSÃO] <descrever missão nova>
+
+Atualize sua missão ativa com base em docs/ai/04_CURRENT_TASK.txt.
+
+Não execute código ainda.
+
+Primeiro investigue os arquivos reais e me traga entendimento + proposta.
+Aguarde meu OK.
+----------------------------------------------------------------
+
+Exemplo:
+
+[MISSÃO] Confirmar e finalizar a integração do SlotsStep.tsx no AppointmentFormModal.
+
+================================================================
+5. COMO O AGENTE DEVE RESPONDER
+================================================================
+
+Toda resposta deve começar assim:
+
+> Missão ativa: <missão> | Etapa: <etapa>
+
+Etapas possíveis:
+
+- investigar
+- confirmar
+- propor
+- aguardar OK
+- entregar
+
+Exemplo:
+
+> Missão ativa: Confirmar e finalizar integração do SlotsStep no AppointmentFormModal | Etapa: investigar
+
+================================================================
+6. REGRA DO OK
+================================================================
+
+O agente não pode alterar código antes de OK explícito.
+
+OK explícito é algo como:
+
+- "OK, pode executar"
+- "Pode aplicar"
+- "Pode alterar os arquivos"
+- "Aprovado, siga"
+
+Não conta como OK:
+
+- "entendi"
+- "legal"
+- "faz sentido"
+- "continua explicando"
+- "manda o plano"
+
+================================================================
+7. COMO ENCERRAR UMA ENTREGA
+================================================================
+
+Depois de entregar código, o agente deve atualizar:
+
+1. docs/ai/05_SESSION_LOG.txt
+2. docs/ai/06_CHANGELOG.txt
+3. docs/ai/04_CURRENT_TASK.txt
+4. docs/ai/07_TECHDEBT.txt, se encontrou pendência fora da missão
+
+E deve informar:
+
+- o que alterou
+- o que não alterou
+- como validar
+- próximo passo recomendado
+
+================================================================
+8. QUANDO ATUALIZAR CADA ARQUIVO
+================================================================
+
+Atualizar sempre:
+
+- 04_CURRENT_TASK.txt
+- 05_SESSION_LOG.txt
+
+Atualizar quando houver código alterado:
+
+- 06_CHANGELOG.txt
+
+Atualizar quando houver pendência fora da missão:
+
+- 07_TECHDEBT.txt
+
+Atualizar só quando status muda:
+
+- 03_ROADMAP.txt
+
+Atualizar raramente:
+
+- 01_PROJECT_CONTEXT.txt
+- 02_ARCHITECTURE_DECISIONS.txt
+- 00_AGENT_RULES.txt
+
+================================================================
+9. COMO EVITAR DESVIO DE FOCO
+================================================================
+
+Se o agente sugerir algo fora da missão, responder:
+
+"Isso está fora da missão ativa. Registre como techdeb e volte para a missão."
+
+Se o agente tentar avançar para outro item do roadmap, responder:
+
+"Não avance roadmap. A missão ativa continua sendo a de 04_CURRENT_TASK.txt."
+
+Se o agente chutar algo sem investigar, responder:
+
+"Pare. Primeiro investigue os arquivos reais."
+
+================================================================
+10. FLUXO RECOMENDADO PARA CADA MISSÃO
+================================================================
+
+1. Willians define missão em 04_CURRENT_TASK.txt.
+2. Willians manda o prompt inicial.
+3. Agente lê os arquivos.
+4. Agente investiga código real.
+5. Agente confirma entendimento.
+6. Agente propõe abordagem.
+7. Willians aprova ou ajusta.
+8. Agente executa.
+9. Agente atualiza logs.
+10. Willians valida.
+11. Roadmap é atualizado se o item foi concluído.
+
+================================================================
+11. EXEMPLO DE MISSÃO BOA
+================================================================
+
+[MISSÃO] Confirmar e finalizar a integração do SlotsStep.tsx no AppointmentFormModal.
+
+Objetivo:
+Concluir a Janela 2 da UI de agendamento.
+
+Fora de escopo:
+- Não implementar override admin.
+- Não mexer em RLS.
+- Não criar migrations.
+- Não alterar algoritmo de disponibilidade.
+
+Critérios de aceite:
+- Janela 2 mostra slots disponíveis.
+- Slot selecionado alimenta o payload do appointment.
+- Loading/error/empty existem.
+- TypeScript não quebra.
+- Session log atualizado.
+
+================================================================
+12. EXEMPLO DE MISSÃO RUIM
+================================================================
+
+[MISSÃO] Melhorar agendamentos.
+
+Problema:
+Muito genérica.
+Permite o agente mexer em:
+- UI
+- banco
+- RLS
+- server fn
+- portal do cliente
+- override
+- anti-overbooking
+
+Resultado:
+Desvio de foco e retrabalho.
+
+================================================================
+13. MODELO DE PROMPT CURTO PARA USO DIÁRIO
+================================================================
+
+Use este prompt quando já estiver tudo configurado:
+
+----------------------------------------------------------------
+PROMPT CURTO
+----------------------------------------------------------------
+
+Leia docs/ai antes de responder.
+
+A missão ativa está em docs/ai/04_CURRENT_TASK.txt.
+
+Siga o fluxo:
+investigar -> confirmar -> propor -> aguardar OK -> entregar.
+
+Não execute nada sem meu OK.
+
+Comece investigando os arquivos reais da missão atual.
+----------------------------------------------------------------
+
+================================================================
+14. MODELO DE PROMPT PARA TROCAR MISSÃO
+================================================================
+
+----------------------------------------------------------------
+PROMPT
+----------------------------------------------------------------
+
+[MISSÃO] <nova missão>
+
+Atualize o foco para esta missão.
+
+Antes de executar:
+1. leia docs/ai
+2. investigue arquivos reais
+3. confirme entendimento
+4. proponha abordagem
+5. aguarde meu OK
+----------------------------------------------------------------
+
+================================================================
+15. CHECKLIST ANTES DE APROVAR EXECUÇÃO
+================================================================
+
+Antes de dizer "OK, pode executar", verificar:
+
+- O agente leu a missão certa?
+- O agente citou arquivos reais?
+- O agente não inventou tabela/API?
+- O plano está dentro do escopo?
+- O agente disse o que NÃO vai mexer?
+- Os riscos estão claros?
+- A entrega tem critério de aceite?
+
+Se sim:
+Pode aprovar.
+
+Se não:
+Pedir correção antes.
+
+================================================================
+16. CHECKLIST DEPOIS DA ENTREGA
+================================================================
+
+Depois que o agente entregar, conferir:
+
+- Código alterado bate com a missão?
+- Nenhum arquivo fora de escopo foi alterado?
+- Logs foram atualizados?
+- Changelog foi atualizado?
+- Techdeb foi registrado se necessário?
+- Próximo passo ficou claro?
+- Roadmap precisa mudar de status?
+
+================================================================
+17. REGRA FINAL
+================================================================
+
+Roadmap mostra o caminho.
+
+Current Task mostra o passo atual.
+
+Session Log mostra o que acabou de acontecer.
+
+Techdebt guarda distrações importantes sem roubar foco.
+
+O agente deve obedecer primeiro a missão atual.
+Se não souber a missão, deve perguntar.
+Nunca deve inferir.

@@ -1,5 +1,6 @@
 // src/features/auth/index.ts
 
+
 // Types
 export type { UserRole, AuthProfile, SessionData } from './types';
 export { ADMIN_ROLES, canAccessAdmin } from './types';
@@ -14,6 +15,7 @@ export {
   useSignOut,
   useRequestPasswordReset,
   useUpdatePassword,
+  useEstablishRecoverySession,
 } from './hooks';
 
 // Components — layouts (montados pelas rotas)
