@@ -100,3 +100,4 @@ tmp_*.txt
 diagnostico-*.txt
 _hook_antigo.txt
 _mojibake_backup/
+docs/ai/
