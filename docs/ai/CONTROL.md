@@ -6,10 +6,10 @@
 ================================================================
 
 MISSÃO:
-> (ex: ajustar layout da tela de gerenciamento de horários)
+
 
 OBJETIVO:
-> (1-3 linhas do resultado esperado)
+
 
 FORA DE ESCOPO:
 > - nada em src/sites sem OK explícito

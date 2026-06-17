@@ -1,4 +1,5 @@
 // src/features/appointments/components/AppointmentsList.tsx
+import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 import {
   CalendarClock,
@@ -118,10 +119,11 @@ export function AppointmentsList({ items }: Props) {
     <div className="flex flex-col gap-4">
       {hasToggle && (
         <div className="flex items-center justify-end">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setShowCompleted((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-button border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text-body"
           >
             {showCompleted ? (
               <>
@@ -134,7 +136,7 @@ export function AppointmentsList({ items }: Props) {
                 Mostrar concluídos ({completedCount})
               </>
             )}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -200,8 +202,8 @@ function StaffCard({ group }: { group: StaffGroup }) {
       style={{ borderLeftColor: color }}
     >
       <h3
-        className="mb-3 flex items-center gap-2.5 text-lg font-bold tracking-tight"
-        style={{ color }}
+        className="mb-3 flex items-center gap-2.5 border-b pb-3 text-lg font-bold tracking-tight"
+        style={{ color, borderBottomColor: color }}
       >
         <StaffAvatar
           name={group.staffName}
@@ -295,25 +297,32 @@ function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
         )}
       </div>
 
-      {actions.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1.5">
-          {actions.map((action) => {
+          {actions.map((action) => {           
             const Icon = action.icon;
+            const variantMap: Record<ActionVariant, 'ghost' | 'success' | 'danger'> = {
+              neutral: 'ghost',
+              positive: 'success',
+              danger: 'danger',
+            };
             return (
-              <button
+              <Button
                 key={action.status}
                 type="button"
+                variant={variantMap[action.variant]}
+                size="sm"
                 disabled={isUpdatingThisRow}
                 onClick={() => mutate({ id: a.id, status: action.status })}
-                className={`inline-flex items-center gap-1 rounded-button border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${VARIANT_CLASS[action.variant]}`}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden />
                 {action.label}
-              </button>
+              </Button>
             );
-          })}
-        </div>
-      )}
+          })}  
+        </div>   
     </li>
   );
 }
+
+
+

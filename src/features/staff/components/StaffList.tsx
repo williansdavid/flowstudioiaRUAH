@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { staffColor } from '../../appointments/components/DayCalendar/staffColor';
 import { useStaffList, useResendStaffInvite, useArchiveStaff } from '../hooks';
 import type { StaffListItem } from '../types';
+import { Button } from '@/components/ui/Button';
 
 interface StaffListProps {
   onCreate?: () => void;
@@ -74,14 +75,10 @@ function Avatar({
 function CreateButton({ onCreate }: { onCreate?: () => void }) {
   if (!onCreate) return null;
   return (
-    <button
-      type="button"
-      onClick={onCreate}
-      className="inline-flex items-center gap-2 rounded-button bg-primary px-4 py-2 text-sm font-semibold text-neutral-900 shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-    >
+    <Button type="button" variant="primary" size="md" onClick={onCreate}>
       <Plus className="size-4" />
       Novo profissional
-    </button>
+    </Button>
   );
 }
 
@@ -149,7 +146,7 @@ function StaffCard({
             {staff.isBookable ? (
               <CalendarCheck2 className="size-3" />
             ) : (
-              <CalendarX2 className="size-3" />
+              <CalendarX2 className="size-5" />
             )}
             {staff.isBookable ? 'Agendável' : 'Indisponível'}
           </span>
@@ -277,14 +274,15 @@ export function StaffList({ onCreate, onEdit }: StaffListProps) {
     <div className="space-y-4">
       {/* Header: criar + toggle ativos/arquivados */}
       <div className="flex items-center justify-between gap-2">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setShowArchived((v) => !v)}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <Archive className="size-4" />
           {showArchived ? 'Ver ativos' : 'Ver arquivados'}
-        </button>
+        </Button>
 
         {!showArchived && <CreateButton onCreate={onCreate} />}
       </div>

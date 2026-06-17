@@ -5,6 +5,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Loader2 } from 'lucide-react';
 import { joinISO, splitISO, nextRoundHour, formatRange } from '@/lib/studioTime';
 import { useCreateTimeOff, useUpdateTimeOff, type TimeOffItem } from '../hooks';
+import { Button } from '@/components/ui/Button';
 
 type Mode =
   | { kind: 'create' }
@@ -199,14 +200,15 @@ export function TimeOffFormModal({ open, mode, staffId, onClose }: Props) {
             )}
 
             <div className="mt-1 flex items-center justify-end">
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="sm"
                 disabled={!canSubmit}
-                className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                isLoading={isSaving}
               >
-                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isEdit ? 'Salvar' : 'Adicionar'}
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog.Content>

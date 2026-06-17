@@ -64,7 +64,7 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
           >
             <CalendarOff className="h-5 w-5" aria-hidden />
           </span>
-          <div className="min-w-0">
+          <div className="flex flex-col gap-1">
             <h3
               className="text-base font-semibold leading-none tracking-tight"
               style={{
@@ -84,13 +84,13 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
         </div>
 
         {canEdit && (
-          <Button
-            variant="ghost"
+          <Button          
+            variant='primary'
             onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
             className="shrink-0"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            Adicionar
+            Adicionar 
           </Button>
         )}
       </div>
@@ -112,17 +112,9 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
           <span style={{ color: 'var(--color-danger)' }}>
             Falha ao carregar folgas.
           </span>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="rounded-md px-3 py-1.5 text-xs transition-colors duration-200"
-            style={{
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text-heading)',
-            }}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={() => void refetch()}>
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
 
@@ -180,35 +172,27 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
                 <div className="flex shrink-0 items-center gap-1">
                   {confirmId === item.id ? (
                     <>
-                      <button
+                      <Button
                         type="button"
+                        variant="danger"
+                        size="sm"
                         disabled={deleteMut.isPending}
+                        isLoading={deleteMut.isPending}
                         onClick={async () => {
                           await deleteMut.mutateAsync({ id: item.id });
                           setConfirmId(null);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 disabled:opacity-50"
-                        style={{
-                          border:
-                            '1px solid color-mix(in srgb, var(--color-danger) 35%, transparent)',
-                          backgroundColor:
-                            'color-mix(in srgb, var(--color-danger) 10%, transparent)',
-                          color: 'var(--color-danger)',
-                        }}
                       >
-                        {deleteMut.isPending && (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                        )}
                         Confirmar
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setConfirmId(null)}
-                        className="rounded-md px-2.5 py-1.5 text-xs transition-colors duration-200"
-                        style={{ color: 'var(--color-text-muted)' }}
                       >
                         Voltar
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>

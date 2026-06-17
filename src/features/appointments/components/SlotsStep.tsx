@@ -5,6 +5,7 @@ import { useAvailableSlots } from '../hooks';
 import type { DaySlots, SlotItem } from '../server/getAvailableSlots';
 import type { GetAvailableSlotsInput } from '../server/getAvailableSlots';
 import { todayLocalDate } from '../utils/todayLocalDate';
+import { Button } from '@/components/ui/Button';
 
 const RANGE_DAYS = 14;
 
@@ -97,13 +98,14 @@ export function SlotsStep({
         <p className="text-sm text-muted-foreground">
           {error.message || 'Não foi possível carregar os horários.'}
         </p>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => void refetch()}
-          className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
         >
           Tentar novamente
-        </button>
+        </Button>
       </div>
     );
   }
@@ -114,27 +116,29 @@ export function SlotsStep({
     <div className="flex flex-col gap-4">
       {/* Navegação de range */}
       <div className="flex items-center justify-between">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setOffset((o) => Math.max(0, o - RANGE_DAYS))}
           disabled={offset === 0 || isFetching}
-          className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-sm disabled:opacity-40"
         >
           <ChevronLeft className="size-4" />
           Anterior
-        </button>
+        </Button>
         <span className="text-xs text-muted-foreground">
           {isFetching ? 'Atualizando…' : `Próximos ${RANGE_DAYS} dias`}
         </span>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setOffset((o) => o + RANGE_DAYS)}
           disabled={isFetching}
-          className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-sm disabled:opacity-40"
         >
           Próximo
           <ChevronRight className="size-4" />
-        </button>
+        </Button>
       </div>
 
       {!hasAnySlot ? (

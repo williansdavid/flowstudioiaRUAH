@@ -22,19 +22,34 @@ export const Route = createFileRoute('/_authed/admin/')({
 function DashboardPage() {
   const { data } = useSuspenseQuery(dashboardQuery);
 
-  return (
-    <div className="space-y-6">
-      <KpiGrid data={data} />
+  if (data.role !== 'admin') {
+    return (
+      <div className="space-y-6">
+        <KpiGrid data={data} />
+      </div>
+    );
+  }
 
-      {data.role === 'admin' ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <RecentLeads leads={data.recentLeads} />
-          <RevenueByStaffChart />
-        </div>
-      ) : null}
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* KPIs: mobile no meio, desktop ocupa a linha inteira no topo */}
+      <div className="order-2 lg:order-1 lg:col-span-2">
+        <KpiGrid data={data} />
+      </div>
+
+      {/* RecentLeads: mobile por último, desktop coluna esquerda da 2ª linha */}
+      <div className="order-3 lg:order-2">
+        <RecentLeads leads={data.recentLeads} />
+      </div>
+
+      {/* Gráfico: mobile no topo, desktop coluna direita da 2ª linha */}
+      <div className="order-1 lg:order-3">
+        <RevenueByStaffChart />
+      </div>
     </div>
   );
 }
+
 
 function DashboardError({ error, reset }: ErrorComponentProps) {
   const queryClient = useQueryClient();

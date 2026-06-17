@@ -392,27 +392,29 @@ export function AppointmentFormModal({
                     </button>
                   </div>
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    variant="danger"
+                    size="sm"
                     onClick={() => setConfirmCancel(true)}
-                    className="inline-flex items-center gap-1 rounded-button border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Cancelar agendamento
-                  </button>
+                  </Button>
                 )
               ) : (
                 <span />
               )}
 
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="sm"
                 disabled={!canSubmit}
-                className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                isLoading={isSaving}
               >
-                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isEdit ? 'Salvar' : 'Criar'}
-              </button>
+              </Button>
 
             </div>
           </form>

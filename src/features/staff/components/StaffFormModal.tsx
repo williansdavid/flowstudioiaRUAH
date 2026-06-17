@@ -9,6 +9,7 @@ import { phoneBRSchema, formatPhoneBR } from '@/lib/core/utils';
 import type { CreateStaffInput } from '../server/createStaff';
 import type { UpdateStaffInput } from '../server/updateStaff';
 import type { StaffListItem } from '../types';
+import { Button } from '@/components/ui/Button';
 
 interface Props {
   open: boolean;
@@ -410,14 +411,15 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
             )}
 
             <div className="mt-1 flex items-center justify-end">
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="sm"
                 disabled={!canSubmit}
-                className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                isLoading={isSaving}
               >
-                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isEdit ? 'Salvar' : 'Cadastrar'}
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog.Content>

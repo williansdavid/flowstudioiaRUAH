@@ -140,8 +140,7 @@ export function ResetPasswordForm() {
         animate="show"
         type="submit"
         disabled={updatePassword.isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-surface-dark)] transition-all hover:bg-[var(--color-accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-        style={{ fontFamily: 'var(--font-heading)' }}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-button bg-accent px-7 py-3.5 text-base font-heading font-semibold uppercase tracking-wide text-surface-dark shadow-md transition-all hover:bg-accent-hover hover:-translate-y-0.5 hover:shadow-accent active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60"
       >
         {updatePassword.isPending ? (
           <>
