@@ -1,122 +1,126 @@
 // src/features/appointments/components/DayCalendar/StaffColumn.tsx
+import React, { useMemo } from 'react';
 import type { AppointmentItem, BookableStaffItem } from '../../types';
-import {
-  GRID_HEIGHT_PX,
-  SLOT_HEIGHT_PX,
-  PX_PER_MINUTE,
-  DAY_START_HOUR,
-  DAY_END_HOUR,
-  minutesFromMidnight,
-} from './geometry';
+import type { DragState } from '../../hooks/useCalendarDrag';
+import { DAY_START_HOUR, DAY_END_HOUR, SLOT_HEIGHT, layoutDay } from './geometry';
 import { staffColor } from './staffColor';
 import { AppointmentBlock } from './AppointmentBlock';
 
-interface Layout {
-  appointment: AppointmentItem;
-  widthFraction: number;
-  leftFraction: number;
-}
-
-/**
- * Cálculo de overlap por "colunas de empacotamento".
- * Eventos que se cruzam no tempo dividem a largura igualmente.
- */
-function layoutOverlaps(items: AppointmentItem[]): Layout[] {
-  const sorted = [...items].sort(
-    (a, b) => minutesFromMidnight(a.startsAt) - minutesFromMidnight(b.startsAt),
-  );
-
-  // Agrupa em clusters de eventos que se sobrepõem em cadeia.
-  const clusters: AppointmentItem[][] = [];
-  let current: AppointmentItem[] = [];
-  let clusterEnd = -1;
-
-  for (const a of sorted) {
-    const start = minutesFromMidnight(a.startsAt);
-    const end = minutesFromMidnight(a.endsAt);
-    if (current.length > 0 && start < clusterEnd) {
-      current.push(a);
-      clusterEnd = Math.max(clusterEnd, end);
-    } else {
-      if (current.length > 0) clusters.push(current);
-      current = [a];
-      clusterEnd = end;
-    }
-  }
-  if (current.length > 0) clusters.push(current);
-
-  const result: Layout[] = [];
-  for (const cluster of clusters) {
-    // Aloca cada evento à primeira "lane" livre.
-    const laneEnds: number[] = [];
-    const laneOf = new Map<string, number>();
-    for (const a of cluster) {
-      const start = minutesFromMidnight(a.startsAt);
-      const end = minutesFromMidnight(a.endsAt);
-      let lane = laneEnds.findIndex((e) => e <= start);
-      if (lane === -1) {
-        lane = laneEnds.length;
-        laneEnds.push(end);
-      } else {
-        laneEnds[lane] = end;
-      }
-      laneOf.set(a.id, lane);
-    }
-    const lanes = laneEnds.length;
-    for (const a of cluster) {
-      const lane = laneOf.get(a.id)!;
-      result.push({
-        appointment: a,
-        widthFraction: 1 / lanes,
-        leftFraction: lane / lanes,
-      });
-    }
-  }
-  return result;
-}
-
 interface Props {
   staff: BookableStaffItem;
+  date: string;
   appointments: AppointmentItem[];
+  dragState: DragState;
+  onAppointmentPointerDown?: (e: React.PointerEvent, appointmentId: string, mode: 'drag' | 'resize') => void;
   onAppointmentClick?: (a: AppointmentItem) => void;
+  onSlotClick?: (staffId: string, startsAt: string) => void;
 }
 
-export function StaffColumn({ staff, appointments, onAppointmentClick }: Props) {
+export function StaffColumn({
+  staff,
+  date,
+  appointments,
+  dragState,
+  onAppointmentPointerDown,
+  onAppointmentClick,
+  onSlotClick,
+}: Props) {
   const color = staffColor(staff.id);
-  const layouts = layoutOverlaps(appointments);
 
-  // Linhas de grade (a cada slot de 15min).
-  const slotCount = ((DAY_END_HOUR - DAY_START_HOUR) * 60) / 15;
+  // Janela de tempo padrão da grade (00:00 às 24:00)
+  const windowConfig = useMemo(
+    () => ({
+      startMin: DAY_START_HOUR * 60,
+      endMin: DAY_END_HOUR * 60,
+    }),
+    []
+  );
+
+  // Calcula o posicionamento geométrico de overlaps e lanes da coluna
+  const positionedBlocks = useMemo(() => {
+    const layoutInputs = appointments.map((a) => ({
+      appointmentId: a.id,
+      staffId: a.staffId,
+      startsAt: a.startsAt,
+      endsAt: a.endsAt,
+    }));
+    return layoutDay(layoutInputs, [staff.id], windowConfig);
+  }, [appointments, staff.id, windowConfig]);
+
+  // Mapeamento rápido para associar a geometria ao agendamento correspondente
+  const blocksMap = useMemo(() => {
+    const map = new Map<string, (typeof positionedBlocks)[0]>();
+    for (const b of positionedBlocks) {
+      map.set(b.appointmentId, b);
+    }
+    return map;
+  }, [positionedBlocks]);
+
+  // Criação dos slots de 15 minutos para detecção de toques (Mobile-First)
+  const slots = useMemo(() => {
+    const list = [];
+    const totalSlots = ((DAY_END_HOUR - DAY_START_HOUR) * 60) / 15;
+    for (let i = 0; i < totalSlots; i++) {
+      const currentMinutes = DAY_START_HOUR * 60 + i * 15;
+      const hours = Math.floor(currentMinutes / 60)
+        .toString()
+        .padStart(2, '0');
+      const mins = (currentMinutes % 60).toString().padStart(2, '0');
+      list.push({ timeStr: `${hours}:${mins}`, currentMinutes });
+    }
+    return list;
+  }, []);
+
+  const handleSlotClick = (timeStr: string) => {
+    const startsAt = `${date}T${timeStr}:00`;
+    onSlotClick?.(staff.id, startsAt);
+  };
 
   return (
-    <div
-      className="relative flex-1 border-r border-border"
-      style={{ height: GRID_HEIGHT_PX, minWidth: 120 }}
-    >
-      {/* Linhas de grade */}
-      {Array.from({ length: slotCount + 1 }, (_, i) => {
-        const isHour = (i * 15) % 60 === 0;
-        return (
+    <div className="relative flex-1 min-w-[120px] h-full border-r border-border bg-surface/50">
+      {/* Grade de fundo interativa para criação rápida — linhas a cada 30 min */}
+      <div className="absolute inset-0 z-0 flex flex-col">
+        {slots.map(({ timeStr, currentMinutes }) => (
           <div
-            key={i}
-            className={`absolute inset-x-0 border-t ${isHour ? 'border-border' : 'border-border/40'}`}
-            style={{ top: i * SLOT_HEIGHT_PX }}
-            aria-hidden
+            key={timeStr}
+            onClick={() => handleSlotClick(timeStr)}
+            className={`w-full cursor-pointer hover:bg-primary/5 transition-colors ${
+              currentMinutes % 30 === 0 ? 'border-t border-border/20' : ''
+            }`}
+            style={{ height: SLOT_HEIGHT }}
+            role="button"
+            aria-label={`Agendar às ${timeStr} com ${staff.name}`}
           />
-        );
-      })}
+        ))}
+      </div>
 
-      {/* Blocos */}
-      {layouts.map(({ appointment, widthFraction, leftFraction }) => (
-        <AppointmentBlock
-          key={appointment.id}
-          appointment={appointment}
-          color={color}
-          widthFraction={widthFraction}
-          leftFraction={leftFraction}
-          onClick={onAppointmentClick}
-        />
-      ))}
+      {/* Camada flutuante contendo os blocos de agendamento */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {appointments.map((a) => {
+          const block = blocksMap.get(a.id);
+          if (!block) return null;
+
+          const widthFraction = 1 / block.laneCount;
+          const leftFraction = block.lane / block.laneCount;
+          const isDragging = dragState.appointmentId === a.id;
+
+          return (
+            <div key={a.id} className="pointer-events-auto">
+              <AppointmentBlock
+                appointment={a}
+                color={color}
+                widthFraction={widthFraction}
+                leftFraction={leftFraction}
+                isDragging={isDragging}
+                onPointerDown={(e, appointmentId, mode) => {
+                  onAppointmentPointerDown?.(e, appointmentId, mode);
+                }}
+                onClick={onAppointmentClick}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

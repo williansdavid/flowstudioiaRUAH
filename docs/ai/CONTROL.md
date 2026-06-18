@@ -5,11 +5,12 @@
 ## 🎯 TOPO — VOCÊ PREENCHE (define a missão)
 ================================================================
 
-MISSÃO:
+MISSÃO: concluir agenda igual do google 
 
 
 OBJETIVO:
-
+incluir - editar - mover - cancelar agendamentos 
+ja esta em andamento mas estamos com dificuldade em concluir - vamos investigar tudo antes 
 
 FORA DE ESCOPO:
 > - nada em src/sites sem OK explícito
@@ -100,25 +101,3 @@ Enums: appointment_status (pending/confirmed/completed/cancelled/no_show), user_
 NÃO existem ainda: whatsapp_messages, whatsapp_settings, ai_messages, user_roles.
 
 RLS travada (12/06/26): appointments (7 policies), staff_time_off (5 policies).
-
-================================================================
-
-🗺️ ROADMAP (marcar [x] feito · [~] andamento · [ ] aberto · [!] bloqueado)
-================================================================ FASE 0 — FUNDAÇÃO ............................. [x] FASE 1 — NÚCLEO/AUTH/LAYOUT ................... [x] FASE 2 — CRUDS BASE ........................... [] [] 2.1 services [] 2.2 clients [] 2.3 staff [] 2.4 profiles [] 2.5 revisão RLS FASE 3 — APPOINTMENTS BÁSICO .................. [x] FASE 4 — DISPONIBILIDADE + AGENDAMENTO ........ [] (4/11) [x] 4.1 DDL staff_time_off [x] 4.2 schema working_hours [x] 4.3 UI grade recorrente [ ] 4.4 UI folgas/bloqueios [x] 4.5 getAvailableSlots [ ] 4.6 UI agendamento Janela 1 [] 4.7 UI agendamento Janela 2 (SlotsStep ↔ Modal pendente) [ ] 4.8 override admin [ ] 4.9 anti-overbooking insert [ ] 4.10 fuso [ ] 4.11 loading/error/empty grade FASE 5 — PORTAL CLIENTE ....................... [!] (depende F4) FASE 6 — FINANCE/LEADS/DASHBOARDS ............. [ ] FASE 7 — WHATSAPP + IA ........................ [ ]
-
-================================================================
-
-🧱 TECHDEBT
-================================================================ [ ] TD-02 criar user_roles dedicada (role hoje em profiles) [ ] TD-03 backfill full_name em staff (pode estar null) [ ] TD-04 anti-overbooking no insert (item 4.9) [ ] TD-05 trigger set_updated_at em staff_time_off [ ] TD-06 seletor de status na agenda (getDayAppointments exclui cancelled fixo)
-
-================================================================
-
-📌 ESTADO DA MISSÃO ATUAL (agente mantém)
-================================================================ Arquivos investigados:
-
-Arquivos a alterar:
-
-Decisões tomadas:
-
-Pendências / próximo passo:
-

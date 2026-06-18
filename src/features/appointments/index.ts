@@ -18,7 +18,13 @@ export {
   type DaySlots,
   type SlotItem,
 } from './server/getAvailableSlots';
-export { useUpdateAppointmentStatus, useAvailableSlots } from './hooks';
+export {
+  useUpdateAppointmentStatus,
+  useAvailableSlots,
+  useCreateAppointment,
+  useUpdateAppointment,
+  useCancelAppointment,
+} from './hooks';
 export { AppointmentsList } from './components/AppointmentsList';
 export type {
   AppointmentItem,

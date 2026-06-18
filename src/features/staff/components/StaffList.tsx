@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { staffColor } from '../../appointments/components/DayCalendar/staffColor';
+import { formatPhoneBR } from '@/lib/core/utils';
+import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { useStaffList, useResendStaffInvite, useArchiveStaff } from '../hooks';
 import type { StaffListItem } from '../types';
 import { Button } from '@/components/ui/Button';
@@ -221,11 +224,9 @@ function StaffCard({
           {staff.phone && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Phone className="size-3.5 shrink-0" />
-              {staff.phone}
+              {formatPhoneBR(staff.phone)}
             </p>
-          )}
-
-          {/* Convite pendente só faz sentido em ativos. */}
+          )}          {/* Convite pendente só faz sentido em ativos. */}
           {showPending && !staff.isArchived && (
             <div className="flex items-center justify-between gap-2 pt-1">
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">

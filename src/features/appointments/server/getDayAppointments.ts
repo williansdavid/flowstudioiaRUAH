@@ -11,10 +11,32 @@ const inputSchema = z.object({
 export type GetDayAppointmentsInput = z.infer<typeof inputSchema>;
 
 function dayRangeISO(date: string): { start: string; end: string } {
-  const start = new Date(`${date}T00:00:00-03:00`);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return { start: start.toISOString(), end: end.toISOString() };
+  // Parse 'YYYY-MM-DD' → [year, month, day]
+  const parts = date.split('-');
+
+  // ✅ CORREÇÃO: validar que parts tem exatamente 3 elementos
+  if (parts.length !== 3) {
+    throw new Error('Data inválida: use formato YYYY-MM-DD');
+  }
+
+  // ✅ CORREÇÃO: usar ! (non-null assertion) após validação
+  const year = parseInt(parts[0]!, 10);
+  const month = parseInt(parts[1]!, 10);
+  const day = parseInt(parts[2]!, 10);
+
+  // ✅ CORREÇÃO: validar que são números válidos
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    throw new Error('Data inválida: year, month, day devem ser números');
+  }
+
+  // Cria Date em horário local (São Paulo UTC-3)
+  const startLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const endLocal = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+  return {
+    start: startLocal.toISOString(),
+    end: endLocal.toISOString(),
+  };
 }
 
 const APPT_SELECT =
@@ -65,6 +87,7 @@ export const getDayAppointments = createServerFn({ method: 'GET' })
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error('[appointments] Sessão inválida.');
     }
@@ -78,6 +101,7 @@ export const getDayAppointments = createServerFn({ method: 'GET' })
       .lt('starts_at', end)
       .neq('status', 'cancelled')
       .order('starts_at', { ascending: true });
+
     if (error) throw error;
 
     return (rows as unknown as RawRow[]).map(mapRow);

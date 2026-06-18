@@ -1,58 +1,159 @@
 // src/features/appointments/components/DayCalendar/geometry.ts
+export interface GridWindow {
+  startMin: number;
+  endMin: number;
+}
 
-export const DAY_START_HOUR = 8;
-export const DAY_END_HOUR = 20;
-export const SLOT_MINUTES = 15;
-export const SNAP_MINUTES = 15;
-export const PX_PER_MINUTE = 1.4;
+export interface PositionedBlock {
+  appointmentId: string;
+  columnIndex: number;
+  top: number;
+  height: number;
+  lane: number;
+  laneCount: number;
+}
 
-/** Offset fixo do studio (America/Sao_Paulo, UTC-3). */
-const TZ_OFFSET = '-03:00';
+export interface LayoutInput {
+  appointmentId: string;
+  staffId: string;
+  startsAt: string;
+  endsAt: string;
+}
 
-export const DAY_TOTAL_MINUTES = (DAY_END_HOUR - DAY_START_HOUR) * 60;
-export const GRID_HEIGHT_PX = DAY_TOTAL_MINUTES * PX_PER_MINUTE;
-export const SLOT_HEIGHT_PX = SLOT_MINUTES * PX_PER_MINUTE;
+interface Interval extends LayoutInput {
+  startMin: number;
+  endMin: number;
+}
 
-/** Minutos desde meia-noite (UTC-3) de um instante ISO. */
+export const SLOT_HEIGHT = 24;
+export const DAY_START_HOUR = 0;
+export const DAY_END_HOUR = 24;
+export const GRID_HEIGHT_PX = (DAY_END_HOUR - DAY_START_HOUR) * (SLOT_HEIGHT * 4);
+export const PX_PER_MINUTE = SLOT_HEIGHT / 15;
+
+export function hourLabels() {
+  const labels = [];
+  for (let h = DAY_START_HOUR; h < DAY_END_HOUR; h++) {
+    labels.push({
+      hour: h,
+      label: `${h.toString().padStart(2, '0')}:00`,
+    });
+  }
+  return labels;
+}
+
+// ✅ CORREÇÃO: usar getHours() e getMinutes() (horário local)
 export function minutesFromMidnight(iso: string): number {
   const d = new Date(iso);
-  // Converte pro horário local UTC-3 sem depender do fuso da máquina.
-  const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
-  return local.getUTCHours() * 60 + local.getUTCMinutes();
+  return d.getHours() * 60 + d.getMinutes();
 }
 
-/** Posição vertical (px) do topo de um bloco a partir do ISO de início. */
-export function topPx(startIso: string): number {
-  const min = minutesFromMidnight(startIso) - DAY_START_HOUR * 60;
-  return min * PX_PER_MINUTE;
+export function topPx(iso: string): number {
+  const mins = minutesFromMidnight(iso);
+  const startMins = DAY_START_HOUR * 60;
+  return (mins - startMins) * PX_PER_MINUTE;
 }
 
-/** Altura (px) de um bloco a partir do range ISO. Mínimo de 1 slot pra clique. */
 export function heightPx(startIso: string, endIso: string): number {
   const start = minutesFromMidnight(startIso);
   const end = minutesFromMidnight(endIso);
-  const dur = Math.max(end - start, SLOT_MINUTES);
-  return dur * PX_PER_MINUTE;
+  return (end - start) * PX_PER_MINUTE;
 }
 
-/** Snap de minutos ao grid (15min). */
-export function snapMinutes(min: number): number {
-  return Math.round(min / SNAP_MINUTES) * SNAP_MINUTES;
+export function yToMinutes(y: number): number {
+  const startMins = DAY_START_HOUR * 60;
+  return startMins + y / PX_PER_MINUTE;
 }
 
-/** Constrói ISO (UTC-3) a partir de date 'YYYY-MM-DD' + minutos desde meia-noite. */
-export function isoFromDateAndMinutes(date: string, minutes: number): string {
-  const clamped = Math.max(0, Math.min(minutes, 24 * 60 - 1));
-  const h = String(Math.floor(clamped / 60)).padStart(2, '0');
-  const m = String(clamped % 60).padStart(2, '0');
-  return new Date(`${date}T${h}:${m}:00${TZ_OFFSET}`).toISOString();
+export function snapMinutes(mins: number): number {
+  return Math.round(mins / 15) * 15;
 }
 
-/** Labels de hora cheia do eixo (08:00 … 20:00). */
-export function hourLabels(): { hour: number; label: string }[] {
-  const out: { hour: number; label: string }[] = [];
-  for (let h = DAY_START_HOUR; h <= DAY_END_HOUR; h++) {
-    out.push({ hour: h, label: `${String(h).padStart(2, '0')}:00` });
+// ✅ CORREÇÃO: usar setHours() e setMinutes() (horário local)
+export function isoFromDateAndMinutes(originalIso: string, totalMinutes: number): string {
+  const d = new Date(originalIso);
+  d.setHours(Math.floor(totalMinutes / 60));
+  d.setMinutes(totalMinutes % 60);
+  d.setSeconds(0);
+  d.setMilliseconds(0);
+  return d.toISOString();
+}
+
+export function layoutDay(
+  items: LayoutInput[],
+  staffIds: string[],
+  window: GridWindow,
+): PositionedBlock[] {
+  const columnByStaff = new Map<string, number>();
+  staffIds.forEach((id, i) => columnByStaff.set(id, i));
+  const result: PositionedBlock[] = [];
+
+  for (const staffId of staffIds) {
+    const columnIndex = columnByStaff.get(staffId)!;
+    const intervals: Interval[] = items
+      .filter((it) => it.staffId === staffId)
+      .map((it) => ({
+        ...it,
+        startMin: minutesFromMidnight(it.startsAt),
+        endMin: minutesFromMidnight(it.endsAt),
+      }))
+      .filter((it) => it.endMin > it.startMin)
+      .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+
+    let group: Interval[] = [];
+    let groupMaxEnd = -Infinity;
+
+    const flush = () => {
+      if (group.length === 0) return;
+      placeGroup(group, columnIndex, window, result);
+      group = [];
+      groupMaxEnd = -Infinity;
+    };
+
+    for (const iv of intervals) {
+      if (group.length > 0 && iv.startMin >= groupMaxEnd) flush();
+      group.push(iv);
+      groupMaxEnd = Math.max(groupMaxEnd, iv.endMin);
+    }
+    flush();
   }
-  return out;
+
+  return result;
+}
+
+function placeGroup(
+  group: Interval[],
+  columnIndex: number,
+  window: GridWindow,
+  out: PositionedBlock[],
+): void {
+  const laneEndMin: number[] = [];
+  const laneOf = new Map<string, number>();
+
+  for (const iv of group) {
+    let lane = laneEndMin.findIndex((end) => iv.startMin >= end);
+    if (lane === -1) {
+      lane = laneEndMin.length;
+      laneEndMin.push(iv.endMin);
+    } else {
+      laneEndMin[lane] = iv.endMin;
+    }
+    laneOf.set(iv.appointmentId, lane);
+  }
+
+  const laneCount = laneEndMin.length;
+  const startMins = DAY_START_HOUR * 60;
+
+  for (const iv of group) {
+    const top = (iv.startMin - startMins) * PX_PER_MINUTE;
+    const rawHeight = (iv.endMin - iv.startMin) * PX_PER_MINUTE;
+    out.push({
+      appointmentId: iv.appointmentId,
+      columnIndex,
+      top,
+      height: Math.max(16, rawHeight),
+      lane: laneOf.get(iv.appointmentId)!,
+      laneCount,
+    });
+  }
 }
