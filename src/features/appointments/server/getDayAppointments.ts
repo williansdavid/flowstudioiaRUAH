@@ -1,4 +1,11 @@
 // src/features/appointments/server/getDayAppointments.ts
+//
+// CORREÇÃO BUG DIA -1 (lado servidor):
+// new Date(year, month-1, day) cria a data no fuso LOCAL do processo (UTC em prod).
+// Range ficava 00:00Z–23:59Z, mas agendamentos de SP das 21h em diante ficam
+// armazenados em UTC do dia seguinte (ex: 21h SP = 00:00Z+1dia).
+// Solução: offset explícito "-03:00" cobre o dia completo no fuso de São Paulo.
+
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
@@ -10,32 +17,19 @@ const inputSchema = z.object({
 
 export type GetDayAppointmentsInput = z.infer<typeof inputSchema>;
 
+/**
+ * ✅ CORREÇÃO: range UTC que cobre o dia completo no fuso de São Paulo (UTC-3).
+ *
+ * "2024-01-15" SP:
+ *   início = 2024-01-15T00:00:00-03:00 = 2024-01-15T03:00:00Z
+ *   fim    = 2024-01-15T23:59:59-03:00 = 2024-01-16T02:59:59Z
+ */
 function dayRangeISO(date: string): { start: string; end: string } {
-  // Parse 'YYYY-MM-DD' → [year, month, day]
-  const parts = date.split('-');
-
-  // ✅ CORREÇÃO: validar que parts tem exatamente 3 elementos
-  if (parts.length !== 3) {
-    throw new Error('Data inválida: use formato YYYY-MM-DD');
-  }
-
-  // ✅ CORREÇÃO: usar ! (non-null assertion) após validação
-  const year = parseInt(parts[0]!, 10);
-  const month = parseInt(parts[1]!, 10);
-  const day = parseInt(parts[2]!, 10);
-
-  // ✅ CORREÇÃO: validar que são números válidos
-  if (isNaN(year) || isNaN(month) || isNaN(day)) {
-    throw new Error('Data inválida: year, month, day devem ser números');
-  }
-
-  // Cria Date em horário local (São Paulo UTC-3)
-  const startLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
-  const endLocal = new Date(year, month - 1, day, 23, 59, 59, 999);
-
+  const start = new Date(`${date}T00:00:00-03:00`);
+  const end = new Date(`${date}T23:59:59.999-03:00`);
   return {
-    start: startLocal.toISOString(),
-    end: endLocal.toISOString(),
+    start: start.toISOString(),
+    end: end.toISOString(),
   };
 }
 
@@ -98,7 +92,7 @@ export const getDayAppointments = createServerFn({ method: 'GET' })
       .from('appointments')
       .select(APPT_SELECT)
       .gte('starts_at', start)
-      .lt('starts_at', end)
+      .lte('starts_at', end)
       .neq('status', 'cancelled')
       .order('starts_at', { ascending: true });
 

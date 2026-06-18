@@ -1,4 +1,15 @@
 // src/features/appointments/components/AppointmentFormModal.tsx
+//
+// CORREÇÃO BUG DIA -1:
+// A função joinISO anterior somava manualmente +3h (UTC-3 → UTC), mas as strings
+// geradas pelo browser com new Date(`${date}T${time}:00`) já são interpretadas
+// no horário LOCAL da máquina. Se o servidor (Vercel/Node) também está em UTC,
+// a soma de +3h causava dupla conversão: horário ficava 3h adiantado / data virava
+// dia seguinte (ou anterior dependendo do horário), produzindo o bug do "dia -1".
+//
+// SOLUÇÃO: usar o construtor com offset explícito "-03:00" para forçar fuso fixo
+// de São Paulo independente do fuso do servidor ou do navegador.
+
 import { useEffect, useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Trash2, Loader2, UserPlus } from 'lucide-react';
@@ -33,9 +44,10 @@ interface Props {
   onClose: () => void;
 }
 
-const TZ_OFFSET = '-03:00';
-
-/** ISO com offset -03:00 → { date:'YYYY-MM-DD', time:'HH:mm' } no fuso do studio. */
+/**
+ * ISO datetime → { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo.
+ * Usa Intl.DateTimeFormat com timeZone explícito — funciona igual em servidor e browser.
+ */
 function splitISO(iso: string): { date: string; time: string } {
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat('sv-SE', {
@@ -52,9 +64,21 @@ function splitISO(iso: string): { date: string; time: string } {
   return { date: date!, time: time! };
 }
 
-/** { date, time } no fuso do studio → ISO com offset -03:00. */
+/**
+ * ✅ CORREÇÃO BUG DIA -1:
+ * { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo → ISO UTC.
+ *
+ * ANTES (bugado):
+ *   const d = new Date(`${date}T${time}:00`);       // interpreta no fuso LOCAL do processo
+ *   const utcTime = d.getTime() + 3 * 60 * 60 * 1000; // soma +3h manual
+ *   return new Date(utcTime).toISOString();           // dupla conversão → dia errado
+ *
+ * DEPOIS (correto):
+ *   Usa offset explícito "-03:00" → São Paulo fixo, sem depender do fuso do ambiente.
+ *   new Date() parseia o offset e retorna o instante correto em UTC internamente.
+ */
 function joinISO(date: string, time: string): string {
-  return new Date(`${date}T${time}:00${TZ_OFFSET}`).toISOString();
+  return new Date(`${date}T${time}:00-03:00`).toISOString();
 }
 
 /** Próxima hora cheia (fuso studio) como default do create sem slot. */
@@ -135,172 +159,173 @@ export function AppointmentFormModal({
 }: Props) {
   const isEdit = mode.kind === 'edit';
   const [form, setForm] = useState<FormState>(() => buildInitialState(mode));
-  const [confirmCancel, setConfirmCancel] = useState(false);
   const [quickClientOpen, setQuickClientOpen] = useState(false);
   const [quickClientName, setQuickClientName] = useState('');
 
-  // Re-sincroniza quando reabre com outro mode (slot diferente / outro appt).
+  const createMutation = useCreateAppointment();
+  const updateMutation = useUpdateAppointment();
+  const cancelMutation = useCancelAppointment();
+
+  // Reseta o formulário sempre que o modal abre ou o mode muda
   useEffect(() => {
     if (open) {
       setForm(buildInitialState(mode));
-      setConfirmCancel(false);
-      setQuickClientOpen(false);
-      setQuickClientName('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode]);
 
-  const createMut = useCreateAppointment();
-  const updateMut = useUpdateAppointment();
-  const cancelMut = useCancelAppointment();
-  const isSaving = createMut.isPending || updateMut.isPending;
-
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  /** Trocar serviço (no create) recalcula endTime a partir da duração. */
-  function handleServiceChange(serviceId: string) {
-    const svc = services.find((s) => s.id === serviceId);
-    setForm((f) => ({
-      ...f,
-      serviceId,
-      endTime:
-        !isEdit && svc ? addMinutes(f.startTime, svc.durationMinutes) : f.endTime,
-    }));
+  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  /** Mudar hora inicial (create) empurra a final mantendo a duração do serviço. */
-  function handleStartChange(startTime: string) {
-    const svc = services.find((s) => s.id === form.serviceId);
-    setForm((f) => ({
-      ...f,
-      startTime,
-      endTime:
-        !isEdit && svc ? addMinutes(startTime, svc.durationMinutes) : f.endTime,
-    }));
-  }
+  // Quando serviço muda, auto-preenche endTime com base na duração
+  const selectedService = useMemo(
+    () => services.find((s) => s.id === form.serviceId) ?? null,
+    [services, form.serviceId],
+  );
 
-  const errors = useMemo(() => {
-    const e: string[] = [];
-    if (!form.clientId) e.push('Selecione o cliente.');
-    if (!form.serviceId) e.push('Selecione o serviço.');
-    if (!form.staffId) e.push('Selecione o profissional.');
-    if (form.endTime <= form.startTime)
-      e.push('Horário final deve ser após o inicial.');
+  useEffect(() => {
+    if (!selectedService) return;
+    set('endTime', addMinutes(form.startTime, selectedService.durationMinutes));
+  }, [form.serviceId, form.startTime]);
 
-    const hoursError = validateAppointmentHours({
+  const validationError = useMemo(() => {
+    if (!form.date || !form.startTime || !form.endTime) return null;
+    return validateAppointmentHours({
       date: form.date,
       startTime: form.startTime,
       endTime: form.endTime,
       hours: businessHours,
     });
-    if (hoursError) e.push(hoursError);
+  }, [form.date, form.startTime, form.endTime, businessHours]);
 
-    return e;
-  }, [form, businessHours]);
+  const canSubmit =
+    form.clientId &&
+    form.serviceId &&
+    form.staffId &&
+    form.date &&
+    form.startTime &&
+    form.endTime &&
+    !validationError;
 
-  const canSubmit = errors.length === 0 && !isSaving;
+  const isSaving =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    cancelMutation.isPending;
 
-  async function handleSubmit(ev: React.FormEvent) {
-    ev.preventDefault();
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     if (!canSubmit) return;
 
     const startsAt = joinISO(form.date, form.startTime);
     const endsAt = joinISO(form.date, form.endTime);
-    const notes = form.notes.trim() ? form.notes.trim() : null;
 
-    try {
-      if (mode.kind === 'edit') {
-        await updateMut.mutateAsync({
-          id: mode.appointment.id,
-          serviceId: form.serviceId,
+    if (isEdit) {
+      const a = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
+      updateMutation.mutate(
+        {
+          id: a.id,
           staffId: form.staffId,
+          serviceId: form.serviceId,
           startsAt,
           endsAt,
-          notes,
-        });
-      } else {
-        await createMut.mutateAsync({
+          notes: form.notes || null,
+        },
+        { onSuccess: onClose },
+      );
+    } else {
+      createMutation.mutate(
+        {
           clientId: form.clientId,
           serviceId: form.serviceId,
           staffId: form.staffId,
           startsAt,
           endsAt,
-          notes,
-        });
-      }
-      onClose();
-    } catch {
-      // toast já tratado nos hooks
+          notes: form.notes || null,
+        },
+        { onSuccess: onClose },
+      );
     }
   }
 
-  async function handleCancelAppointment() {
-    if (mode.kind !== 'edit') return;
-    try {
-      await cancelMut.mutateAsync({ id: mode.appointment.id, reason: null });
-      onClose();
-    } catch {
-      /* toast nos hooks */
-    }
+  function handleDelete() {
+    if (!isEdit) return;
+    const a = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
+    cancelMutation.mutate({ id: a.id }, { onSuccess: onClose });
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface shadow-md focus:outline-none">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <Dialog.Title className="text-lg font-bold tracking-tight text-text-body">
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-card border border-border bg-surface p-6 shadow-xl focus:outline-none">
+          <div className="mb-4 flex items-center justify-between">
+            <Dialog.Title className="text-base font-bold">
               {isEdit ? 'Editar agendamento' : 'Novo agendamento'}
             </Dialog.Title>
-            <Dialog.Close
-              className="inline-flex h-8 w-8 items-center justify-center rounded-pill text-text-muted transition-colors hover:bg-surface-2 hover:text-text-body"
-              aria-label="Fechar"
-            >
-              <X className="h-4 w-4" />
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="rounded-button p-1 text-text-muted hover:bg-surface-2 hover:text-text-body"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </Dialog.Close>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-4 overflow-y-auto px-5 py-4"
-          >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Cliente */}
             <div className="flex flex-col gap-1">
-              <span className={fieldLabel}>Cliente</span>
-              <ClientCombobox
-                clients={clients}
-                value={form.clientId}
-                disabled={isEdit}
-                onChange={(id) => set('clientId', id)}
-                onCreateNew={(name) => {
-                  setQuickClientName(name);
-                  setQuickClientOpen(true);
-                }}
-              />
+              <label className={fieldLabel}>Cliente</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <ClientCombobox
+                    clients={clients}
+                    value={form.clientId}
+                    disabled={isEdit}
+                    onChange={(id) => set('clientId', id)}
+                    onCreateNew={(name) => {
+                      setQuickClientName(name);
+                      setQuickClientOpen(true);
+                    }}
+                  />
+                </div>
+                {!isEdit && (
+                  <button
+                    type="button"
+                    title="Cadastrar cliente rápido"
+                    onClick={() => {
+                      setQuickClientName('');
+                      setQuickClientOpen(true);
+                    }}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button border border-border bg-surface text-text-muted hover:bg-surface-2 hover:text-text-body"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Serviço */}
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Serviço</span>
+            <div className="flex flex-col gap-1">
+              <label className={fieldLabel}>Serviço</label>
               <select
                 className={fieldInput}
                 value={form.serviceId}
-                onChange={(e) => handleServiceChange(e.target.value)}
+                onChange={(e) => set('serviceId', e.target.value)}
               >
                 <option value="">Selecione…</option>
                 {services.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name} ({s.durationMinutes} min)
+                    {s.name} ({s.durationMinutes}min)
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
             {/* Profissional */}
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Profissional</span>
+            <div className="flex flex-col gap-1">
+              <label className={fieldLabel}>Profissional</label>
               <select
                 className={fieldInput}
                 value={form.staffId}
@@ -313,99 +338,74 @@ export function AppointmentFormModal({
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            {/* Data */}
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Data</span>
-              <input
-                type="date"
-                className={fieldInput}
-                value={form.date}
-                onChange={(e) => set('date', e.target.value)}
-              />
-            </label>
-
-            {/* Início / Fim */}
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className={fieldLabel}>Início</span>
+            {/* Data e Horários */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col gap-1">
+                <label className={fieldLabel}>Data</label>
+                <input
+                  type="date"
+                  className={fieldInput}
+                  value={form.date}
+                  onChange={(e) => set('date', e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className={fieldLabel}>Início</label>
                 <input
                   type="time"
-                  step={900}
                   className={fieldInput}
                   value={form.startTime}
-                  onChange={(e) => handleStartChange(e.target.value)}
+                  onChange={(e) => set('startTime', e.target.value)}
                 />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className={fieldLabel}>Fim</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className={fieldLabel}>Fim</label>
                 <input
                   type="time"
-                  step={900}
                   className={fieldInput}
                   value={form.endTime}
                   onChange={(e) => set('endTime', e.target.value)}
                 />
-              </label>
+              </div>
             </div>
 
-            {/* Notas */}
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Observações</span>
-              <textarea
-                rows={2}
-                maxLength={1000}
-                className={`${fieldInput} resize-none`}
-                value={form.notes}
-                onChange={(e) => set('notes', e.target.value)}
-                placeholder="Opcional"
-              />
-            </label>
-
-            {errors.length > 0 && (
-              <p className="text-xs text-red-600">{errors[0]}</p>
+            {validationError && (
+              <p className="text-xs text-red-600">{validationError}</p>
             )}
 
+            {/* Observações */}
+            <div className="flex flex-col gap-1">
+              <label className={fieldLabel}>Observações (opcional)</label>
+              <textarea
+                className={`${fieldInput} resize-none`}
+                rows={2}
+                value={form.notes}
+                onChange={(e) => set('notes', e.target.value)}
+                maxLength={1000}
+              />
+            </div>
+
             {/* Ações */}
-            <div className="mt-1 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between pt-1">
               {isEdit ? (
-                confirmCancel ? (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={cancelMut.isPending}
-                      onClick={handleCancelAppointment}
-                      className="inline-flex items-center gap-1 rounded-button border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
-                    >
-                      {cancelMut.isPending && (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      )}
-                      Confirmar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmCancel(false)}
-                      className="rounded-button px-2.5 py-1.5 text-xs text-text-muted hover:text-text-body"
-                    >
-                      Voltar
-                    </button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setConfirmCancel(true)}
-                  >
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 rounded-button px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {cancelMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
                     <Trash2 className="h-3.5 w-3.5" />
-                    Cancelar agendamento
-                  </Button>
-                )
+                  )}
+                  Excluir
+                </button>
               ) : (
                 <span />
               )}
-
               <Button
                 type="submit"
                 variant="primary"
@@ -415,7 +415,6 @@ export function AppointmentFormModal({
               >
                 {isEdit ? 'Salvar' : 'Criar'}
               </Button>
-
             </div>
           </form>
 

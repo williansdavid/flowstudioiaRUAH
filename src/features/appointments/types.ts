@@ -1,11 +1,4 @@
 // src/features/appointments/types.ts
-export interface AppointmentItem {
-  // ...campos existentes...
-  staffId: string;
-  staffName: string;
-  staffAvatarUrl: string | null; // ← novo
-  // ...resto...
-}
 export type AppointmentStatus =
   | 'pending'
   | 'confirmed'
@@ -25,6 +18,7 @@ export interface AppointmentItem {
   serviceName: string;
   staffId: string;
   staffName: string;
+  staffAvatarUrl: string | null;
   price: number;
   notes: string | null;
 }
@@ -47,3 +41,12 @@ export interface ClientOption {
   name: string;
   phone: string | null;
 }
+
+
+export interface BookableStaffItem {
+  id: string;
+  name: string;
+  displayOrder: number;
+  avatarUrl?: string | null; // ← Adicionado para o header da agenda
+}
+

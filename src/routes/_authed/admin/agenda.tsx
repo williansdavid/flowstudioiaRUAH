@@ -1,20 +1,21 @@
 // src/routes/_authed/admin/agenda.tsx
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react'
+
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
 import { AppointmentFormModal } from '@/features/appointments/components/AppointmentFormModal'
+import { Button } from '@/components/ui/Button'
+
 import {
   getDayAppointments,
   listBookableStaff,
   listClientsForSelect,
   listActiveServices,
   todayLocalDate,
-  useUpdateAppointment,
 } from '@/features/appointments'
 import { businessHours } from '@/sites/ruah/config/businessHours'
 import type { AppointmentItem } from '@/features/appointments'
@@ -62,8 +63,6 @@ function AgendaPage() {
     mode: { kind: 'create' },
   })
 
-  const queryClient = useQueryClient()
-
   const { data: appointments } = useSuspenseQuery({
     queryKey: ['appointments', 'day', date],
     queryFn: () => getDayAppointments({ data: { date } }),
@@ -85,24 +84,6 @@ function AgendaPage() {
   })
 
   const isToday = date === today
-  const { mutate: updateAppointment } = useUpdateAppointment()
-
-  const handleAppointmentUpdate = (
-    id: string,
-    next: { staffId: string; startsAt: string; endsAt: string }
-  ) => {
-    updateAppointment(
-      { id, staffId: next.staffId, startsAt: next.startsAt, endsAt: next.endsAt },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: ['appointments', 'day', date],
-          })
-          toast.success('Agendamento atualizado')
-        },
-      }
-    )
-  }
 
   const handleAppointmentClick = (appointment: AppointmentItem) => {
     setModal({ open: true, mode: { kind: 'edit', appointment } })
@@ -133,146 +114,105 @@ function AgendaPage() {
     if (e.target.value) setDate(e.target.value)
   }
 
-  const stats = {
-    total: appointments.length,
-    confirmed: appointments.filter((a) => a.status === 'confirmed').length,
-    completed: appointments.filter((a) => a.status === 'completed').length,
-    cancelled: appointments.filter((a) => a.status === 'cancelled').length,
-  }
-
   const dateObj = new Date(date + 'T00:00:00')
 
+  const renderControls = (isMobile: boolean) => (
+    <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-between' : 'hidden sm:flex'}`}>
+      <button
+        onClick={handleToday}
+        className="flex-shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-slate-100 active:scale-95"
+      >
+        Hoje
+      </button>
+
+      <div className="flex flex-1 sm:flex-none items-center justify-between overflow-hidden rounded-lg border border-slate-700 bg-slate-900 mx-1 sm:mx-0 min-w-0">
+        <button
+          onClick={handlePrevDay}
+          className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
+          aria-label="Dia anterior"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        
+        {/* Truque do Input Invisível: O span mostra a data fluida, o input invisível recebe o clique */}
+        <div className="relative flex flex-1 sm:flex-none items-center justify-center border-x border-slate-700 px-1.5 sm:px-3 py-2.5 sm:py-2 min-w-0">
+          <CalendarIcon className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 flex-shrink-0" />
+          <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
+            {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </span>
+          <input
+            type="date"
+            value={date}
+            onChange={handleDateChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          />
+        </div>
+
+        <button
+          onClick={handleNextDay}
+          className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
+          aria-label="Próximo dia"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+
+      <Button
+        onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
+        className="flex-shrink-0 gap-1.5 px-3 py-2.5 h-auto text-xs sm:text-sm sm:h-10 sm:px-4 active:scale-95"
+      >
+        <Plus className="h-4 w-4" />
+        Novo
+      </Button>
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="h-[calc(100dvh-64px)] lg:h-[100dvh] w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
+      <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6">
+        
+        {/* Header Fixo - Hero Limpo e Direto */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 pt-4 pb-3 sm:p-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-              <CalendarIcon className="h-5 w-5" />
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+              <CalendarIcon className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-100">Agenda</h1>
-              <p className="text-sm text-slate-400">
-                {format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR })}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={handleToday}
-              className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-slate-100"
-            >
-              Hoje
-            </button>
-
-            <div className="flex items-center overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
-              <button
-                onClick={handlePrevDay}
-                className="p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
-                aria-label="Dia anterior"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-
-              <div className="relative flex items-center border-x border-slate-700 px-3 py-2">
-                <CalendarIcon className="mr-2 h-4 w-4 text-slate-500" />
-                <input
-                  type="date"
-                  value={date}
-                  onChange={handleDateChange}
-                  className="bg-transparent text-sm font-medium text-slate-200 outline-none"
-                />
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider">Agenda</span>
+                {isToday && (
+                  <span className="inline-flex items-center rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] sm:text-xs font-medium text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+                    Hoje
+                  </span>
+                )}
               </div>
-
-              <button
-                onClick={handleNextDay}
-                className="p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
-                aria-label="Próximo dia"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 capitalize leading-none">
+                {format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR })}
+              </h1>
             </div>
-
-            <button
-              onClick={() => {
-                setModal({ open: true, mode: { kind: 'create' } })
-              }}
-              className="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-500"
-            >
-              <Plus className="h-4 w-4" />
-              Novo
-            </button>
           </div>
+
+          {/* Controles no Desktop */}
+          {renderControls(false)}
         </div>
 
         {/* Main Grid */}
-        <div className="grid gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-9">
-            <DayCalendar
-              date={date}
-              appointments={appointments}
-              staff={staff}
-              isToday={isToday}
-              onAppointmentClick={handleAppointmentClick}
-              onAppointmentUpdate={handleAppointmentUpdate}
-              onSlotClick={handleSlotClick}
-            />
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Stats */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400">
-                  <Clock className="h-4 w-4" />
-                </div>
-                <h3 className="font-semibold text-slate-100">Resumo do dia</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Total" value={stats.total} color="bg-slate-800" />
-                <StatCard label="Confirmados" value={stats.confirmed} color="bg-emerald-500/10 text-emerald-300" />
-                <StatCard label="Concluídos" value={stats.completed} color="bg-blue-500/10 text-blue-300" />
-                <StatCard label="Cancelados" value={stats.cancelled} color="bg-red-500/10 text-red-300" />
-              </div>
-            </div>
-
-            {/* Upcoming */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-              <h3 className="mb-4 font-semibold text-slate-100">Próximos agendamentos</h3>
-
-              <div className="space-y-2">
-                {appointments.length === 0 ? (
-                  <p className="text-sm text-slate-500">Nenhum agendamento para este dia.</p>
-                ) : (
-                  appointments
-                    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
-                    .slice(0, 5)
-                    .map((appt) => (
-                      <div
-                        key={appt.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-950/50 p-3 text-sm"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-slate-200">{appt.clientName}</p>
-                          <p className="truncate text-xs text-slate-500">{appt.serviceName}</p>
-                        </div>
-                        <div className="ml-3 text-right">
-                          <p className="font-medium text-slate-300">
-                            {format(new Date(appt.startsAt), 'HH:mm')}
-                          </p>
-                          <p className="text-[10px] uppercase text-slate-500">{appt.status}</p>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="flex-1 min-h-0 overflow-hidden sm:rounded-2xl">
+          <DayCalendar
+            date={date}
+            appointments={appointments}
+            staff={staff}
+            isToday={isToday}
+            onAppointmentClick={handleAppointmentClick}
+            onSlotClick={handleSlotClick}
+          />
         </div>
+
+        {/* Controles no Mobile - Com mais respiro e sem estourar */}
+        <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-slate-800/60 bg-slate-950">
+          {renderControls(true)}
+        </div>
+
       </div>
 
       {/* Modal */}
@@ -285,23 +225,6 @@ function AgendaPage() {
         services={services}
         businessHours={businessHours}
       />
-    </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  color,
-}: {
-  label: string
-  value: number
-  color: string
-}) {
-  return (
-    <div className={`rounded-lg border border-slate-800/60 p-3 ${color}`}>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="mt-1 text-xs font-medium opacity-70">{label}</p>
     </div>
   )
 }

@@ -1,29 +1,14 @@
 // src/features/appointments/components/DayCalendar/DayCalendar.tsx
-import { useMemo, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { AppointmentItem, BookableStaffItem } from '../../types';
-import {
-  DAY_START_HOUR,
-  DAY_END_HOUR,
-  SLOT_HEIGHT,
-  PX_PER_MINUTE,
-  topPx,
-  heightPx,
-  yToMinutes,
-  snapMinutes,
-  isoFromDateAndMinutes,
-} from './geometry';
-import { staffColor } from './staffColor';
-import { TimeAxis } from './TimeAxis';
 import { StaffColumn } from './StaffColumn';
-import { NowLine } from './NowLine';
-import { useCalendarDrag } from '../../hooks/useCalendarDrag';
+import { CALENDAR_CONFIG } from '../../utils/calendarUtils';
 
 interface Props {
   date: string;
   staff: BookableStaffItem[];
   appointments: AppointmentItem[];
   isToday?: boolean;
-  onAppointmentUpdate?: (id: string, next: { staffId: string; startsAt: string; endsAt: string }) => void;
   onAppointmentClick?: (a: AppointmentItem) => void;
   onSlotClick?: (staffId: string, startsAt: string) => void;
 }
@@ -33,151 +18,174 @@ export function DayCalendar({
   staff,
   appointments,
   isToday = false,
-  onAppointmentUpdate,
   onAppointmentClick,
   onSlotClick,
 }: Props) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const currentTimeRef = useRef<HTMLDivElement>(null);
+  const initialScrollDone = useRef(false);
+  const [currentTimeTop, setCurrentTimeTop] = useState<number | null>(null);
 
-  // Scroll automático pra hora atual ao abrir
-  useEffect(() => {
-    if (!isToday || !scrollContainerRef.current) return;
-
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const viewportHeight = scrollContainerRef.current.clientHeight;
-    const scrollTop = currentMinutes * PX_PER_MINUTE - viewportHeight / 2;
-
-    scrollContainerRef.current.scrollTop = Math.max(0, scrollTop);
-  }, [isToday]);
-
-  const dragOptions = useMemo(
-    () => ({
-      appointments: appointments.map((a) => ({
-        id: a.id,
-        staffId: a.staffId,
-        startDate: a.startsAt,
-        endDate: a.endsAt,
-        topPx,
-        heightPx,
-        yToMinutes,
-        snapMinutes,
-        isoFromDateAndMinutes,
-        columnWidth: 120,
-        columnOffsets: staff.reduce(
-          (acc, s, idx) => {
-            acc[s.id] = idx * 120;
-            return acc;
-          },
-          {} as Record<string, number>
-        ),
-        containerLeft: 0,
-      })),
-      onUpdate: (id: string, next: { staffId: string; startDate: string; endDate: string }) => {
-        onAppointmentUpdate?.(id, {
-          staffId: next.staffId,
-          startsAt: next.startDate,
-          endsAt: next.endDate,
-        });
-      },
-    }),
-    [appointments, staff, onAppointmentUpdate]
+  const hours = Array.from(
+    { length: CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR + 1 },
+    (_, i) => CALENDAR_CONFIG.START_HOUR + i
   );
 
-  const { dragState, bindPointer, handlePointerDown } = useCalendarDrag(dragOptions);
+  const totalHeight = (CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE;
 
-  const byStaff = useMemo(() => {
-    const map = new Map<string, AppointmentItem[]>();
-    for (const a of appointments) {
-      const list = map.get(a.staffId) || [];
-      list.push(a);
-      map.set(a.staffId, list);
+  useEffect(() => {
+    initialScrollDone.current = false;
+  }, [date]);
+
+  useEffect(() => {
+    if (!isToday) return;
+    
+    const updateIndicator = () => {
+      const now = new Date();
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      const offset = minutes - (CALENDAR_CONFIG.START_HOUR * 60);
+      
+      if (offset >= 0 && offset <= (CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR) * 60) {
+        setCurrentTimeTop(offset * CALENDAR_CONFIG.PIXELS_PER_MINUTE);
+      } else {
+        setCurrentTimeTop(null);
+      }
+    };
+    
+    updateIndicator();
+    const interval = setInterval(updateIndicator, 60000);
+    return () => clearInterval(interval);
+  }, [isToday]);
+
+  useEffect(() => {
+    if (isToday && currentTimeTop !== null && !initialScrollDone.current) {
+      const container = scrollContainerRef.current;
+      const anchor = currentTimeRef.current;
+      
+      if (!container || !anchor) return;
+
+      let attempts = 0;
+
+      const performScroll = () => {
+        attempts++;
+        if (container.clientHeight > 0 && container.scrollHeight > container.clientHeight) {
+          anchor.scrollIntoView({ 
+            block: 'center',
+            inline: 'nearest'
+          });
+          initialScrollDone.current = true;
+        } else if (attempts < 20) {
+          setTimeout(performScroll, 50);
+        }
+      };
+
+      performScroll();
     }
-    return map;
-  }, [appointments]);
+  }, [isToday, currentTimeTop]);
 
-  const gridHeight = (DAY_END_HOUR - DAY_START_HOUR) * (SLOT_HEIGHT * 4);
-
-  const ghostColumnIndex = useMemo(() => {
-    if (!dragState.staffId) return -1;
-    return staff.findIndex((s) => s.id === dragState.staffId);
-  }, [dragState.staffId, staff]);
-
-  if (staff.length === 0) {
-    return (
-      <div className="rounded-card border border-border bg-surface p-5 shadow-md">
-        <p className="py-8 text-center text-sm text-text-muted">
-          Nenhum profissional disponível para agendamento.
-        </p>
-      </div>
-    );
+  const byStaff = new Map<string, AppointmentItem[]>();
+  for (const appt of appointments) {
+    if (!byStaff.has(appt.staffId)) {
+      byStaff.set(appt.staffId, []);
+    }
+    byStaff.get(appt.staffId)!.push(appt);
   }
 
   return (
-    <div
-      className="overflow-hidden rounded-card border border-border bg-surface shadow-md select-none"
-      data-calendar-container
-      ref={bindPointer}
-    >
-      {/* Cabeçalho sticky */}
-      <div className="flex border-b border-border bg-surface-2 sticky top-0 z-30">
-        <div className="w-14 shrink-0 border-r border-border" aria-hidden />
-        {staff.map((s) => (
-          <div
-            key={s.id}
-            className="flex flex-1 items-center gap-1.5 border-r border-border px-2 py-2 min-w-[120px]"
-          >
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: staffColor(s.id) }}
-            />
-            <span
-              className="truncate text-xs font-bold tracking-tight"
-              style={{ color: staffColor(s.id) }}
-            >
-              {s.name}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Corpo scrollável */}
-      <div
+    <div className="flex flex-col h-full bg-slate-950 sm:rounded-2xl border-y sm:border border-slate-800/60 sm:shadow-2xl overflow-hidden">
+      
+      {/* ÁREA DE SCROLL (O cabeçalho interno foi removido. A grade começa direto aqui) */}
+      <div 
+        className="flex-1 overflow-auto relative bg-slate-950 snap-x snap-mandatory scroll-pl-8 sm:scroll-pl-16 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" 
         ref={scrollContainerRef}
-        className="overflow-auto touch-pan-y"
-        style={{ maxHeight: '70vh' }}
       >
-        <div className="relative flex" style={{ height: gridHeight }}>
-          <TimeAxis />
-          {isToday && (
-            <div className="pointer-events-none absolute inset-y-0 left-14 right-0 z-20">
-              <NowLine />
+        <div className="flex min-w-max">
+          
+          {/* RÉGUA DE HORÁRIOS */}
+          <div className="sticky left-0 z-40 w-8 sm:w-16 flex-shrink-0 border-r border-slate-700/50 bg-slate-950/80 backdrop-blur-xl shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]">
+            <div className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/50 h-[60px]" />
+            <div className="relative mt-4 mb-8" style={{ height: totalHeight }}>
+              {hours.map(hour => (
+                <div 
+                  key={hour} 
+                  className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-[11px] font-bold text-orange-500 -mt-2 select-none" 
+                  style={{ top: (hour - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE }}
+                >
+                  {hour.toString().padStart(2, '0')}:00
+                </div>
+              ))}
+              {isToday && currentTimeTop !== null && (
+                <div 
+                  ref={currentTimeRef}
+                  className="absolute right-0 translate-x-[6px] -translate-y-[6px] w-3 h-3 bg-cyan-400 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.8)] ring-2 ring-slate-950 z-50" 
+                  style={{ top: currentTimeTop }}
+                />
+              )}
             </div>
-          )}
-          {staff.map((s) => (
-            <StaffColumn
-              key={s.id}
-              staff={s}
-              date={date}
-              appointments={byStaff.get(s.id) ?? []}
-              dragState={dragState}
-              onAppointmentPointerDown={handlePointerDown}
-              onAppointmentClick={onAppointmentClick}
-              onSlotClick={onSlotClick}
-            />
-          ))}
-          {/* Ghost Block (Feedback Visual Fluido e Mobile-First) */}
-          {dragState.mode && dragState.newStartDate && dragState.newEndDate && ghostColumnIndex !== -1 && (
-            <div
-              className="absolute border-2 border-dashed border-primary/50 bg-primary/20 rounded-button pointer-events-none z-40 transition-all duration-75"
-              style={{
-                top: `${topPx(dragState.newStartDate)}px`,
-                height: `${heightPx(dragState.newStartDate, dragState.newEndDate)}px`,
-                width: `calc((100% - 56px) / ${staff.length})`,
-                left: `calc(56px + (${ghostColumnIndex} * (100% - 56px) / ${staff.length}))`,
-              }}
-            />
-          )}
+          </div>
+
+          {/* CARDS DOS PROFISSIONAIS */}
+          {staff.map(s => {
+            const avatarSrc = s.avatarUrl || (s as any).avatar_url;
+            
+            return (
+              <div 
+                key={s.id} 
+                className="w-[calc(100vw-4rem)] sm:w-[380px] flex-shrink-0 border-r border-slate-700/50 relative snap-start flex flex-col group"
+              >
+                <div className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-700/50 p-4 h-[60px] flex items-center justify-center gap-3 transition-colors group-hover:bg-slate-900/50">
+                  {avatarSrc ? (
+                    <img 
+                      src={avatarSrc} 
+                      alt={s.name} 
+                      className="w-8 h-8 rounded-full object-cover border border-slate-700"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        e.currentTarget.parentElement?.classList.add('fallback-active');
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {avatarSrc && (
+                    <div className="hidden fallback-active:flex w-8 h-8 rounded-full bg-slate-800 border border-slate-700 items-center justify-center text-xs font-bold text-slate-300">
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-semibold text-slate-200 tracking-wide truncate">{s.name}</span>
+                </div>
+
+                <div className="relative mt-4 mb-8" style={{ height: totalHeight }}>
+                  <div className="absolute inset-0 pointer-events-none z-0">
+                    {hours.map(hour => (
+                      <div 
+                        key={hour} 
+                        className="absolute w-full border-t border-slate-700/60" 
+                        style={{ top: (hour - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE }} 
+                      />
+                    ))}
+                  </div>
+                  {isToday && currentTimeTop !== null && (
+                    <div 
+                      className="absolute left-0 right-0 border-t border-cyan-500/50 z-20 pointer-events-none" 
+                      style={{ top: currentTimeTop }}
+                    />
+                  )}
+                  <div className="absolute inset-0 z-10">
+                    <StaffColumn
+                      staff={s}
+                      date={date}
+                      appointments={byStaff.get(s.id) ?? []}
+                      onAppointmentClick={onAppointmentClick}
+                      onSlotClick={onSlotClick}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

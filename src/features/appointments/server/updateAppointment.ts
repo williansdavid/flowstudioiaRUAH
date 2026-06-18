@@ -1,4 +1,10 @@
 // src/features/appointments/server/updateAppointment.ts
+//
+// CORREÇÃO BUG DIA -1:
+// A função localToUTC anterior somava +3h sobre uma string que já é UTC,
+// causando dupla conversão e deslocando o horário 3h (→ dia errado no banco).
+// Solução: new Date(iso).toISOString() simplesmente normaliza para UTC sem offset manual.
+
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
@@ -21,6 +27,15 @@ const updateSchema = z
 
 export type UpdateAppointmentInput = z.infer<typeof updateSchema>;
 
+/**
+ * ✅ CORREÇÃO: sem adição manual de offset.
+ * new Date() parseia ISO com qualquer offset (Z, -03:00, etc.) corretamente.
+ * .toISOString() retorna sempre UTC. Não precisa somar nada.
+ */
+function ensureUTC(iso: string): string {
+  return new Date(iso).toISOString();
+}
+
 export const updateAppointment = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => updateSchema.parse(data))
   .handler(async ({ data }): Promise<{ id: string }> => {
@@ -30,26 +45,29 @@ export const updateAppointment = createServerFn({ method: 'POST' })
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
+
     if (userError || !user) {
       throw new Error('[appointments] Sessão inválida.');
     }
 
     const patch: TablesUpdate<'appointments'> = {};
+
     if (data.staffId !== undefined) patch.staff_id = data.staffId;
-    if (data.startsAt !== undefined) patch.starts_at = data.startsAt;
-    if (data.endsAt !== undefined) patch.ends_at = data.endsAt;
+    if (data.startsAt !== undefined) patch.starts_at = ensureUTC(data.startsAt);
+    if (data.endsAt !== undefined) patch.ends_at = ensureUTC(data.endsAt);
     if (data.notes !== undefined) patch.notes = data.notes;
 
-    // Trocar serviço re-sincroniza price.
     if (data.serviceId !== undefined) {
       const { data: service, error: svcError } = await supabase
         .from('services')
         .select('price')
         .eq('id', data.serviceId)
         .single();
+
       if (svcError || !service) {
         throw new Error('[appointments] Serviço não encontrado.');
       }
+
       patch.service_id = data.serviceId;
       patch.price = Number(service.price);
     }
@@ -64,7 +82,9 @@ export const updateAppointment = createServerFn({ method: 'POST' })
       .eq('id', data.id)
       .select('id')
       .single();
+
     if (error) throw error;
+
     if (!updated) {
       throw new Error('[appointments] Agendamento não encontrado ou sem permissão.');
     }

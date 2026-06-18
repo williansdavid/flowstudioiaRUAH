@@ -1,0 +1,3629 @@
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\calendar\geometry.ts =====
+
+// src/features/appointments/components/calendar/geometry.ts
+
+import type { GridWindow, PositionedBlock } from './geometry.types'
+
+// ── Constantes de escala ─────────────────────────────────────────
+/** Granularidade do slot, em minutos. */
+export const SLOT_MINUTES = 15
+/** Altura de um slot, em px. (15min = 24px → 1h = 96px) */
+export const SLOT_HEIGHT = 24
+/** Margem antes/depois do expediente, em minutos. */
+export const SLOT_MARGIN = 30
+/** Altura mínima de um bloco, em px (legibilidade). */
+const MIN_BLOCK_HEIGHT = 16
+
+// ── Janela do dia ────────────────────────────────────────────────
+
+/** Dia do businessHours já resolvido (formato HH:mm ou fechado). */
+export interface DayHours {
+  open: boolean
+  opensAt?: string
+  closesAt?: string
+}
+
+/** Converte "HH:mm" em minutos desde 00:00. Retorna null se inválido. */
+export function hhmmToMin(value: string | undefined): number | null {
+  if (!value) return null
+  const [h, m] = value.split(':')
+  const hours = Number(h)
+  const mins = Number(m)
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) return null
+  return hours * 60 + mins
+}
+
+/**
+ * Deriva a janela visível da grade a partir do horário do dia.
+ * Aplica margem antes/depois. Retorna null se o dia está fechado.
+ */
+export function deriveGridWindow(
+  day: DayHours,
+  marginMin = SLOT_MARGIN,
+): GridWindow | null {
+  if (!day.open) return null
+  const open = hhmmToMin(day.opensAt)
+  const close = hhmmToMin(day.closesAt)
+  if (open === null || close === null || close <= open) return null
+
+  const startMin = Math.max(0, open - marginMin)
+  const endMin = Math.min(24 * 60, close + marginMin)
+  return { startMin, endMin }
+}
+
+/** Altura total da grade, em px. */
+export function gridHeight(window: GridWindow): number {
+  return ((window.endMin - window.startMin) / SLOT_MINUTES) * SLOT_HEIGHT
+}
+
+// ── Conversões tempo ⇄ pixel ─────────────────────────────────────
+
+/** ISO datetime → minutos desde 00:00 (hora local). */
+export function isoToMinutes(iso: string): number {
+  const d = new Date(iso)
+  return d.getHours() * 60 + d.getMinutes()
+}
+
+/** Minutos desde 00:00 → posição Y na grade, em px. */
+export function timeToY(minutesOfDay: number, window: GridWindow): number {
+  return ((minutesOfDay - window.startMin) / SLOT_MINUTES) * SLOT_HEIGHT
+}
+
+/** Posição Y na grade → minutos desde 00:00. */
+export function yToTime(y: number, window: GridWindow): number {
+  return window.startMin + (y / SLOT_HEIGHT) * SLOT_MINUTES
+}
+
+/** Arredonda minutos para o slot mais próximo (snap de 15 em 15). */
+export function snapToSlot(minutes: number): number {
+  return Math.round(minutes / SLOT_MINUTES) * SLOT_MINUTES
+}
+
+// ── Layout do dia (resolução de overlap em lanes) ────────────────
+
+/** Entrada mínima necessária para posicionar um bloco. */
+export interface LayoutInput {
+  appointmentId: string
+  staffId: string
+  /** ISO datetime de início. */
+  startsAt: string
+  /** ISO datetime de fim. */
+  endsAt: string
+}
+
+interface Interval extends LayoutInput {
+  startMin: number
+  endMin: number
+}
+
+/**
+ * Posiciona os agendamentos do dia na grade.
+ *
+ * - `columnIndex` vem da ordem de `staffIds`.
+ * - Blocos sobrepostos do MESMO staff são divididos em lanes
+ *   (algoritmo de varredura por grupos de overlap).
+ * - Agendamentos de staff fora de `staffIds` são ignorados.
+ */
+export function layoutDay(
+  items: LayoutInput[],
+  staffIds: string[],
+  window: GridWindow,
+): PositionedBlock[] {
+  const columnByStaff = new Map<string, number>()
+  staffIds.forEach((id, i) => columnByStaff.set(id, i))
+
+  const result: PositionedBlock[] = []
+
+  // Processa coluna por coluna (cada staff resolve overlap isolado).
+  for (const staffId of staffIds) {
+    const columnIndex = columnByStaff.get(staffId)!
+
+    const intervals: Interval[] = items
+      .filter((it) => it.staffId === staffId)
+      .map((it) => ({
+        ...it,
+        startMin: isoToMinutes(it.startsAt),
+        endMin: isoToMinutes(it.endsAt),
+      }))
+      .filter((it) => it.endMin > it.startMin)
+      .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin)
+
+    // Agrupa intervalos que se sobrepõem em cadeia.
+    let group: Interval[] = []
+    let groupMaxEnd = -Infinity
+
+    const flush = () => {
+      if (group.length === 0) return
+      placeGroup(group, columnIndex, window, result)
+      group = []
+      groupMaxEnd = -Infinity
+    }
+
+    for (const iv of intervals) {
+      if (group.length > 0 && iv.startMin >= groupMaxEnd) flush()
+      group.push(iv)
+      groupMaxEnd = Math.max(groupMaxEnd, iv.endMin)
+    }
+    flush()
+  }
+
+  return result
+}
+
+/** Distribui um grupo de intervalos sobrepostos em lanes. */
+function placeGroup(
+  group: Interval[],
+  columnIndex: number,
+  window: GridWindow,
+  out: PositionedBlock[],
+): void {
+  // laneEndMin[lane] = fim do último bloco naquela lane.
+  const laneEndMin: number[] = []
+  const laneOf = new Map<string, number>()
+
+  for (const iv of group) {
+    let lane = laneEndMin.findIndex((end) => iv.startMin >= end)
+    if (lane === -1) {
+      lane = laneEndMin.length
+      laneEndMin.push(iv.endMin)
+    } else {
+      laneEndMin[lane] = iv.endMin
+    }
+    laneOf.set(iv.appointmentId, lane)
+  }
+
+  const laneCount = laneEndMin.length
+
+  for (const iv of group) {
+    const top = timeToY(iv.startMin, window)
+    const rawHeight = timeToY(iv.endMin, window) - top
+    out.push({
+      appointmentId: iv.appointmentId,
+      columnIndex,
+      top,
+      height: Math.max(MIN_BLOCK_HEIGHT, rawHeight),
+      lane: laneOf.get(iv.appointmentId)!,
+      laneCount,
+    })
+  }
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\calendar\geometry.types.ts =====
+
+// src/features/appointments/components/calendar/geometry.types.ts
+
+/**
+ * Tipos de VIEW do calendário (geometria/renderização).
+ * NÃO são tipos de domínio — não confundir com AppointmentItem.
+ */
+
+/** Janela de horário visível na grade, em minutos desde 00:00. */
+export interface GridWindow {
+  /** Início da grade em minutos (ex: 510 = 08:30). */
+  startMin: number
+  /** Fim da grade em minutos (ex: 1170 = 19:30). */
+  endMin: number
+}
+
+/** Bloco de agendamento já posicionado na grade. */
+export interface PositionedBlock {
+  appointmentId: string
+  /** Coluna do staff (índice na lista de colunas). */
+  columnIndex: number
+  /** Posição vertical do topo, em px. */
+  top: number
+  /** Altura do bloco, em px. */
+  height: number
+  /** Faixa horizontal dentro da coluna (overlap). */
+  lane: number
+  /** Total de lanes no grupo de overlap (largura = 1/laneCount). */
+  laneCount: number
+}
+
+/** Estado de arraste/redimensionamento (usado depois pelo bloco de drag). */
+export interface DragState {
+  appointmentId: string
+  mode: 'move' | 'resize-start' | 'resize-end'
+  /** Y inicial do ponteiro, em px relativos à grade. */
+  originY: number
+  /** Snapshot do bloco no início do drag. */
+  initialTop: number
+  initialHeight: number
+  /** Coluna original (para detectar mudança de staff). */
+  originColumnIndex: number
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\AppointmentBlock.tsx =====
+
+// src/features/appointments/components/DayCalendar/AppointmentBlock.tsx
+import React from 'react';
+import type { AppointmentItem, AppointmentStatus } from '../../types';
+import { topPx, heightPx } from './geometry';
+
+/** Opacidade/estilo por status — completed e no_show ficam mais apagados. */
+const STATUS_STYLE: Record<AppointmentStatus, string> = {
+  pending: 'opacity-100',
+  confirmed: 'opacity-100 ring-1 ring-inset ring-white/40',
+  completed: 'opacity-60',
+  cancelled: 'opacity-40 line-through',
+  no_show: 'opacity-50',
+};
+
+interface Props {
+  appointment: AppointmentItem;
+  color: string;
+  widthFraction: number;
+  leftFraction: number;
+  isDragging?: boolean;
+  onPointerDown?: (e: React.PointerEvent, appointmentId: string, mode: 'drag' | 'resize') => void;
+  onClick?: (a: AppointmentItem) => void;
+}
+
+export function AppointmentBlock({
+  appointment: a,
+  color,
+  widthFraction,
+  leftFraction,
+  isDragging = false,
+  onPointerDown,
+  onClick,
+}: Props) {
+  const top = topPx(a.startsAt);
+  const height = heightPx(a.startsAt, a.endsAt);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Se o clique for no handle de redimensionamento (últimos 12px), ativa resize
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const mode = relativeY > height - 12 ? 'resize' : 'drag';
+    onPointerDown?.(e, a.id, mode);
+  };
+
+  return (
+    <div
+      role="button"
+      onPointerDown={handlePointerDown}
+      onClick={(e) => {
+        // Evita abrir o modal se houve arraste
+        if (!isDragging) onClick?.(a);
+      }}
+      className={`absolute overflow-hidden rounded-button px-1.5 py-1 text-left text-white shadow-sm transition-shadow hover:shadow-md focus:outline-none ${
+        isDragging
+          ? 'z-50 cursor-grabbing ring-2 ring-white shadow-xl scale-[1.02]'
+          : 'z-10 cursor-grab'
+      } ${STATUS_STYLE[a.status]}`}
+      style={{
+        top: `${top}px`,
+        height: `${Math.max(height - 2, 0)}px`,
+        left: `calc(${leftFraction * 100}% + 2px)`,
+        width: `calc(${widthFraction * 100}% - 4px)`,
+        backgroundColor: color,
+        touchAction: 'none', // Crítico para mobile-first: impede o scroll nativo durante o drag
+      }}
+    >
+      <div className="flex flex-col h-full justify-between">
+        <div>
+          <span className="block truncate text-[10px] font-semibold leading-tight tabular-nums">
+            {new Date(a.startsAt).toLocaleTimeString('pt-BR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+          <span className="block truncate text-[11px] font-semibold leading-tight">
+            {a.clientName}
+          </span>
+        </div>
+        {/* Handle de redimensionamento visual */}
+        <div className="w-full h-1.5 flex justify-center items-center opacity-30 group-hover:opacity-100">
+          <div className="w-8 h-1 bg-white rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\DayCalendar.tsx =====
+
+// src/features/appointments/components/DayCalendar/DayCalendar.tsx
+import { useMemo, useRef, useEffect } from 'react';
+import type { AppointmentItem, BookableStaffItem } from '../../types';
+import {
+  DAY_START_HOUR,
+  DAY_END_HOUR,
+  SLOT_HEIGHT,
+  PX_PER_MINUTE,
+  topPx,
+  heightPx,
+  yToMinutes,
+  snapMinutes,
+  isoFromDateAndMinutes,
+} from './geometry';
+import { staffColor } from './staffColor';
+import { TimeAxis } from './TimeAxis';
+import { StaffColumn } from './StaffColumn';
+import { NowLine } from './NowLine';
+import { useCalendarDrag } from '../../hooks/useCalendarDrag';
+
+interface Props {
+  date: string;
+  staff: BookableStaffItem[];
+  appointments: AppointmentItem[];
+  isToday?: boolean;
+  onAppointmentUpdate?: (id: string, next: { staffId: string; startsAt: string; endsAt: string }) => void;
+  onAppointmentClick?: (a: AppointmentItem) => void;
+  onSlotClick?: (staffId: string, startsAt: string) => void;
+}
+
+export function DayCalendar({
+  date,
+  staff,
+  appointments,
+  isToday = false,
+  onAppointmentUpdate,
+  onAppointmentClick,
+  onSlotClick,
+}: Props) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll automático pra hora atual ao abrir
+  useEffect(() => {
+    if (!isToday || !scrollContainerRef.current) return;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const viewportHeight = scrollContainerRef.current.clientHeight;
+    const scrollTop = currentMinutes * PX_PER_MINUTE - viewportHeight / 2;
+    scrollContainerRef.current.scrollTop = Math.max(0, scrollTop);
+  }, [isToday]);
+
+  const dragOptions = useMemo(
+    () => ({
+      appointments: appointments.map((a) => ({
+        id: a.id,
+        staffId: a.staffId,
+        startDate: a.startsAt,
+        endDate: a.endsAt,
+        topPx,
+        heightPx,
+        yToMinutes,
+        snapMinutes,
+        isoFromDateAndMinutes,
+        columnWidth: 120,
+        columnOffsets: staff.reduce(
+          (acc, s, idx) => {
+            acc[s.id] = idx * 120;
+            return acc;
+          },
+          {} as Record<string, number>
+        ),
+        containerLeft: 0,
+      })),
+      onUpdate: (id: string, next: { staffId: string; startDate: string; endDate: string }) => {
+        // ✅ CORREÇÃO: encontrar agendamento atualizado e abrir modal
+        const updatedAppointment = appointments.find((a) => a.id === id);
+        if (updatedAppointment) {
+          const appointmentWithNewTime: AppointmentItem = {
+            ...updatedAppointment,
+            staffId: next.staffId,
+            startsAt: next.startDate,
+            endsAt: next.endDate,
+          };
+          // Abrir modal de confirmação com novo horário
+          onAppointmentClick?.(appointmentWithNewTime);
+        }
+      },
+      scrollContainerRef,
+    }),
+    [appointments, staff, onAppointmentClick]
+  );
+
+  const { dragState, bindPointer, handlePointerDown } = useCalendarDrag(dragOptions);
+
+  const byStaff = useMemo(() => {
+    const map = new Map<string, AppointmentItem[]>();
+    for (const a of appointments) {
+      const list = map.get(a.staffId) || [];
+      list.push(a);
+      map.set(a.staffId, list);
+    }
+    return map;
+  }, [appointments]);
+
+  const gridHeight = (DAY_END_HOUR - DAY_START_HOUR) * (SLOT_HEIGHT * 4);
+
+  const ghostColumnIndex = useMemo(() => {
+    if (!dragState.staffId) return -1;
+    return staff.findIndex((s) => s.id === dragState.staffId);
+  }, [dragState.staffId, staff]);
+
+  if (staff.length === 0) {
+    return (
+      <div className="rounded-card border border-border bg-surface p-5 shadow-md">
+        <p className="py-8 text-center text-sm text-text-muted">
+          Nenhum profissional disponível para agendamento.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="overflow-hidden rounded-card border border-border bg-surface shadow-md select-none"
+      data-calendar-container
+      ref={bindPointer}
+    >
+      {/* Cabeçalho sticky */}
+      <div className="flex border-b border-border bg-surface-2 sticky top-0 z-30">
+        <div className="w-14 shrink-0 border-r border-border" aria-hidden />
+        {staff.map((s) => (
+          <div
+            key={s.id}
+            className="flex flex-1 items-center gap-1.5 border-r border-border px-2 py-2 min-w-[120px]"
+          >
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: staffColor(s.id) }}
+            />
+            <span
+              className="truncate text-xs font-bold tracking-tight"
+              style={{ color: staffColor(s.id) }}
+            >
+              {s.name}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Corpo scrollável */}
+      <div
+        ref={scrollContainerRef}
+        className="overflow-auto touch-pan-y"
+        style={{ maxHeight: '70vh' }}
+      >
+        <div className="relative flex" style={{ height: gridHeight }}>
+          <TimeAxis />
+          {isToday && (
+            <div className="pointer-events-none absolute inset-y-0 left-14 right-0 z-20">
+              <NowLine />
+            </div>
+          )}
+          {staff.map((s) => (
+            <StaffColumn
+              key={s.id}
+              staff={s}
+              date={date}
+              appointments={byStaff.get(s.id) ?? []}
+              dragState={dragState}
+              onAppointmentPointerDown={handlePointerDown}
+              onAppointmentClick={onAppointmentClick}
+              onSlotClick={onSlotClick}
+            />
+          ))}
+
+          {/* Ghost Block (Feedback Visual Fluido e Mobile-First) */}
+          {dragState.mode && dragState.newStartDate && dragState.newEndDate && ghostColumnIndex !== -1 && (
+            <div
+              className="absolute border-2 border-dashed border-primary/50 bg-primary/20 rounded-button pointer-events-none z-40 transition-all duration-75"
+              style={{
+                top: `${topPx(dragState.newStartDate)}px`,
+                height: `${heightPx(dragState.newStartDate, dragState.newEndDate)}px`,
+                width: `calc((100% - 56px) / ${staff.length})`,
+                left: `calc(56px + (${ghostColumnIndex} * (100% - 56px) / ${staff.length}))`,
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\geometry.ts =====
+
+// src/features/appointments/components/DayCalendar/geometry.ts
+export interface GridWindow {
+  startMin: number;
+  endMin: number;
+}
+
+export interface PositionedBlock {
+  appointmentId: string;
+  columnIndex: number;
+  top: number;
+  height: number;
+  lane: number;
+  laneCount: number;
+}
+
+export interface LayoutInput {
+  appointmentId: string;
+  staffId: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+interface Interval extends LayoutInput {
+  startMin: number;
+  endMin: number;
+}
+
+export const SLOT_HEIGHT = 24;
+export const DAY_START_HOUR = 0;
+export const DAY_END_HOUR = 24;
+export const GRID_HEIGHT_PX = (DAY_END_HOUR - DAY_START_HOUR) * (SLOT_HEIGHT * 4);
+export const PX_PER_MINUTE = SLOT_HEIGHT / 15;
+
+export function hourLabels() {
+  const labels = [];
+  for (let h = DAY_START_HOUR; h < DAY_END_HOUR; h++) {
+    labels.push({
+      hour: h,
+      label: `${h.toString().padStart(2, '0')}:00`,
+    });
+  }
+  return labels;
+}
+
+// ✅ CORREÇÃO: usar getHours() e getMinutes() (horário local)
+export function minutesFromMidnight(iso: string): number {
+  const d = new Date(iso);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+export function topPx(iso: string): number {
+  const mins = minutesFromMidnight(iso);
+  const startMins = DAY_START_HOUR * 60;
+  return (mins - startMins) * PX_PER_MINUTE;
+}
+
+export function heightPx(startIso: string, endIso: string): number {
+  const start = minutesFromMidnight(startIso);
+  const end = minutesFromMidnight(endIso);
+  return (end - start) * PX_PER_MINUTE;
+}
+
+export function yToMinutes(y: number): number {
+  const startMins = DAY_START_HOUR * 60;
+  return startMins + y / PX_PER_MINUTE;
+}
+
+export function snapMinutes(mins: number): number {
+  return Math.round(mins / 15) * 15;
+}
+
+// ✅ CORREÇÃO: usar setHours() e setMinutes() (horário local)
+export function isoFromDateAndMinutes(originalIso: string, totalMinutes: number): string {
+  const d = new Date(originalIso);
+  d.setHours(Math.floor(totalMinutes / 60));
+  d.setMinutes(totalMinutes % 60);
+  d.setSeconds(0);
+  d.setMilliseconds(0);
+  return d.toISOString();
+}
+
+export function layoutDay(
+  items: LayoutInput[],
+  staffIds: string[],
+  window: GridWindow,
+): PositionedBlock[] {
+  const columnByStaff = new Map<string, number>();
+  staffIds.forEach((id, i) => columnByStaff.set(id, i));
+  const result: PositionedBlock[] = [];
+
+  for (const staffId of staffIds) {
+    const columnIndex = columnByStaff.get(staffId)!;
+    const intervals: Interval[] = items
+      .filter((it) => it.staffId === staffId)
+      .map((it) => ({
+        ...it,
+        startMin: minutesFromMidnight(it.startsAt),
+        endMin: minutesFromMidnight(it.endsAt),
+      }))
+      .filter((it) => it.endMin > it.startMin)
+      .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+
+    let group: Interval[] = [];
+    let groupMaxEnd = -Infinity;
+
+    const flush = () => {
+      if (group.length === 0) return;
+      placeGroup(group, columnIndex, window, result);
+      group = [];
+      groupMaxEnd = -Infinity;
+    };
+
+    for (const iv of intervals) {
+      if (group.length > 0 && iv.startMin >= groupMaxEnd) flush();
+      group.push(iv);
+      groupMaxEnd = Math.max(groupMaxEnd, iv.endMin);
+    }
+    flush();
+  }
+
+  return result;
+}
+
+function placeGroup(
+  group: Interval[],
+  columnIndex: number,
+  window: GridWindow,
+  out: PositionedBlock[],
+): void {
+  const laneEndMin: number[] = [];
+  const laneOf = new Map<string, number>();
+
+  for (const iv of group) {
+    let lane = laneEndMin.findIndex((end) => iv.startMin >= end);
+    if (lane === -1) {
+      lane = laneEndMin.length;
+      laneEndMin.push(iv.endMin);
+    } else {
+      laneEndMin[lane] = iv.endMin;
+    }
+    laneOf.set(iv.appointmentId, lane);
+  }
+
+  const laneCount = laneEndMin.length;
+  const startMins = DAY_START_HOUR * 60;
+
+  for (const iv of group) {
+    const top = (iv.startMin - startMins) * PX_PER_MINUTE;
+    const rawHeight = (iv.endMin - iv.startMin) * PX_PER_MINUTE;
+    out.push({
+      appointmentId: iv.appointmentId,
+      columnIndex,
+      top,
+      height: Math.max(16, rawHeight),
+      lane: laneOf.get(iv.appointmentId)!,
+      laneCount,
+    });
+  }
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\NowLine.tsx =====
+
+// src/features/appointments/components/DayCalendar/NowLine.tsx
+import { useEffect, useState } from 'react';
+import { topPx, DAY_START_HOUR, DAY_END_HOUR } from './geometry';
+
+function nowISO(): string {
+  return new Date().toISOString();
+}
+
+function isVisible(): boolean {
+  const now = new Date();
+  // ✅ CORREÇÃO: usar getHours() em vez de getUTCHours()
+  const h = now.getHours();
+  return h >= DAY_START_HOUR && h < DAY_END_HOUR;
+}
+
+export function NowLine() {
+  const [iso, setIso] = useState(nowISO);
+  const [visible, setVisible] = useState(isVisible);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIso(nowISO());
+      setVisible(isVisible());
+    }, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!visible) return null;
+
+  const top = topPx(iso);
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
+      style={{ top }}
+      aria-hidden
+    >
+      <span className="h-2 w-2 shrink-0 rounded-full bg-red-500 -translate-x-1" />
+      <div className="h-px flex-1 bg-red-500" />
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\staffColor.ts =====
+
+// src/features/appointments/components/DayCalendar/staffColor.ts
+
+/**
+ * Paleta fixa de cores distintas para diferenciar profissionais.
+ * Mesma paleta usada em AppointmentsList — fonte única.
+ */
+export const STAFF_PALETTE = [
+  '#6366f1', // indigo
+  '#14b8a6', // teal
+  '#f59e0b', // amber
+  '#8b5cf6', // violet
+  '#06b6d4', // cyan
+  '#ef4444', // red
+  '#84cc16', // lime
+  '#ec4899', // pink
+] as const;
+
+/** Hash estável (djb2) do staffId → índice na paleta. Mesmo staff = mesma cor sempre. */
+export function staffColor(staffId: string): string {
+  let hash = 5381;
+  for (let i = 0; i < staffId.length; i++) {
+    hash = (hash * 33) ^ staffId.charCodeAt(i);
+  }
+  const index = Math.abs(hash) % STAFF_PALETTE.length;
+  return STAFF_PALETTE[index]!;
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\StaffColumn.tsx =====
+
+// src/features/appointments/components/DayCalendar/StaffColumn.tsx
+import React, { useMemo } from 'react';
+import type { AppointmentItem, BookableStaffItem } from '../../types';
+import type { DragState } from '../../hooks/useCalendarDrag';
+import { DAY_START_HOUR, DAY_END_HOUR, SLOT_HEIGHT, layoutDay } from './geometry';
+import { staffColor } from './staffColor';
+import { AppointmentBlock } from './AppointmentBlock';
+
+interface Props {
+  staff: BookableStaffItem;
+  date: string;
+  appointments: AppointmentItem[];
+  dragState: DragState;
+  onAppointmentPointerDown?: (e: React.PointerEvent, appointmentId: string, mode: 'drag' | 'resize') => void;
+  onAppointmentClick?: (a: AppointmentItem) => void;
+  onSlotClick?: (staffId: string, startsAt: string) => void;
+}
+
+export function StaffColumn({
+  staff,
+  date,
+  appointments,
+  dragState,
+  onAppointmentPointerDown,
+  onAppointmentClick,
+  onSlotClick,
+}: Props) {
+  const color = staffColor(staff.id);
+
+  // Janela de tempo padrão da grade (00:00 às 24:00)
+  const windowConfig = useMemo(
+    () => ({
+      startMin: DAY_START_HOUR * 60,
+      endMin: DAY_END_HOUR * 60,
+    }),
+    []
+  );
+
+  // Calcula o posicionamento geométrico de overlaps e lanes da coluna
+  const positionedBlocks = useMemo(() => {
+    const layoutInputs = appointments.map((a) => ({
+      appointmentId: a.id,
+      staffId: a.staffId,
+      startsAt: a.startsAt,
+      endsAt: a.endsAt,
+    }));
+    return layoutDay(layoutInputs, [staff.id], windowConfig);
+  }, [appointments, staff.id, windowConfig]);
+
+  // Mapeamento rápido para associar a geometria ao agendamento correspondente
+  const blocksMap = useMemo(() => {
+    const map = new Map<string, (typeof positionedBlocks)[0]>();
+    for (const b of positionedBlocks) {
+      map.set(b.appointmentId, b);
+    }
+    return map;
+  }, [positionedBlocks]);
+
+  // Criação dos slots de 15 minutos para detecção de toques (Mobile-First)
+  const slots = useMemo(() => {
+    const list = [];
+    const totalSlots = ((DAY_END_HOUR - DAY_START_HOUR) * 60) / 15;
+    for (let i = 0; i < totalSlots; i++) {
+      const currentMinutes = DAY_START_HOUR * 60 + i * 15;
+      const hours = Math.floor(currentMinutes / 60)
+        .toString()
+        .padStart(2, '0');
+      const mins = (currentMinutes % 60).toString().padStart(2, '0');
+      list.push({ timeStr: `${hours}:${mins}`, currentMinutes });
+    }
+    return list;
+  }, []);
+
+  const handleSlotClick = (timeStr: string) => {
+    const startsAt = `${date}T${timeStr}:00`;
+    onSlotClick?.(staff.id, startsAt);
+  };
+
+  return (
+    <div className="relative flex-1 min-w-[120px] h-full border-r border-border bg-surface/50">
+      {/* Grade de fundo interativa para criação rápida — linhas a cada 30 min */}
+      <div className="absolute inset-0 z-0 flex flex-col">
+        {slots.map(({ timeStr, currentMinutes }) => (
+          <div
+            key={timeStr}
+            onClick={() => handleSlotClick(timeStr)}
+            className={`w-full cursor-pointer hover:bg-primary/5 transition-colors ${
+              currentMinutes % 30 === 0 ? 'border-t border-border/20' : ''
+            }`}
+            style={{ height: SLOT_HEIGHT }}
+            role="button"
+            aria-label={`Agendar às ${timeStr} com ${staff.name}`}
+          />
+        ))}
+      </div>
+
+      {/* Camada flutuante contendo os blocos de agendamento */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {appointments.map((a) => {
+          const block = blocksMap.get(a.id);
+          if (!block) return null;
+
+          const widthFraction = 1 / block.laneCount;
+          const leftFraction = block.lane / block.laneCount;
+          const isDragging = dragState.appointmentId === a.id;
+
+          return (
+            <div key={a.id} className="pointer-events-auto">
+              <AppointmentBlock
+                appointment={a}
+                color={color}
+                widthFraction={widthFraction}
+                leftFraction={leftFraction}
+                isDragging={isDragging}
+                onPointerDown={(e, appointmentId, mode) => {
+                  onAppointmentPointerDown?.(e, appointmentId, mode);
+                }}
+                onClick={onAppointmentClick}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\DayCalendar\TimeAxis.tsx =====
+
+// src/features/appointments/components/DayCalendar/TimeAxis.tsx
+import { GRID_HEIGHT_PX, PX_PER_MINUTE, DAY_START_HOUR, hourLabels } from './geometry';
+
+export function TimeAxis() {
+  const labels = hourLabels();
+
+  return (
+    <div
+      className="relative w-14 shrink-0 select-none border-r border-border"
+      style={{ height: GRID_HEIGHT_PX }}
+      aria-hidden
+    >
+      {labels.map(({ hour, label }) => {
+        const top = (hour - DAY_START_HOUR) * 60 * PX_PER_MINUTE;
+        return (
+          <span
+            key={hour}
+            className="absolute right-1.5 -translate-y-1/2 text-[10px] font-medium tabular-nums text-text-muted"
+            style={{ top }}
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\AppointmentFormModal.tsx =====
+
+// src/features/appointments/components/AppointmentFormModal.tsx
+import { useEffect, useMemo, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { QuickClientModal } from './QuickClientModal';
+import { ClientCombobox } from './ClientCombobox';
+import { Button } from '@/components/ui/Button';
+import type {
+  AppointmentItem,
+  BookableStaffItem,
+  ClientOption,
+  ServiceOption,
+} from '../types';
+import {
+  useCreateAppointment,
+  useUpdateAppointment,
+  useCancelAppointment,
+} from '../hooks';
+import type { BusinessHours } from '@/sites/ruah/types';
+import { validateAppointmentHours } from '@/sites/ruah/utils/validateAppointmentHours';
+
+type Mode =
+  | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
+  | { kind: 'edit'; appointment: AppointmentItem };
+
+interface Props {
+  open: boolean;
+  mode: Mode;
+  clients: ClientOption[];
+  services: ServiceOption[];
+  staff: BookableStaffItem[];
+  businessHours: BusinessHours;
+  onClose: () => void;
+}
+
+/** ISO com horário local → { date:'YYYY-MM-DD', time:'HH:mm' } no fuso do studio. */
+function splitISO(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const fmt = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  // sv-SE → "YYYY-MM-DD HH:mm"
+  const [date, time] = fmt.format(d).split(' ');
+  return { date: date!, time: time! };
+}
+
+// ✅ CORREÇÃO: converter horário local para UTC
+/** { date, time } no fuso do studio → ISO UTC. */
+function joinISO(date: string, time: string): string {
+  // Cria Date em horário local (sem offset)
+  const d = new Date(`${date}T${time}:00`);
+  // Converte pra UTC (+3h, porque São Paulo é UTC-3)
+  const utcTime = d.getTime() + 3 * 60 * 60 * 1000;
+  return new Date(utcTime).toISOString();
+}
+
+/** Próxima hora cheia (fuso studio) como default do create sem slot. */
+function nextRoundHour(): { date: string; time: string } {
+  const now = new Date();
+  const { date } = splitISO(now.toISOString());
+  const hh = Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      hour12: false,
+    }).format(now),
+  );
+  const next = Math.min(hh + 1, 23);
+  return { date, time: `${String(next).padStart(2, '0')}:00` };
+}
+
+/** Soma minutos a um 'HH:mm', sem virar o dia (clamp em 23:59). */
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = Math.min(h! * 60 + m! + minutes, 23 * 60 + 59);
+  const nh = Math.floor(total / 60);
+  const nm = total % 60;
+  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
+interface FormState {
+  clientId: string;
+  serviceId: string;
+  staffId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  notes: string;
+}
+
+function buildInitialState(mode: Mode): FormState {
+  if (mode.kind === 'edit') {
+    const a = mode.appointment;
+    const start = splitISO(a.startsAt);
+    const end = splitISO(a.endsAt);
+    return {
+      clientId: a.clientId,
+      serviceId: a.serviceId,
+      staffId: a.staffId,
+      date: start.date,
+      startTime: start.time,
+      endTime: end.time,
+      notes: a.notes ?? '',
+    };
+  }
+  const base = mode.defaults?.startsAt
+    ? splitISO(mode.defaults.startsAt)
+    : nextRoundHour();
+  return {
+    clientId: '',
+    serviceId: '',
+    staffId: mode.defaults?.staffId ?? '',
+    date: base.date,
+    startTime: base.time,
+    endTime: addMinutes(base.time, 30),
+    notes: '',
+  };
+}
+
+const fieldLabel = 'text-xs font-medium text-text-muted';
+const fieldInput =
+  'w-full rounded-button border border-border bg-surface px-3 py-2 text-sm text-text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary';
+
+export function AppointmentFormModal({
+  open,
+  mode,
+  clients,
+  services,
+  staff,
+  businessHours,
+  onClose,
+}: Props) {
+  const isEdit = mode.kind === 'edit';
+  const [form, setForm] = useState<FormState>(() => buildInitialState(mode));
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [quickClientOpen, setQuickClientOpen] = useState(false);
+  const [quickClientName, setQuickClientName] = useState('');
+
+  // Re-sincroniza quando reabre com outro mode (slot diferente / outro appt).
+  useEffect(() => {
+    if (open) {
+      setForm(buildInitialState(mode));
+      setConfirmCancel(false);
+      setQuickClientOpen(false);
+      setQuickClientName('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
+
+  const createMut = useCreateAppointment();
+  const updateMut = useUpdateAppointment();
+  const cancelMut = useCancelAppointment();
+
+  const isSaving = createMut.isPending || updateMut.isPending;
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  /** Trocar serviço (no create) recalcula endTime a partir da duração. */
+  function handleServiceChange(serviceId: string) {
+    const svc = services.find((s) => s.id === serviceId);
+    setForm((f) => ({
+      ...f,
+      serviceId,
+      endTime:
+        !isEdit && svc ? addMinutes(f.startTime, svc.durationMinutes) : f.endTime,
+    }));
+  }
+
+  /** Mudar hora inicial (create) empurra a final mantendo a duração do serviço. */
+  function handleStartChange(startTime: string) {
+    const svc = services.find((s) => s.id === form.serviceId);
+    setForm((f) => ({
+      ...f,
+      startTime,
+      endTime:
+        !isEdit && svc ? addMinutes(startTime, svc.durationMinutes) : f.endTime,
+    }));
+  }
+
+  const errors = useMemo(() => {
+    const e: string[] = [];
+    if (!form.clientId) e.push('Selecione o cliente.');
+    if (!form.serviceId) e.push('Selecione o serviço.');
+    if (!form.staffId) e.push('Selecione o profissional.');
+    if (form.endTime <= form.startTime)
+      e.push('Horário final deve ser após o inicial.');
+    const hoursError = validateAppointmentHours({
+      date: form.date,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      hours: businessHours,
+    });
+    if (hoursError) e.push(hoursError);
+    return e;
+  }, [form, businessHours]);
+
+  const canSubmit = errors.length === 0 && !isSaving;
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!canSubmit) return;
+
+    const startsAt = joinISO(form.date, form.startTime);
+    const endsAt = joinISO(form.date, form.endTime);
+    const notes = form.notes.trim() ? form.notes.trim() : null;
+
+    try {
+      if (mode.kind === 'edit') {
+        await updateMut.mutateAsync({
+          id: mode.appointment.id,
+          serviceId: form.serviceId,
+          staffId: form.staffId,
+          startsAt,
+          endsAt,
+          notes,
+        });
+      } else {
+        await createMut.mutateAsync({
+          clientId: form.clientId,
+          serviceId: form.serviceId,
+          staffId: form.staffId,
+          startsAt,
+          endsAt,
+          notes,
+        });
+      }
+      onClose();
+    } catch {
+      // toast já tratado nos hooks
+    }
+  }
+
+  async function handleCancelAppointment() {
+    if (mode.kind !== 'edit') return;
+    try {
+      await cancelMut.mutateAsync({ id: mode.appointment.id, reason: null });
+      onClose();
+    } catch {
+      /* toast nos hooks */
+    }
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface shadow-md focus:outline-none">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <Dialog.Title className="text-lg font-bold tracking-tight text-text-body">
+              {isEdit ? 'Editar agendamento' : 'Novo agendamento'}
+            </Dialog.Title>
+            <Dialog.Close
+              className="inline-flex h-8 w-8 items-center justify-center rounded-pill text-text-muted transition-colors hover:bg-surface-2 hover:text-text-body"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </Dialog.Close>
+          </div>
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-4 overflow-y-auto px-5 py-4"
+          >
+            {/* Cliente */}
+            <div className="flex flex-col gap-1">
+              <span className={fieldLabel}>Cliente</span>
+              <ClientCombobox
+                clients={clients}
+                value={form.clientId}
+                disabled={isEdit}
+                onChange={(id) => set('clientId', id)}
+                onCreateNew={(name) => {
+                  setQuickClientName(name);
+                  setQuickClientOpen(true);
+                }}
+              />
+            </div>
+
+            {/* Serviço */}
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>Serviço</span>
+              <select
+                className={fieldInput}
+                value={form.serviceId}
+                onChange={(e) => handleServiceChange(e.target.value)}
+              >
+                <option value="">Selecione…</option>
+                {services.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.durationMinutes} min)
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* Profissional */}
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>Profissional</span>
+              <select
+                className={fieldInput}
+                value={form.staffId}
+                onChange={(e) => set('staffId', e.target.value)}
+              >
+                <option value="">Selecione…</option>
+                {staff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* Data */}
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>Data</span>
+              <input
+                type="date"
+                className={fieldInput}
+                value={form.date}
+                onChange={(e) => set('date', e.target.value)}
+              />
+            </label>
+
+            {/* Início / Fim */}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className={fieldLabel}>Início</span>
+                <input
+                  type="time"
+                  step={900}
+                  className={fieldInput}
+                  value={form.startTime}
+                  onChange={(e) => handleStartChange(e.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className={fieldLabel}>Fim</span>
+                <input
+                  type="time"
+                  step={900}
+                  className={fieldInput}
+                  value={form.endTime}
+                  onChange={(e) => set('endTime', e.target.value)}
+                />
+              </label>
+            </div>
+
+            {/* Notas */}
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>Observações</span>
+              <textarea
+                rows={2}
+                maxLength={1000}
+                className={`${fieldInput} resize-none`}
+                value={form.notes}
+                onChange={(e) => set('notes', e.target.value)}
+                placeholder="Opcional"
+              />
+            </label>
+
+            {errors.length > 0 && (
+              <p className="text-xs text-red-600">{errors[0]}</p>
+            )}
+
+            {/* Ações */}
+            <div className="mt-1 flex items-center justify-between gap-2">
+              {isEdit ? (
+                confirmCancel ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={cancelMut.isPending}
+                      onClick={handleCancelAppointment}
+                      className="inline-flex items-center gap-1 rounded-button border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {cancelMut.isPending && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      )}
+                      Confirmar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmCancel(false)}
+                      className="rounded-button px-2.5 py-1.5 text-xs text-text-muted hover:text-text-body"
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => setConfirmCancel(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Cancelar agendamento
+                  </Button>
+                )
+              ) : (
+                <span />
+              )}
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={!canSubmit}
+                isLoading={isSaving}
+              >
+                {isEdit ? 'Salvar' : 'Criar'}
+              </Button>
+            </div>
+          </form>
+
+          <QuickClientModal
+            open={quickClientOpen}
+            initialName={quickClientName}
+            onClose={() => setQuickClientOpen(false)}
+            onCreated={(client) => set('clientId', client.id)}
+          />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\AppointmentsList.tsx =====
+
+// src/features/appointments/components/AppointmentsList.tsx
+import { Button } from '@/components/ui/Button';
+import { useState } from 'react';
+import {
+  CalendarClock,
+  Eye,
+  EyeOff,
+  Check,
+  CheckCheck,
+  X,
+  UserX,
+  RotateCcw,
+} from 'lucide-react';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import type { AppointmentItem } from '../types';
+import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { useUpdateAppointmentStatus } from '../hooks';
+
+type Status = AppointmentItem['status'];
+
+const STATUS_LABEL: Record<Status, string> = {
+  pending: 'Pendente',
+  confirmed: 'Confirmado',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+  no_show: 'Não compareceu',
+};
+
+const STATUS_CLASS: Record<Status, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  confirmed: 'bg-emerald-100 text-emerald-700',
+  completed: 'bg-blue-100 text-blue-700',
+  cancelled: 'bg-red-100 text-red-700',
+  no_show: 'bg-red-100 text-red-700',
+};
+
+const STAFF_PALETTE = [
+  '#6366f1', // indigo
+  '#14b8a6', // teal
+  '#f59e0b', // amber
+  '#8b5cf6', // violet
+  '#06b6d4', // cyan
+  '#ef4444', // red
+  '#84cc16', // lime
+  '#ec4899', // pink
+] as const;
+
+function staffColor(staffId: string): string {
+  let hash = 5381;
+  for (let i = 0; i < staffId.length; i++) {
+    hash = (hash * 33) ^ staffId.charCodeAt(i);
+  }
+  const index = Math.abs(hash) % STAFF_PALETTE.length;
+  return STAFF_PALETTE[index]!;
+}
+
+/** Iniciais do nome para fallback do avatar (máx. 2 letras). */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  const first = parts[0]![0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1]![0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
+const timeFmt = new Intl.DateTimeFormat('pt-BR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'America/Sao_Paulo',
+});
+
+function buildWhatsAppMessage(a: AppointmentItem): string {
+  const hora = timeFmt.format(new Date(a.startsAt));
+  return `Olá ${a.clientName}! Passando pra confirmar seu horário das ${hora} para ${a.serviceName}. Está tudo certo?`;
+}
+
+interface Props {
+  items: AppointmentItem[];
+}
+
+interface StaffGroup {
+  staffId: string;
+  staffName: string;
+  staffAvatarUrl: string | null;
+  appointments: AppointmentItem[];
+}
+
+function groupByStaff(items: AppointmentItem[]): StaffGroup[] {
+  const groups = new Map<string, StaffGroup>();
+  for (const a of items) {
+    let group = groups.get(a.staffId);
+    if (!group) {
+      group = {
+        staffId: a.staffId,
+        staffName: a.staffName,
+        staffAvatarUrl: a.staffAvatarUrl,
+        appointments: [],
+      };
+      groups.set(a.staffId, group);
+    }
+    group.appointments.push(a);
+  }
+  return [...groups.values()];
+}
+
+export function AppointmentsList({ items }: Props) {
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  const completedCount = items.filter((a) => a.status === 'completed').length;
+  const visibleItems = showCompleted
+    ? items
+    : items.filter((a) => a.status !== 'completed');
+
+  const groups = groupByStaff(visibleItems);
+
+  const hasToggle = completedCount > 0;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {hasToggle && (
+        <div className="flex items-center justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowCompleted((v) => !v)}
+          >
+            {showCompleted ? (
+              <>
+                <EyeOff className="h-3.5 w-3.5" aria-hidden />
+                Ocultar concluídos
+              </>
+            ) : (
+              <>
+                <Eye className="h-3.5 w-3.5" aria-hidden />
+                Mostrar concluídos ({completedCount})
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {visibleItems.length === 0 ? (
+        <div className="rounded-card border border-border bg-surface p-5 shadow-md">
+          <p className="py-8 text-center text-sm text-text-muted">
+            {items.length === 0
+              ? 'Nenhum agendamento para hoje.'
+              : 'Nenhum agendamento pendente. Todos foram concluídos.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {groups.map((group) => (
+            <StaffCard key={group.staffId} group={group} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StaffAvatar({
+  name,
+  avatarUrl,
+  color,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  color: string;
+}) {
+  const ring = { boxShadow: `0 0 0 2px ${color}` };
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        loading="lazy"
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+        style={ring}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+      style={{ backgroundColor: color, ...ring }}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
+function StaffCard({ group }: { group: StaffGroup }) {
+  const color = staffColor(group.staffId);
+
+  return (
+    <div
+      className="rounded-card border border-border bg-surface p-5 shadow-md border-l-4"
+      style={{ borderLeftColor: color }}
+    >
+      <h3
+        className="mb-3 flex items-center gap-2.5 border-b pb-3 text-lg font-bold tracking-tight"
+        style={{ color, borderBottomColor: color }}
+      >
+        <StaffAvatar
+          name={group.staffName}
+          avatarUrl={group.staffAvatarUrl}
+          color={color}
+        />
+        {group.staffName}
+      </h3>
+      <ul className="divide-y divide-border">
+        {group.appointments.map((a) => (
+          <AppointmentRow key={a.id} appointment={a} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+type ActionVariant = 'neutral' | 'positive' | 'danger';
+
+interface StatusAction {
+  status: Status;
+  label: string;
+  icon: typeof Check;
+  variant: ActionVariant;
+}
+
+const ACTIONS_BY_STATUS: Record<Status, StatusAction[]> = {
+  pending: [
+    { status: 'confirmed', label: 'Confirmar', icon: Check, variant: 'positive' },
+    { status: 'cancelled', label: 'Cancelar', icon: X, variant: 'danger' },
+  ],
+  confirmed: [
+    { status: 'completed', label: 'Concluir', icon: CheckCheck, variant: 'positive' },
+    { status: 'no_show', label: 'Não compareceu', icon: UserX, variant: 'danger' },
+    { status: 'cancelled', label: 'Cancelar', icon: X, variant: 'danger' },
+  ],
+  completed: [],
+  no_show: [
+    { status: 'pending', label: 'Reabrir', icon: RotateCcw, variant: 'neutral' },
+  ],
+  cancelled: [],
+};
+
+const VARIANT_CLASS: Record<ActionVariant, string> = {
+  neutral:
+    'border-border bg-surface text-text-muted hover:bg-surface-2 hover:text-text-body',
+  positive:
+    'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+  danger: 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100',
+};
+
+function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
+  const waHref = toWhatsAppHref(a.clientPhone, buildWhatsAppMessage(a));
+  const { mutate, isPending, variables } = useUpdateAppointmentStatus();
+
+  const actions = ACTIONS_BY_STATUS[a.status];
+  const isUpdatingThisRow = isPending && variables?.id === a.id;
+
+  return (
+    <li className="flex flex-col gap-1.5 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-sm font-medium tabular-nums">
+          <CalendarClock className="h-4 w-4 text-text-muted" aria-hidden />
+          {timeFmt.format(new Date(a.startsAt))}
+        </span>
+
+        <span
+          className={`shrink-0 rounded-pill px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[a.status]}`}
+        >
+          {STATUS_LABEL[a.status]}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-text-body">{a.clientName}</p>
+          <p className="truncate text-xs text-text-muted">{a.serviceName}</p>
+        </div>
+
+        {waHref && (
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Enviar WhatsApp para ${a.clientName}`}
+            title="Conversar no WhatsApp"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-emerald-600 text-white transition-colors hover:bg-emerald-700"
+          >
+            <WhatsAppIcon className="h-4 w-4" />
+          </a>
+        )}
+      </div>
+
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {actions.map((action) => {           
+            const Icon = action.icon;
+            const variantMap: Record<ActionVariant, 'ghost' | 'success' | 'danger'> = {
+              neutral: 'ghost',
+              positive: 'success',
+              danger: 'danger',
+            };
+            return (
+              <Button
+                key={action.status}
+                type="button"
+                variant={variantMap[action.variant]}
+                size="sm"
+                disabled={isUpdatingThisRow}
+                onClick={() => mutate({ id: a.id, status: action.status })}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+                {action.label}
+              </Button>
+            );
+          })}  
+        </div>   
+    </li>
+  );
+}
+
+
+
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\ClientCombobox.tsx =====
+
+// src/features/appointments/components/ClientCombobox.tsx
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, UserPlus, Check, X } from 'lucide-react';
+import type { ClientOption } from '../types';
+
+interface Props {
+  clients: ClientOption[];
+  value: string;
+  disabled?: boolean;
+  onChange: (clientId: string) => void;
+  /** Dispara o cadastro rápido, levando o termo digitado como nome inicial. */
+  onCreateNew: (initialName: string) => void;
+}
+
+const MAX_VISIBLE = 50;
+
+/** Normaliza para busca: minúsculas, sem acento, sem separadores de telefone. */
+function norm(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function normPhone(s: string): string {
+  return s.replace(/\D/g, '');
+}
+
+const fieldInput =
+  'w-full rounded-button border border-border bg-surface px-3 py-2 text-sm text-text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary';
+
+export function ClientCombobox({
+  clients,
+  value,
+  disabled = false,
+  onChange,
+  onCreateNew,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [highlight, setHighlight] = useState(0);
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const selected = useMemo(
+    () => clients.find((c) => c.id === value) ?? null,
+    [clients, value],
+  );
+
+  const selectedLabel = selected
+    ? `${selected.name}${selected.phone ? ` — ${selected.phone}` : ''}`
+    : '';
+
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    if (!q) return clients.slice(0, MAX_VISIBLE);
+    const nq = norm(q);
+    const pq = normPhone(q);
+    const out: ClientOption[] = [];
+    for (const c of clients) {
+      const byName = norm(c.name).includes(nq);
+      const byPhone = pq.length > 0 && c.phone && normPhone(c.phone).includes(pq);
+      if (byName || byPhone) {
+        out.push(c);
+        if (out.length >= MAX_VISIBLE) break;
+      }
+    }
+    return out;
+  }, [clients, query]);
+
+  // Reseta highlight quando a lista muda.
+  useEffect(() => {
+    setHighlight(0);
+  }, [query, open]);
+
+  // Click-outside fecha.
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(ev: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(ev.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  // Mantém item destacado visível.
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const el = listRef.current.querySelector<HTMLElement>(
+      `[data-idx="${highlight}"]`,
+    );
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [highlight, open]);
+
+  function openDropdown() {
+    if (disabled) return;
+    setOpen(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  function pick(client: ClientOption) {
+    onChange(client.id);
+    setOpen(false);
+    setQuery('');
+  }
+
+  function clearSelection() {
+    onChange('');
+    setQuery('');
+    openDropdown();
+  }
+
+  function handleKeyDown(ev: React.KeyboardEvent) {
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const item = filtered[highlight];
+      if (item) pick(item);
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      setOpen(false);
+      setQuery('');
+    }
+  }
+
+  // Modo edit: campo fixo, sem interação.
+  if (disabled) {
+    return (
+      <div className={`${fieldInput} cursor-not-allowed opacity-70`}>
+        {selectedLabel || 'Selecione…'}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      {/* Trigger / valor selecionado */}
+      {!open ? (
+        <button
+          type="button"
+          onClick={openDropdown}
+          className={`${fieldInput} flex items-center justify-between text-left`}
+        >
+          <span className={selected ? 'text-text-body' : 'text-text-muted'}>
+            {selectedLabel || 'Selecione…'}
+          </span>
+          <span className="flex items-center gap-1">
+            {selected && (
+              <span
+                role="button"
+                tabIndex={-1}
+                aria-label="Limpar"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearSelection();
+                }}
+                className="inline-flex h-5 w-5 items-center justify-center rounded-pill text-text-muted hover:bg-surface-2 hover:text-text-body"
+              >
+                <X className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <ChevronDown className="h-4 w-4 text-text-muted" />
+          </span>
+        </button>
+      ) : (
+        <input
+          ref={inputRef}
+          type="text"
+          className={fieldInput}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Buscar por nome ou telefone…"
+          autoComplete="off"
+        />
+      )}
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-button border border-border bg-surface shadow-md">
+          <ul ref={listRef} className="max-h-56 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-text-muted">
+                Nenhum cliente encontrado.
+              </li>
+            ) : (
+              filtered.map((c, idx) => {
+                const active = idx === highlight;
+                const isSel = c.id === value;
+                return (
+                  <li key={c.id} data-idx={idx}>
+                    <button
+                      type="button"
+                      onMouseEnter={() => setHighlight(idx)}
+                      onClick={() => pick(c)}
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                        active ? 'bg-surface-2' : ''
+                      }`}
+                    >
+                      <span className="truncate text-text-body">
+                        {c.name}
+                        {c.phone ? (
+                          <span className="text-text-muted"> — {c.phone}</span>
+                        ) : null}
+                      </span>
+                      {isSel && (
+                        <Check className="h-4 w-4 shrink-0 text-primary" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+
+          {/* Rodapé fixo: cadastrar novo */}
+          <div className="border-t border-border">
+            <button
+              type="button"
+              onClick={() => {
+                onCreateNew(query.trim());
+                setOpen(false);
+                setQuery('');
+              }}
+              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-surface-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              {query.trim() ? `Cadastrar “${query.trim()}”` : 'Novo cliente'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\QuickClientModal.tsx =====
+
+// src/features/appointments/components/QuickClientModal.tsx
+import { useEffect, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X, Loader2 } from 'lucide-react';
+import type { ClientOption } from '../types';
+import { useCreateQuickClient } from '../hooks';
+
+interface Props {
+  open: boolean;
+  initialName?: string;
+  onClose: () => void;
+  onCreated: (client: ClientOption) => void;
+}
+
+const fieldLabel = 'text-xs font-medium text-text-muted';
+const fieldInput =
+  'w-full rounded-button border border-border bg-surface px-3 py-2 text-sm text-text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary';
+
+export function QuickClientModal({
+  open,
+  initialName,
+  onClose,
+  onCreated,
+}: Props) {
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const createMut = useCreateQuickClient();
+
+  useEffect(() => {
+    if (open) {
+      setFullName(initialName ?? '');
+      setPhone('');
+      setEmail('');
+    }
+  }, [open, initialName]);
+
+  const canSubmit = fullName.trim().length >= 2 && !createMut.isPending;
+
+  async function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!canSubmit) return;
+    try {
+      const client = await createMut.mutateAsync({
+        fullName: fullName.trim(),
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+      });
+      onCreated(client);
+      onClose();
+    } catch {
+      // toast tratado no hook
+    }
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-[60] flex w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface shadow-md focus:outline-none">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <Dialog.Title className="text-lg font-bold tracking-tight text-text-body">
+              Novo cliente
+            </Dialog.Title>
+            <Dialog.Close
+              className="inline-flex h-8 w-8 items-center justify-center rounded-pill text-text-muted transition-colors hover:bg-surface-2 hover:text-text-body"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </Dialog.Close>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-4">
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>Nome</span>
+              <input
+                autoFocus
+                type="text"
+                maxLength={120}
+                className={fieldInput}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nome do cliente"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>Telefone</span>
+              <input
+                type="tel"
+                maxLength={30}
+                className={fieldInput}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Opcional"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className={fieldLabel}>E-mail</span>
+              <input
+                type="email"
+                maxLength={255}
+                className={fieldInput}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Opcional"
+              />
+            </label>
+
+            <div className="mt-1 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-button px-3 py-2 text-sm text-text-muted hover:text-text-body"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {createMut.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                Cadastrar
+              </button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\components\SlotsStep.tsx =====
+
+// src/features/appointments/components/SlotsStep.tsx
+import { useMemo, useState } from 'react';
+import { AlertCircle, CalendarX, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { useAvailableSlots } from '../hooks';
+import type { DaySlots, SlotItem } from '../server/getAvailableSlots';
+import type { GetAvailableSlotsInput } from '../server/getAvailableSlots';
+import { todayLocalDate } from '../utils/todayLocalDate';
+import { Button } from '@/components/ui/Button';
+
+const RANGE_DAYS = 14;
+
+interface SlotsStepProps {
+  staffId: string | null;
+  serviceId: string | null;
+  businessHours: GetAvailableSlotsInput['businessHours'];
+  /** Slot escolhido (controlado pelo wizard pai). */
+  selectedStartsAt: string | null;
+  onSelect: (slot: SlotItem) => void;
+}
+
+const WEEKDAY_LABEL = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sb'] as const;
+
+function formatDayLabel(date: string): { weekday: string; dayMonth: string } {
+  const d = new Date(`${date}T12:00:00-03:00`);
+  const wd = WEEKDAY_LABEL[d.getDay()] ?? '';
+  const dayMonth = d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+  return { weekday: wd, dayMonth };
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  });
+}
+
+export function SlotsStep({
+  staffId,
+  serviceId,
+  businessHours,
+  selectedStartsAt,
+  onSelect,
+}: SlotsStepProps) {
+  // Navegação por "página" de 14 dias. offset em dias a partir de hoje.
+  const [offset, setOffset] = useState(0);
+
+  const startDate = useMemo(() => {
+    const base = todayLocalDate();
+    if (offset === 0) return base;
+    const d = new Date(`${base}T00:00:00-03:00`);
+    d.setDate(d.getDate() + offset);
+    return d.toISOString().slice(0, 10);
+  }, [offset]);
+
+  const {
+    data: days,
+    isPending,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useAvailableSlots({
+    staffId,
+    serviceId,
+    startDate,
+    days: RANGE_DAYS,
+    businessHours,
+  });
+
+  // Pré-requisito do wizard: Janela 1 incompleta.
+  if (!staffId || !serviceId) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
+        <CalendarX className="size-6 opacity-60" />
+        <p>Selecione o serviço e o profissional para ver os horários.</p>
+      </div>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" />
+        <span>Carregando horários…</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+        <AlertCircle className="size-6 text-destructive" />
+        <p className="text-sm text-muted-foreground">
+          {error.message || 'Não foi possível carregar os horários.'}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => void refetch()}
+        >
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+
+  const hasAnySlot = days.some((d) => d.slots.length > 0);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Navegação de range */}
+      <div className="flex items-center justify-between">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOffset((o) => Math.max(0, o - RANGE_DAYS))}
+          disabled={offset === 0 || isFetching}
+        >
+          <ChevronLeft className="size-4" />
+          Anterior
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          {isFetching ? 'Atualizando…' : `Próximos ${RANGE_DAYS} dias`}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOffset((o) => o + RANGE_DAYS)}
+          disabled={isFetching}
+        >
+          Próximo
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
+
+      {!hasAnySlot ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
+          <CalendarX className="size-6 opacity-60" />
+          <p>Nenhum horário disponível neste período.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {days
+            .filter((d) => d.slots.length > 0)
+            .map((day) => (
+              <DayRow
+                key={day.date}
+                day={day}
+                selectedStartsAt={selectedStartsAt}
+                onSelect={onSelect}
+              />
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface DayRowProps {
+  day: DaySlots;
+  selectedStartsAt: string | null;
+  onSelect: (slot: SlotItem) => void;
+}
+
+function DayRow({ day, selectedStartsAt, onSelect }: DayRowProps) {
+  const { weekday, dayMonth } = formatDayLabel(day.date);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-sm font-semibold capitalize">{weekday}</span>
+        <span className="text-xs text-muted-foreground">{dayMonth}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+        {day.slots.map((slot) => {
+          const active = slot.startsAt === selectedStartsAt;
+          return (
+            <button
+              key={slot.startsAt}
+              type="button"
+              onClick={() => onSelect(slot)}
+              aria-pressed={active}
+              className={
+                active
+                  ? 'rounded-md border border-primary bg-primary px-2 py-2 text-sm font-medium text-text-on-dark'
+                  : 'rounded-md border px-2 py-2 text-sm hover:border-primary hover:bg-accent'
+              }
+            >
+              {formatTime(slot.startsAt)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\hooks\useCalendarDrag.ts =====
+
+// src/features/appointments/hooks/useCalendarDrag.ts
+import { useState, useCallback, useRef } from 'react';
+
+export interface DragState {
+  mode: 'drag' | 'resize' | null;
+  appointmentId: string | null;
+  originalStartDate: string | null;
+  originalEndDate: string | null;
+  newStartDate: string | null;
+  newEndDate: string | null;
+  staffId: string | null;
+  startY: number;
+  currentY: number;
+}
+
+export interface DragOptions {
+  appointments: Array<{
+    id: string;
+    staffId: string;
+    startDate: string;
+    endDate: string;
+    topPx: (iso: string) => number;
+    heightPx: (start: string, end: string) => number;
+    yToMinutes: (y: number) => number;
+    snapMinutes: (minutes: number) => number;
+    isoFromDateAndMinutes: (date: string, minutes: number) => string;
+    columnWidth: number;
+    columnOffsets: Record<string, number>;
+    containerLeft: number;
+  }>;
+  onUpdate: (id: string, next: { staffId: string; startDate: string; endDate: string }) => void;
+  scrollContainerRef?: React.RefObject<HTMLDivElement>;
+}
+
+// ✅ CORREÇÃO: garantir que adjustedDateStr é sempre string
+function adjustDateAndMinutes(
+  dateStr: string,
+  minutes: number
+): { dateStr: string; minutes: number } {
+  let date = new Date(dateStr + 'T00:00:00Z');
+  let adjustedMinutes = minutes;
+
+  while (adjustedMinutes < 0) {
+    date.setUTCDate(date.getUTCDate() - 1);
+    adjustedMinutes += 1440;
+  }
+
+  while (adjustedMinutes >= 1440) {
+    date.setUTCDate(date.getUTCDate() + 1);
+    adjustedMinutes -= 1440;
+  }
+
+  const adjustedDateStr = date.toISOString().split('T')[0] ?? dateStr;
+  return { dateStr: adjustedDateStr, minutes: adjustedMinutes };
+}
+
+export function useCalendarDrag(options: DragOptions) {
+  const [dragState, setDragState] = useState<DragState>({
+    mode: null,
+    appointmentId: null,
+    originalStartDate: null,
+    originalEndDate: null,
+    newStartDate: null,
+    newEndDate: null,
+    staffId: null,
+    startY: 0,
+    currentY: 0,
+  });
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const bindPointer = useCallback(
+    (element: HTMLElement | null) => {
+      if (!element) return;
+      containerRef.current = element.closest('[data-calendar-container]') as HTMLDivElement;
+    },
+    []
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent, appointmentId: string, mode: 'drag' | 'resize') => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const appointment = options.appointments.find((a) => a.id === appointmentId);
+      if (!appointment) return;
+
+      const containerRect = containerRef.current?.getBoundingClientRect() ?? { top: 0 };
+      const scrollOffset = options.scrollContainerRef?.current?.scrollTop ?? 0;
+      const adjustedStartY = e.clientY - containerRect.top + scrollOffset;
+
+      setDragState({
+        mode,
+        appointmentId,
+        originalStartDate: appointment.startDate,
+        originalEndDate: appointment.endDate,
+        newStartDate: appointment.startDate,
+        newEndDate: appointment.endDate,
+        staffId: appointment.staffId,
+        startY: adjustedStartY,
+        currentY: adjustedStartY,
+      });
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const containerRect = containerRef.current?.getBoundingClientRect() ?? { top: 0 };
+        const scrollOffset = options.scrollContainerRef?.current?.scrollTop ?? 0;
+        const adjustedCurrentY = moveEvent.clientY - containerRect.top + scrollOffset;
+        const deltaY = adjustedCurrentY - adjustedStartY;
+
+        const deltaMinutes = appointment.yToMinutes(deltaY);
+
+        setDragState((prev) => {
+          if (!prev.originalStartDate || !prev.originalEndDate) return prev;
+
+          const startDate = new Date(prev.originalStartDate);
+          const endDate = new Date(prev.originalEndDate);
+          const durationMs = endDate.getTime() - startDate.getTime();
+
+          let newStart: Date;
+          let newEnd: Date;
+
+          if (mode === 'drag') {
+            newStart = new Date(startDate.getTime() + deltaMinutes * 60_000);
+            newEnd = new Date(newStart.getTime() + durationMs);
+          } else {
+            newStart = new Date(prev.originalStartDate);
+            newEnd = new Date(endDate.getTime() + deltaMinutes * 60_000);
+          }
+
+          const snappedStartMinutes = appointment.snapMinutes(
+            newStart.getHours() * 60 + newStart.getMinutes()
+          );
+          const snappedEndMinutes = appointment.snapMinutes(
+            newEnd.getHours() * 60 + newEnd.getMinutes()
+          );
+
+          let dateStr = prev.originalStartDate.split('T')[0];
+          if (!dateStr) return prev;
+
+          const startAdjustment = adjustDateAndMinutes(dateStr, snappedStartMinutes);
+          dateStr = startAdjustment.dateStr;
+          const adjustedStartMinutes = startAdjustment.minutes;
+
+          const endAdjustment = adjustDateAndMinutes(dateStr, snappedEndMinutes);
+          const adjustedEndMinutes = endAdjustment.minutes;
+
+          const newStartDate = appointment.isoFromDateAndMinutes(dateStr, adjustedStartMinutes);
+          const newEndDate = appointment.isoFromDateAndMinutes(dateStr, adjustedEndMinutes);
+
+          return {
+            ...prev,
+            newStartDate,
+            newEndDate,
+            currentY: adjustedCurrentY,
+          };
+        });
+      };
+
+      const handlePointerUp = () => {
+        setDragState((prev) => {
+          if (prev.newStartDate && prev.newEndDate && prev.appointmentId) {
+            options.onUpdate(prev.appointmentId, {
+              staffId: prev.staffId!,
+              startDate: prev.newStartDate,
+              endDate: prev.newEndDate,
+            });
+          }
+          return {
+            mode: null,
+            appointmentId: null,
+            originalStartDate: null,
+            originalEndDate: null,
+            newStartDate: null,
+            newEndDate: null,
+            staffId: null,
+            startY: 0,
+            currentY: 0,
+          };
+        });
+        document.removeEventListener('pointermove', handlePointerMove);
+        document.removeEventListener('pointerup', handlePointerUp);
+      };
+
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    },
+    [options]
+  );
+
+  return {
+    dragState,
+    bindPointer,
+    handlePointerDown,
+  };
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\createAppointment.ts =====
+
+// src/features/appointments/server/createAppointment.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const createSchema = z
+  .object({
+    clientId: z.string().uuid('Cliente inválido'),
+    serviceId: z.string().uuid('Serviço inválido'),
+    staffId: z.string().uuid('Profissional inválido'),
+    startsAt: z.string().datetime({ offset: true }),
+    endsAt: z.string().datetime({ offset: true }),
+    notes: z.string().max(1000).nullable().optional(),
+  })
+  .refine((d) => new Date(d.endsAt) > new Date(d.startsAt), {
+    message: 'Horário final deve ser após o inicial.',
+    path: ['endsAt'],
+  });
+
+export type CreateAppointmentInput = z.infer<typeof createSchema>;
+
+export const createAppointment = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => createSchema.parse(data))
+  .handler(async ({ data }): Promise<{ id: string }> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    // price é NOT NULL — puxa do serviço (fonte da verdade).
+    const { data: service, error: svcError } = await supabase
+      .from('services')
+      .select('price')
+      .eq('id', data.serviceId)
+      .single();
+    if (svcError || !service) {
+      throw new Error('[appointments] Serviço não encontrado.');
+    }
+
+    const { data: inserted, error } = await supabase
+      .from('appointments')
+      .insert({
+        client_id: data.clientId,
+        service_id: data.serviceId,
+        staff_id: data.staffId,
+        starts_at: data.startsAt,
+        ends_at: data.endsAt,
+        price: Number(service.price),
+        notes: data.notes ?? null,
+        status: 'pending',
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    if (!inserted) {
+      throw new Error('[appointments] Falha ao criar agendamento.');
+    }
+
+    return { id: inserted.id };
+  });
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\createQuickClient.ts =====
+
+// src/features/appointments/server/createQuickClient.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { ClientOption } from '../types';
+
+const inputSchema = z.object({
+  fullName: z.string().trim().min(2, 'Nome muito curto.').max(120),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
+  email: z
+    .string()
+    .trim()
+    .max(255)
+    .email('E-mail inválido.')
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v && v.length > 0 ? v.toLowerCase() : null)),
+});
+
+export type CreateQuickClientInput = z.input<typeof inputSchema>;
+
+export const createQuickClient = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }): Promise<ClientOption> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { data: row, error } = await supabase
+      .from('clients')
+      .insert({
+        full_name: data.fullName,
+        phone: data.phone,
+        email: data.email,
+      })
+      .select('id, full_name, phone')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error('Já existe um cliente com este e-mail.');
+      }
+      throw error;
+    }
+
+    return {
+      id: row.id,
+      name: row.full_name ?? 'Cliente',
+      phone: row.phone,
+    };
+  });
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\deleteAppointment.ts =====
+
+// src/features/appointments/server/deleteAppointment.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const deleteSchema = z.object({
+  id: z.string().uuid('ID inválido'),
+  reason: z.string().max(500).nullable().optional(),
+});
+
+export type DeleteAppointmentInput = z.infer<typeof deleteSchema>;
+
+export const deleteAppointment = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => deleteSchema.parse(data))
+  .handler(async ({ data }): Promise<{ id: string }> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('appointments')
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancelled_reason: data.reason ?? null,
+      })
+      .eq('id', data.id)
+      .select('id')
+      .single();
+    if (error) throw error;
+    if (!updated) {
+      throw new Error('[appointments] Agendamento não encontrado ou sem permissão.');
+    }
+
+    return { id: updated.id };
+  });
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\getAvailableSlots.ts =====
+
+// src/features/appointments/server/getAvailableSlots.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import {
+  parseWorkingHours,
+  type DaySchedule,
+  type WeekdayKey,
+} from '@/lib/scheduling/workingHours.schema';
+
+/** Granularidade FIXA da grade (decisão #8). */
+const SLOT_STEP_MIN = 30;
+
+/** Status que ocupam slot. cancelled/no_show liberam (decisão #10). */
+const OCCUPYING_STATUSES = ['pending', 'confirmed', 'completed'] as const;
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * businessHours injetado pelo site (Sistema não importa de sites/).
+ * Shape espelha src/sites/<studio>/config/businessHours.ts.
+ */
+const businessDaySchema = z.discriminatedUnion('open', [
+  z.object({ open: z.literal(false) }),
+  z.object({
+    open: z.literal(true),
+    opensAt: z.string().regex(TIME_RE),
+    closesAt: z.string().regex(TIME_RE),
+  }),
+]);
+
+const businessHoursSchema = z.object({
+  sunday: businessDaySchema,
+  monday: businessDaySchema,
+  tuesday: businessDaySchema,
+  wednesday: businessDaySchema,
+  thursday: businessDaySchema,
+  friday: businessDaySchema,
+  saturday: businessDaySchema,
+});
+
+export type BusinessHoursInput = z.infer<typeof businessHoursSchema>;
+
+const inputSchema = z.object({
+  staffId: z.string().uuid('Profissional inválido'),
+  serviceId: z.string().uuid('Serviço inválido'),
+  // primeiro dia do range, 'YYYY-MM-DD' local UTC-3
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
+  days: z.number().int().min(1).max(31).default(14),
+  businessHours: businessHoursSchema,
+});
+
+export type GetAvailableSlotsInput = z.infer<typeof inputSchema>;
+
+export interface SlotItem {
+  startsAt: string; // ISO UTC
+  endsAt: string; // ISO UTC
+}
+
+export interface DaySlots {
+  date: string; // 'YYYY-MM-DD'
+  slots: SlotItem[];
+}
+
+interface Interval {
+  start: number; // epoch ms
+  end: number;
+}
+
+/** Índice 0..6 (0=domingo) -> nome usado no businessHours. */
+const WEEKDAY_NAMES = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+] as const satisfies readonly (keyof BusinessHoursInput)[];
+
+/** Soma N dias a 'YYYY-MM-DD' (aritmética em UTC, sem tocar fuso). */
+function addDays(date: string, n: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Weekday 0..6 (0=domingo) do dia local UTC-3. */
+function weekdayIndex(date: string): number {
+  const d = new Date(`${date}T12:00:00-03:00`);
+  const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+  return local.getUTCDay();
+}
+
+/** "HH:MM" local (UTC-3) no dia -> epoch ms. */
+function localTimeToMs(date: string, time: string): number {
+  return new Date(`${date}T${time}:00-03:00`).getTime();
+}
+
+/** Range UTC [00:00, +24h) do dia local UTC-3. */
+function dayRangeISO(date: string): { start: string; end: string } {
+  const start = new Date(`${date}T00:00:00-03:00`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+/** max(a.start,b.start) .. min(a.end,b.end). null se não há interseção. */
+function intersect(a: Interval, b: Interval): Interval | null {
+  const start = Math.max(a.start, b.start);
+  const end = Math.min(a.end, b.end);
+  return end > start ? { start, end } : null;
+}
+
+interface BusyRow {
+  starts_at: string;
+  ends_at: string;
+}
+
+interface TimeOffRow {
+  starts_at: string;
+  ends_at: string;
+}
+
+export const getAvailableSlots = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }): Promise<DaySlots[]> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    // 1. Serviço: duração (valida bloco contínuo, COND. 3) + validade.
+    const { data: service, error: svcError } = await supabase
+      .from('services')
+      .select('duration_minutes, is_active')
+      .eq('id', data.serviceId)
+      .single();
+    if (svcError || !service) {
+      throw new Error('[appointments] Serviço não encontrado.');
+    }
+    if (!service.is_active) {
+      throw new Error('[appointments] Serviço inativo.');
+    }
+    const durationMs = service.duration_minutes * 60 * 1000;
+    const stepMs = SLOT_STEP_MIN * 60 * 1000;
+
+    // 2. Staff: working_hours + bookable.
+    const { data: staff, error: staffError } = await supabase
+      .from('staff')
+      .select('working_hours, is_bookable')
+      .eq('id', data.staffId)
+      .single();
+    if (staffError || !staff) {
+      throw new Error('[appointments] Profissional não encontrado.');
+    }
+
+    const startDate = data.startDate;
+    const endDate = addDays(startDate, data.days);
+
+    // Vazio cedo: staff não-bookable ou sem grade válida.
+    const workingHours = staff.is_bookable
+      ? parseWorkingHours(staff.working_hours)
+      : null;
+
+    if (!workingHours) {
+      return buildEmptyRange(startDate, data.days);
+    }
+
+    // 3. Range global UTC para queries (1 query cada, não por dia).
+    const rangeStart = dayRangeISO(startDate).start;
+    const rangeEnd = dayRangeISO(endDate).start; // 00:00 do dia seguinte ao último
+
+    const [busyRes, timeOffRes] = await Promise.all([
+      supabase
+        .from('appointments')
+        .select('starts_at, ends_at')
+        .eq('staff_id', data.staffId)
+        .gte('starts_at', rangeStart)
+        .lt('starts_at', rangeEnd)
+        .in('status', OCCUPYING_STATUSES as unknown as string[]),
+      supabase
+        .from('staff_time_off')
+        .select('starts_at, ends_at')
+        .eq('staff_id', data.staffId)
+        .lt('starts_at', rangeEnd)
+        .gt('ends_at', rangeStart),
+    ]);
+
+    if (busyRes.error) throw busyRes.error;
+    if (timeOffRes.error) throw timeOffRes.error;
+
+    const appointments: Interval[] = (busyRes.data as BusyRow[]).map((r) => ({
+      start: new Date(r.starts_at).getTime(),
+      end: new Date(r.ends_at).getTime(),
+    }));
+
+    const timeOff: Interval[] = (timeOffRes.data as TimeOffRow[]).map((r) => ({
+      start: new Date(r.starts_at).getTime(),
+      end: new Date(r.ends_at).getTime(),
+    }));
+
+    const now = Date.now();
+    const result: DaySlots[] = [];
+
+    // 4. Loop por dia do range.
+    for (let i = 0; i < data.days; i++) {
+      const date = addDays(startDate, i);
+      const wd = weekdayIndex(date);
+      const dayName = WEEKDAY_NAMES[wd]!;
+
+      // businessHours do dia.
+      const business = data.businessHours[dayName];
+      if (!business.open) {
+        result.push({ date, slots: [] });
+        continue;
+      }
+
+      // working_hours do dia (folga fixa => null).
+      const daySchedule: DaySchedule | null =
+        workingHours[String(wd) as WeekdayKey];
+      if (!daySchedule) {
+        result.push({ date, slots: [] });
+        continue;
+      }
+
+      // Passo 2 da 5.4: janela base = businessHours ∩ working_hours.
+      const businessWindow: Interval = {
+        start: localTimeToMs(date, business.opensAt),
+        end: localTimeToMs(date, business.closesAt),
+      };
+      const workWindow: Interval = {
+        start: localTimeToMs(date, daySchedule.start),
+        end: localTimeToMs(date, daySchedule.end),
+      };
+      const base = intersect(businessWindow, workWindow);
+      if (!base) {
+        result.push({ date, slots: [] });
+        continue;
+      }
+
+      // Busy do dia = breaks (almoço) + time_off + appointments.
+      const dayBusy: Interval[] = [
+        ...daySchedule.breaks.map((b) => ({
+          start: localTimeToMs(date, b.start),
+          end: localTimeToMs(date, b.end),
+        })),
+        ...timeOff,
+        ...appointments,
+      ];
+
+      // 5. Fatia grade fixa 30min; mantém slot se [slot, slot+duração]
+      //    cabe na base E não colide com nenhum busy (COND. 3).
+      const slots: SlotItem[] = [];
+      for (
+        let slotStart = base.start;
+        slotStart + durationMs <= base.end;
+        slotStart += stepMs
+      ) {
+        const slotEnd = slotStart + durationMs;
+
+        if (slotStart < now) continue; // descarta passado
+
+        const collides = dayBusy.some(
+          (b) => b.start < slotEnd && b.end > slotStart,
+        );
+        if (collides) continue;
+
+        slots.push({
+          startsAt: new Date(slotStart).toISOString(),
+          endsAt: new Date(slotEnd).toISOString(),
+        });
+      }
+
+      result.push({ date, slots });
+    }
+
+    return result;
+  });
+
+/** Range completo com dias vazios (staff sem grade/não-bookable). */
+function buildEmptyRange(startDate: string, days: number): DaySlots[] {
+  const out: DaySlots[] = [];
+  for (let i = 0; i < days; i++) {
+    out.push({ date: addDays(startDate, i), slots: [] });
+  }
+  return out;
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\getDayAppointments.ts =====
+
+// src/features/appointments/server/getDayAppointments.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { AppointmentItem, AppointmentStatus } from '../types';
+
+const inputSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use YYYY-MM-DD)'),
+});
+
+export type GetDayAppointmentsInput = z.infer<typeof inputSchema>;
+
+function dayRangeISO(date: string): { start: string; end: string } {
+  // Parse 'YYYY-MM-DD' → [year, month, day]
+  const parts = date.split('-');
+
+  // ✅ CORREÇÃO: validar que parts tem exatamente 3 elementos
+  if (parts.length !== 3) {
+    throw new Error('Data inválida: use formato YYYY-MM-DD');
+  }
+
+  // ✅ CORREÇÃO: usar ! (non-null assertion) após validação
+  const year = parseInt(parts[0]!, 10);
+  const month = parseInt(parts[1]!, 10);
+  const day = parseInt(parts[2]!, 10);
+
+  // ✅ CORREÇÃO: validar que são números válidos
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    throw new Error('Data inválida: year, month, day devem ser números');
+  }
+
+  // Cria Date em horário local (São Paulo UTC-3)
+  const startLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const endLocal = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+  return {
+    start: startLocal.toISOString(),
+    end: endLocal.toISOString(),
+  };
+}
+
+const APPT_SELECT =
+  'id, starts_at, ends_at, status, price, notes, client_id, service_id, clients(full_name, phone), services(name), staff(id, profiles(full_name, avatar_url))';
+
+interface RawRow {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  status: AppointmentStatus;
+  price: number;
+  notes: string | null;
+  client_id: string;
+  service_id: string;
+  clients: { full_name: string | null; phone: string | null } | null;
+  services: { name: string } | null;
+  staff: {
+    id: string;
+    profiles: { full_name: string | null; avatar_url: string | null } | null;
+  } | null;
+}
+
+function mapRow(row: RawRow): AppointmentItem {
+  return {
+    id: row.id,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    status: row.status,
+    clientId: row.client_id,
+    clientName: row.clients?.full_name ?? 'Cliente',
+    clientPhone: row.clients?.phone ?? null,
+    serviceId: row.service_id,
+    serviceName: row.services?.name ?? 'Serviço',
+    staffId: row.staff?.id ?? 'unknown',
+    staffName: row.staff?.profiles?.full_name ?? 'Profissional',
+    staffAvatarUrl: row.staff?.profiles?.avatar_url ?? null,
+    price: Number(row.price),
+    notes: row.notes,
+  };
+}
+
+export const getDayAppointments = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }): Promise<AppointmentItem[]> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { start, end } = dayRangeISO(data.date);
+
+    const { data: rows, error } = await supabase
+      .from('appointments')
+      .select(APPT_SELECT)
+      .gte('starts_at', start)
+      .lt('starts_at', end)
+      .neq('status', 'cancelled')
+      .order('starts_at', { ascending: true });
+
+    if (error) throw error;
+
+    return (rows as unknown as RawRow[]).map(mapRow);
+  });
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\listActiveServices.ts =====
+
+// src/features/appointments/server/listActiveServices.ts
+import { createServerFn } from '@tanstack/react-start';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { ServiceOption } from '../types';
+
+interface RawRow {
+  id: string;
+  name: string;
+  duration_minutes: number;
+  price: number;
+}
+
+export const listActiveServices = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<ServiceOption[]> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { data, error } = await supabase
+      .from('services')
+      .select('id, name, duration_minutes, price')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+    if (error) throw error;
+
+    return (data as unknown as RawRow[]).map((r) => ({
+      id: r.id,
+      name: r.name,
+      durationMinutes: r.duration_minutes,
+      price: Number(r.price),
+    }));
+  },
+);
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\listBookableStaff.ts =====
+
+// src/features/appointments/server/listBookableStaff.ts
+import { createServerFn } from '@tanstack/react-start';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { BookableStaffItem } from '../types';
+
+interface RawRow {
+  id: string;
+  display_order: number;
+  profiles: { full_name: string | null } | null;
+}
+
+export const listBookableStaff = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<BookableStaffItem[]> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { data, error } = await supabase
+      .from('staff')
+      .select('id, display_order, profiles(full_name)')
+      .eq('is_bookable', true)
+      .order('display_order', { ascending: true });
+    if (error) throw error;
+
+    return (data as unknown as RawRow[]).map((r) => ({
+      id: r.id,
+      name: r.profiles?.full_name ?? 'Profissional',
+      displayOrder: r.display_order,
+    }));
+  },
+);
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\listClientsForSelect.ts =====
+
+// src/features/appointments/server/listClientsForSelect.ts
+import { createServerFn } from '@tanstack/react-start';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { ClientOption } from '../types';
+
+interface RawRow {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+}
+
+export const listClientsForSelect = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<ClientOption[]> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, full_name, phone')
+      .order('full_name', { ascending: true });
+    if (error) throw error;
+
+    return (data as unknown as RawRow[]).map((r) => ({
+      id: r.id,
+      name: r.full_name ?? 'Cliente',
+      phone: r.phone,
+    }));
+  },
+);
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\updateAppointment.ts =====
+
+// src/features/appointments/server/updateAppointment.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { TablesUpdate } from '@/lib/supabase/types';
+
+const updateSchema = z
+  .object({
+    id: z.string().uuid('ID inválido'),
+    staffId: z.string().uuid().optional(),
+    serviceId: z.string().uuid().optional(),
+    startsAt: z.string().datetime({ offset: true }).optional(),
+    endsAt: z.string().datetime({ offset: true }).optional(),
+    notes: z.string().max(1000).nullable().optional(),
+  })
+  .refine(
+    (d) =>
+      !(d.startsAt && d.endsAt) || new Date(d.endsAt) > new Date(d.startsAt),
+    { message: 'Horário final deve ser após o inicial.', path: ['endsAt'] },
+  );
+
+export type UpdateAppointmentInput = z.infer<typeof updateSchema>;
+
+// ✅ CORREÇÃO: converter horário local (São Paulo) para UTC
+function localToUTC(isoLocal: string): string {
+  const d = new Date(isoLocal);
+  const utcTime = d.getTime() + 3 * 60 * 60 * 1000; // +3h (São Paulo UTC-3)
+  return new Date(utcTime).toISOString();
+}
+
+export const updateAppointment = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => updateSchema.parse(data))
+  .handler(async ({ data }): Promise<{ id: string }> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const patch: TablesUpdate<'appointments'> = {};
+
+    if (data.staffId !== undefined) patch.staff_id = data.staffId;
+    // ✅ CORREÇÃO: converter startsAt e endsAt para UTC
+    if (data.startsAt !== undefined) patch.starts_at = localToUTC(data.startsAt);
+    if (data.endsAt !== undefined) patch.ends_at = localToUTC(data.endsAt);
+    if (data.notes !== undefined) patch.notes = data.notes;
+
+    // Trocar serviço re-sincroniza price.
+    if (data.serviceId !== undefined) {
+      const { data: service, error: svcError } = await supabase
+        .from('services')
+        .select('price')
+        .eq('id', data.serviceId)
+        .single();
+
+      if (svcError || !service) {
+        throw new Error('[appointments] Serviço não encontrado.');
+      }
+
+      patch.service_id = data.serviceId;
+      patch.price = Number(service.price);
+    }
+
+    if (Object.keys(patch).length === 0) {
+      throw new Error('[appointments] Nada para atualizar.');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('appointments')
+      .update(patch)
+      .eq('id', data.id)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    if (!updated) {
+      throw new Error('[appointments] Agendamento não encontrado ou sem permissão.');
+    }
+
+    return { id: updated.id };
+  });
+
+
+===== C:\FlowStudio AI\src\features\appointments\server\updateAppointmentStatus.ts =====
+
+// src/features/appointments/server/updateAppointmentStatus.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import type { AppointmentItem } from '../types';
+
+const updateStatusSchema = z.object({
+  id: z.string().uuid('ID inválido'),
+  status: z.enum([
+    'pending',
+    'confirmed',
+    'completed',
+    'cancelled',
+    'no_show',
+  ]),
+});
+
+export type UpdateAppointmentStatusInput = z.infer<typeof updateStatusSchema>;
+
+/**
+ * Atualiza o status de um agendamento.
+ * RLS no banco é a defesa: admin/staff alteram qualquer um; client só o dele.
+ */
+export const updateAppointmentStatus = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => updateStatusSchema.parse(data))
+  .handler(async ({ data }): Promise<{ id: string; status: AppointmentItem['status'] }> => {
+    const supabase = createSupabaseServer();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
+    }
+
+    const { data: updated, error } = await supabase
+      .from('appointments')
+      .update({ status: data.status })
+      .eq('id', data.id)
+      .select('id, status')
+      .single();
+    if (error) throw error;
+    if (!updated) {
+      throw new Error('[appointments] Agendamento não encontrado ou sem permissão.');
+    }
+
+    return updated as { id: string; status: AppointmentItem['status'] };
+  });
+
+
+===== C:\FlowStudio AI\src\features\appointments\utils\todayLocalDate.ts =====
+
+// src/features/appointments/utils/todayLocalDate.ts
+
+/** Data 'YYYY-MM-DD' de hoje no fuso do studio (America/Sao_Paulo, UTC-3 fixo). */
+export function todayLocalDate(): string {
+  const now = new Date();
+  // Desloca pra UTC-3 e lê os componentes em UTC.
+  const local = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const year = local.getUTCFullYear();
+  const month = String(local.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(local.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\hooks.ts =====
+
+// src/features/appointments/hooks.ts
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { toast } from 'sonner';
+import {
+  updateAppointmentStatus,
+  type UpdateAppointmentStatusInput,
+} from './server/updateAppointmentStatus';
+import {
+  createAppointment,
+  type CreateAppointmentInput,
+} from './server/createAppointment';
+import {
+  updateAppointment,
+  type UpdateAppointmentInput,
+} from './server/updateAppointment';
+import {
+  deleteAppointment,
+  type DeleteAppointmentInput,
+} from './server/deleteAppointment';
+import {
+  createQuickClient,
+  type CreateQuickClientInput,
+} from './server/createQuickClient';
+import {
+  getAvailableSlots,
+  type GetAvailableSlotsInput,
+  type DaySlots,
+} from './server/getAvailableSlots';
+
+const APPOINTMENTS_TODAY_KEY = ['appointments', 'today'] as const;
+
+const SUCCESS_MESSAGE: Record<UpdateAppointmentStatusInput['status'], string> = {
+  pending: 'Agendamento reaberto.',
+  confirmed: 'Agendamento confirmado.',
+  completed: 'Agendamento concluído.',
+  cancelled: 'Agendamento cancelado.',
+  no_show: 'Marcado como não compareceu.',
+};
+
+export function useUpdateAppointmentStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: UpdateAppointmentStatusInput) =>
+      updateAppointmentStatus({ data: input }),
+    onSuccess: async (_data, variables) => {
+      toast.success(SUCCESS_MESSAGE[variables.status]);
+      await queryClient.invalidateQueries({
+        queryKey: APPOINTMENTS_TODAY_KEY,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Não foi possível atualizar o agendamento.');
+    },
+  });
+}
+
+export function useCreateAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateAppointmentInput) =>
+      createAppointment({ data: input }),
+    onSuccess: async () => {
+      toast.success('Agendamento criado.');
+      await queryClient.invalidateQueries({
+        queryKey: APPOINTMENTS_TODAY_KEY,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Não foi possível criar o agendamento.');
+    },
+  });
+}
+
+export function useUpdateAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: UpdateAppointmentInput) =>
+      updateAppointment({ data: input }),
+    onSuccess: async () => {
+      toast.success('Agendamento atualizado.');
+      await queryClient.invalidateQueries({
+        queryKey: APPOINTMENTS_TODAY_KEY,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Não foi possível atualizar o agendamento.');
+    },
+  });
+}
+
+export function useCancelAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: DeleteAppointmentInput) =>
+      deleteAppointment({ data: input }),
+    onSuccess: async () => {
+      toast.success('Agendamento cancelado.');
+      await queryClient.invalidateQueries({
+        queryKey: APPOINTMENTS_TODAY_KEY,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Não foi possível cancelar o agendamento.');
+    },
+  });
+}
+
+export function useCreateQuickClient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateQuickClientInput) =>
+      createQuickClient({ data: input }),
+    onSuccess: async () => {
+      toast.success('Cliente cadastrado.');
+      await queryClient.invalidateQueries({
+        queryKey: ['appointments', 'clients'],
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Não foi possível cadastrar o cliente.');
+    },
+  });
+}
+
+interface UseAvailableSlotsParams {
+  staffId: string | null;
+  serviceId: string | null;
+  startDate: string; // 'YYYY-MM-DD'
+  days?: number;
+  businessHours: GetAvailableSlotsInput['businessHours'];
+}
+
+export function useAvailableSlots({
+  staffId,
+  serviceId,
+  startDate,
+  days = 14,
+  businessHours,
+}: UseAvailableSlotsParams) {
+  return useQuery<DaySlots[], Error>({
+    queryKey: [
+      'appointments',
+      'slots',
+      staffId,
+      serviceId,
+      startDate,
+      days,
+    ] as const,
+    queryFn: () =>
+      getAvailableSlots({
+        data: {
+          staffId: staffId!,
+          serviceId: serviceId!,
+          startDate,
+          days,
+          businessHours,
+        },
+      }),
+    enabled: Boolean(staffId && serviceId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+
+===== C:\FlowStudio AI\src\features\appointments\index.ts =====
+
+// src/features/appointments/index.ts
+export { todayLocalDate } from './utils/todayLocalDate';
+export { AppointmentFormModal } from './components/AppointmentFormModal';
+export { getDayAppointments, type GetDayAppointmentsInput } from './server/getDayAppointments';
+export { listBookableStaff } from './server/listBookableStaff';
+export { listActiveServices } from './server/listActiveServices';
+export { listClientsForSelect } from './server/listClientsForSelect';
+export { createAppointment, type CreateAppointmentInput } from './server/createAppointment';
+export { updateAppointment, type UpdateAppointmentInput } from './server/updateAppointment';
+export { deleteAppointment, type DeleteAppointmentInput } from './server/deleteAppointment';
+export {
+  updateAppointmentStatus,
+  type UpdateAppointmentStatusInput,
+} from './server/updateAppointmentStatus';
+export {
+  getAvailableSlots,
+  type GetAvailableSlotsInput,
+  type DaySlots,
+  type SlotItem,
+} from './server/getAvailableSlots';
+export {
+  useUpdateAppointmentStatus,
+  useAvailableSlots,
+  useCreateAppointment,
+  useUpdateAppointment,
+  useCancelAppointment,
+} from './hooks';
+export { AppointmentsList } from './components/AppointmentsList';
+export type {
+  AppointmentItem,
+  AppointmentStatus,
+  BookableStaffItem,
+  ServiceOption,
+  ClientOption,
+} from './types';
+
+
+===== C:\FlowStudio AI\src\features\appointments\types.ts =====
+
+// src/features/appointments/types.ts
+export interface AppointmentItem {
+  // ...campos existentes...
+  staffId: string;
+  staffName: string;
+  staffAvatarUrl: string | null; // ← novo
+  // ...resto...
+}
+export type AppointmentStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show';
+
+export interface AppointmentItem {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentStatus;
+  clientId: string;
+  clientName: string;
+  clientPhone: string | null;
+  serviceId: string;
+  serviceName: string;
+  staffId: string;
+  staffName: string;
+  price: number;
+  notes: string | null;
+}
+
+export interface BookableStaffItem {
+  id: string;
+  name: string;
+  displayOrder: number;
+}
+
+export interface ServiceOption {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  price: number;
+}
+
+export interface ClientOption {
+  id: string;
+  name: string;
+  phone: string | null;
+}
