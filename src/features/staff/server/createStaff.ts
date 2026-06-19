@@ -1,9 +1,11 @@
+// src/features/staff/server/createStaff.ts
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { phoneBRSchema } from '@/lib/core/utils';
 import { env } from '@/lib/env';
+
 // ----------------------------------------------------------------
 // Input schema (Opção B / B1 — sem password)
 // ----------------------------------------------------------------
@@ -15,8 +17,8 @@ const createStaffSchema = z.object({
   specialty: z.string().trim().optional().or(z.literal('')),
   is_bookable: z.boolean().default(true),
   role: z.enum(['staff', 'admin']).default('staff'),
+  color: z.string().nullable().optional(), // <--- NOVO CAMPO
 });
-
 
 export type CreateStaffInput = z.input<typeof createStaffSchema>;
 
@@ -57,17 +59,14 @@ export const createStaff = createServerFn({ method: 'POST' })
 
     const admin = createSupabaseAdmin();
     const email = data.email.toLowerCase();
-    // phone já chega canônico (+55DDDNUMERO) via phoneBRSchema
     const phone = data.phone;
     const specialty = data.specialty?.trim() ? data.specialty.trim() : null;
 
-    // PASSO 3 — Criar Auth user via CONVITE (sem senha; dispara e-mail)
-    // is_staff_invite: true => o trigger handle_new_user NÃO cria/vincula clients
-    const { data: invited, error: inviteErr } =
-      await admin.auth.admin.inviteUserByEmail(email, {
-        data: { full_name: data.full_name, is_staff_invite: true },
-        redirectTo: `${env.VITE_APP_URL}/primeiro-acesso`,
-      });
+    // PASSO 3 — Criar Auth user via CONVITE
+    const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
+      data: { full_name: data.full_name, is_staff_invite: true },
+      redirectTo: `${env.VITE_APP_URL}/primeiro-acesso`,
+    });
 
     if (inviteErr || !invited?.user) {
       const msg = inviteErr?.message ?? '';
@@ -79,7 +78,7 @@ export const createStaff = createServerFn({ method: 'POST' })
 
     const newUserId = invited.user.id;
 
-    // PASSO 4 — Upsert profile (idempotente; sem phone — coluna não existe)
+    // PASSO 4 — Upsert profile
     const { error: profileErr } = await admin.from('profiles').upsert(
       {
         id: newUserId,
@@ -91,14 +90,12 @@ export const createStaff = createServerFn({ method: 'POST' })
       { onConflict: 'id' },
     );
 
-
     if (profileErr) {
-      // ROLLBACK: remove o Auth user recém-criado
       await admin.auth.admin.deleteUser(newUserId);
       throw new Error(`Falha ao gravar profile: ${profileErr.message}`);
     }
 
-    // PASSO 5 — Insert staff (display_order = max + 1)
+    // PASSO 5 — Insert staff
     const { data: maxRow, error: maxErr } = await admin
       .from('staff')
       .select('display_order')
@@ -107,7 +104,6 @@ export const createStaff = createServerFn({ method: 'POST' })
       .maybeSingle();
 
     if (maxErr) {
-      // ROLLBACK: profile + auth user
       await admin.from('profiles').delete().eq('id', newUserId);
       await admin.auth.admin.deleteUser(newUserId);
       throw new Error(`Falha ao calcular ordem: ${maxErr.message}`);
@@ -124,12 +120,12 @@ export const createStaff = createServerFn({ method: 'POST' })
         specialty,
         is_bookable: data.is_bookable,
         display_order: nextOrder,
+        color: data.color || null, // <--- SALVANDO A COR
       })
       .select('id')
       .single();
 
     if (staffErr || !staffRow) {
-      // ROLLBACK: staff (nada inserido) -> profile -> auth user
       await admin.from('profiles').delete().eq('id', newUserId);
       await admin.auth.admin.deleteUser(newUserId);
       throw new Error(`Falha ao criar staff: ${staffErr?.message ?? 'desconhecido'}`);

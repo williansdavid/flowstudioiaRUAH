@@ -5,13 +5,12 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react'
-
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
 import { AppointmentFormModal } from '@/features/appointments/components/AppointmentFormModal'
 import { Button } from '@/components/ui/Button'
-
 import {
   getDayAppointments,
+  getDayTimeOff,
   listBookableStaff,
   listClientsForSelect,
   listActiveServices,
@@ -32,6 +31,10 @@ export const Route = createFileRoute('/_authed/admin/agenda')({
       queryClient.ensureQueryData({
         queryKey: ['staff', 'bookable'],
         queryFn: listBookableStaff,
+      }),
+      queryClient.ensureQueryData({
+        queryKey: ['dayTimeOff', date],
+        queryFn: () => getDayTimeOff({ data: { date } }),
       }),
       queryClient.ensureQueryData({
         queryKey: ['clients', 'select'],
@@ -71,6 +74,11 @@ function AgendaPage() {
   const { data: staff } = useSuspenseQuery({
     queryKey: ['staff', 'bookable'],
     queryFn: listBookableStaff,
+  })
+
+  const { data: timeOff = [] } = useSuspenseQuery({
+    queryKey: ['dayTimeOff', date],
+    queryFn: () => getDayTimeOff({ data: { date } }),
   })
 
   const { data: clients } = useSuspenseQuery({
@@ -124,7 +132,6 @@ function AgendaPage() {
       >
         Hoje
       </button>
-
       <div className="flex flex-1 sm:flex-none items-center justify-between overflow-hidden rounded-lg border border-slate-700 bg-slate-900 mx-1 sm:mx-0 min-w-0">
         <button
           onClick={handlePrevDay}
@@ -133,8 +140,6 @@ function AgendaPage() {
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        
-        {/* Truque do Input Invisível: O span mostra a data fluida, o input invisível recebe o clique */}
         <div className="relative flex flex-1 sm:flex-none items-center justify-center border-x border-slate-700 px-1.5 sm:px-3 py-2.5 sm:py-2 min-w-0">
           <CalendarIcon className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 flex-shrink-0" />
           <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
@@ -147,7 +152,6 @@ function AgendaPage() {
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
           />
         </div>
-
         <button
           onClick={handleNextDay}
           className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
@@ -156,7 +160,6 @@ function AgendaPage() {
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-
       <Button
         onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
         className="flex-shrink-0 gap-1.5 px-3 py-2.5 h-auto text-xs sm:text-sm sm:h-10 sm:px-4 active:scale-95"
@@ -168,10 +171,9 @@ function AgendaPage() {
   )
 
   return (
-    <div className="h-[calc(100dvh-64px)] lg:h-[100dvh] w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-      <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6">
-        
-        {/* Header Fixo - Hero Limpo e Direto */}
+    <div className="h-full w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
+      <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6 min-h-0">
+        {/* Header Fixo */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 pt-4 pb-3 sm:p-0">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
@@ -191,31 +193,28 @@ function AgendaPage() {
               </h1>
             </div>
           </div>
-
-          {/* Controles no Desktop */}
           {renderControls(false)}
         </div>
 
         {/* Main Grid */}
-        <div className="flex-1 min-h-0 overflow-hidden sm:rounded-2xl">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden sm:rounded-2xl">
           <DayCalendar
             date={date}
             appointments={appointments}
             staff={staff}
+            timeOff={timeOff}
             isToday={isToday}
             onAppointmentClick={handleAppointmentClick}
             onSlotClick={handleSlotClick}
           />
         </div>
 
-        {/* Controles no Mobile - Com mais respiro e sem estourar */}
+        {/* Controles Mobile */}
         <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-slate-800/60 bg-slate-950">
           {renderControls(true)}
         </div>
-
       </div>
 
-      {/* Modal */}
       <AppointmentFormModal
         open={modal.open}
         onClose={() => setModal({ open: false, mode: { kind: 'create' } })}

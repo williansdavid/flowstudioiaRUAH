@@ -17,9 +17,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { staffColor } from '../../appointments/components/DayCalendar/staffColor';
-import { formatPhoneBR } from '@/lib/core/utils';
-import { toWhatsAppHref } from '@/lib/utils/whatsapp';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { toWhatsAppHref } from '@/lib/utils/whatsapp';
 import { useStaffList, useResendStaffInvite, useArchiveStaff } from '../hooks';
 import type { StaffListItem } from '../types';
 import { Button } from '@/components/ui/Button';
@@ -37,6 +36,14 @@ function getInitials(name: string): string {
   return (parts[0]!.charAt(0) + parts[parts.length - 1]!.charAt(0)).toUpperCase();
 }
 
+/** Formata telefone BR (simples, sem lib externa). */
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, '');
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return phone;
+}
+
 function Avatar({
   name,
   url,
@@ -51,11 +58,10 @@ function Avatar({
 
   return (
     <div
-      className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2"
+      className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full"
       style={{
         backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ['--tw-ring-color' as any]: `color-mix(in srgb, ${color} 30%, transparent)`,
+        boxShadow: `0 0 0 3px color-mix(in srgb, ${color} 30%, transparent)`,
       }}
     >
       {showImg ? (
@@ -88,18 +94,18 @@ function CreateButton({ onCreate }: { onCreate?: () => void }) {
 /** Skeleton de um card durante o loading. */
 function StaffCardSkeleton() {
   return (
-    <li className="flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm">
+    <li className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-start gap-4">
-        <div className="size-14 shrink-0 animate-pulse rounded-full bg-muted" />
+        <div className="size-14 shrink-0 animate-pulse rounded-full bg-surface-2" />
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-          <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
-          <div className="h-5 w-24 animate-pulse rounded-full bg-muted" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-surface-2" />
+          <div className="h-3 w-1/2 animate-pulse rounded bg-surface-2" />
+          <div className="h-5 w-24 animate-pulse rounded-full bg-surface-2" />
         </div>
       </div>
-      <div className="space-y-2 border-t pt-3">
-        <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+      <div className="space-y-2 border-t border-border pt-3">
+        <div className="h-3 w-3/4 animate-pulse rounded bg-surface-2" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-surface-2" />
       </div>
     </li>
   );
@@ -116,51 +122,51 @@ function StaffCard({
   onArchive: (id: string, name: string, archive: boolean) => void;
   archivePending: boolean;
 }) {
-  const color = staffColor(staff.id);
+  const color = staff.color ?? staffColor(staff.id);
   const resendInvite = useResendStaffInvite();
-
   const isAdmin = staff.role === 'admin';
   const showPending = staff.canEdit && !staff.hasAccess && Boolean(staff.email);
+  const whatsappHref = staff.phone ? toWhatsAppHref(staff.phone) : null;
 
   return (
     <li
-      className="group relative flex flex-col gap-4 overflow-hidden rounded-xl border bg-card p-5 pl-6 shadow-sm transition hover:shadow-md"
+      className="group relative flex flex-col gap-4 overflow-hidden rounded-card border border-border bg-surface p-5 pl-6 shadow-sm transition hover:border-primary/30"
       style={{ borderLeft: `4px solid ${color}` }}
     >
+      {/* Linha superior: avatar + info + ações no topo */}
       <div className="flex items-start gap-4">
         <Avatar name={staff.name} url={staff.avatarUrl} color={color} />
-
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold leading-tight">{staff.name}</p>
+          <p className="truncate font-semibold text-text-body">{staff.name}</p>
           {staff.specialty && (
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            <p className="mt-0.5 truncate text-sm text-text-muted">
               {staff.specialty}
             </p>
           )}
 
           <div className="mt-2 flex items-center justify-between gap-2">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              staff.isBookable
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                : 'bg-red-500 text-white dark:bg-red-600 dark:text-white'
-            }`}
-          >
-            {staff.isBookable ? (
-              <CalendarCheck2 className="size-3" />
-            ) : (
-              <CalendarX2 className="size-5" />
-            )}
-            {staff.isBookable ? 'Agendável' : 'Indisponível'}
-          </span>
-
+            {/* Badge soft premium: Agendável / Indisponível */}
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ${
+                staff.isBookable
+                  ? 'bg-emerald-500/10 text-emerald-500'
+                  : 'bg-rose-500/10 text-rose-500'
+              }`}
+            >
+              {staff.isBookable ? (
+                <CalendarCheck2 className="size-3" />
+              ) : (
+                <CalendarX2 className="size-3.5" />
+              )}
+              {staff.isBookable ? 'Agendável' : 'Indisponível'}
+            </span>
 
             {!staff.isArchived && (
               <Link
                 to="/admin/equipe/$staffId/horarios"
                 params={{ staffId: staff.id }}
                 aria-label={`Horários de ${staff.name}`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-text-muted transition hover:bg-surface-2 hover:text-text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 <CalendarRange className="size-3.5" />
                 Horários
@@ -169,7 +175,7 @@ function StaffCard({
           </div>
         </div>
 
-        {/* Ações no topo direito: editar (só ativos) + arquivar/reativar */}
+        {/* Ações no topo direito */}
         {staff.canEdit && (
           <div className="flex shrink-0 items-center gap-1">
             {onEdit && !staff.isArchived && (
@@ -177,19 +183,18 @@ function StaffCard({
                 type="button"
                 onClick={() => onEdit(staff.id)}
                 aria-label={`Editar ${staff.name}`}
-                className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                className="rounded-lg p-2 text-text-muted transition hover:bg-surface-2 hover:text-text-body focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Pencil className="size-4" />
               </button>
             )}
-
             {staff.isArchived ? (
               <button
                 type="button"
                 disabled={archivePending}
                 onClick={() => onArchive(staff.id, staff.name, false)}
                 aria-label={`Reativar ${staff.name}`}
-                className="inline-flex items-center gap-1.5 rounded-lg p-2 text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg p-2 text-emerald-500 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ArchiveRestore className="size-4" />
               </button>
@@ -199,7 +204,7 @@ function StaffCard({
                 disabled={archivePending}
                 onClick={() => onArchive(staff.id, staff.name, true)}
                 aria-label={`Arquivar ${staff.name}`}
-                className="inline-flex items-center gap-1.5 rounded-lg p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
+                className="inline-flex items-center gap-1.5 rounded-lg p-2 text-red-500 transition hover:bg-red-500/10 focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Archive className="size-4" />
               </button>
@@ -208,28 +213,44 @@ function StaffCard({
         )}
       </div>
 
+      {/* Rodapé: admin badge, email, phone, convite */}
       {(isAdmin || staff.email || staff.phone || showPending) && (
-        <div className="space-y-1.5 border-t pt-3">
+        <div className="space-y-1.5 border-t border-border pt-3">
           {isAdmin && (
-            <span className="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+            <span className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">
               Admin
             </span>
           )}
           {staff.email && (
-            <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
+            <p className="flex items-center gap-2 truncate text-sm text-text-muted">
               <Mail className="size-3.5 shrink-0" />
               <span className="truncate">{staff.email}</span>
             </p>
           )}
           {staff.phone && (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="size-3.5 shrink-0" />
-              {formatPhoneBR(staff.phone)}
+            <p className="flex items-center justify-between gap-2 text-sm text-text-muted">
+              <span className="flex items-center gap-2">
+                <Phone className="size-3.5 shrink-0" />
+                {formatPhone(staff.phone)}
+              </span>
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`WhatsApp ${staff.name}`}
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-[#25D366] transition hover:bg-[#25D366]/10"
+                >
+                  <WhatsAppIcon className="size-4" />
+                  WhatsApp
+                </a>
+              )}
             </p>
-          )}          {/* Convite pendente só faz sentido em ativos. */}
+          )}
+          {/* Convite pendente */}
           {showPending && !staff.isArchived && (
             <div className="flex items-center justify-between gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-500">
                 <AlertCircle className="size-3.5 shrink-0" />
                 Convite pendente
               </span>
@@ -240,7 +261,7 @@ function StaffCard({
                 }
                 disabled={resendInvite.isPending}
                 aria-label={`Reenviar convite para ${staff.name}`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium text-amber-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-500 dark:hover:bg-amber-950/30"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-amber-500 transition hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Send className="size-3.5" />
                 {resendInvite.isPending ? 'Enviando…' : 'Reenviar'}
@@ -273,18 +294,18 @@ export function StaffList({ onCreate, onEdit }: StaffListProps) {
 
   return (
     <div className="space-y-4">
-      {/* Header: criar + toggle ativos/arquivados */}
+      {/* Header: toggle ativos/arquivados + criar */}
       <div className="flex items-center justify-between gap-2">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => setShowArchived((v) => !v)}
+          className="text-primary hover:bg-primary/10"
         >
-          <Archive className="size-4" />
+          <Archive className="size-4 text-primary" />
           {showArchived ? 'Ver ativos' : 'Ver arquivados'}
         </Button>
-
         {!showArchived && <CreateButton onCreate={onCreate} />}
       </div>
 
@@ -299,7 +320,7 @@ export function StaffList({ onCreate, onEdit }: StaffListProps) {
 
       {/* Error */}
       {isError && !isLoading && (
-        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-card border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-500">
           <AlertCircle className="size-4 shrink-0" />
           Falha ao carregar profissionais.
         </div>
@@ -307,9 +328,9 @@ export function StaffList({ onCreate, onEdit }: StaffListProps) {
 
       {/* Empty */}
       {!isLoading && !isError && (staff?.length ?? 0) === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
-          <Users className="size-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-border p-10 text-center">
+          <Users className="size-8 text-text-muted" />
+          <p className="text-sm text-text-muted">
             {showArchived
               ? 'Nenhum profissional arquivado.'
               : 'Nenhum profissional cadastrado.'}

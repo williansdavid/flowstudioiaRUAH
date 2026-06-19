@@ -1,4 +1,4 @@
-// src/features/staff/server/listStaff.ts
+﻿// src/features/staff/server/listStaff.ts
 import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
@@ -9,7 +9,6 @@ const listSchema = z.object({
   includeArchived: z.boolean().optional(), // default false
 });
 
-
 interface RawRow {
   id: string;
   full_name: string | null;
@@ -18,7 +17,8 @@ interface RawRow {
   is_bookable: boolean;
   display_order: number;
   profile_id: string | null;
-  archived_at: string | null; // <-- novo
+  archived_at: string | null;
+  color: string | null;               // <-- NOVO
   profiles: {
     full_name: string | null;
     email: string | null;
@@ -39,6 +39,7 @@ export const listStaff = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => listSchema.parse(data ?? {}))
   .handler(async ({ data }): Promise<StaffListItem[]> => {
     const includeArchived = data?.includeArchived ?? false;
+
     const supabase = createSupabaseServer();
 
     const {
@@ -55,7 +56,7 @@ export const listStaff = createServerFn({ method: 'GET' })
     let query = supabase
       .from('staff')
       .select(
-        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, profiles(full_name, email, avatar_url, role)',
+        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, color, profiles(full_name, email, avatar_url, role)',
       )
       .order('display_order', { ascending: true });
 
@@ -75,9 +76,7 @@ export const listStaff = createServerFn({ method: 'GET' })
 
     const rows = rowsData as unknown as RawRow[];
 
-
     // Mapa profile_id -> hasAccess (last_sign_in_at != null).
-    // Admin: cruza via listUsers. Staff: usa a própria sessão (sem chamada admin).
     const accessByProfileId = new Map<string, boolean>();
 
     if (role === 'admin') {
@@ -101,6 +100,7 @@ export const listStaff = createServerFn({ method: 'GET' })
       const rawRole = r.profiles?.role ?? null;
       const staffRole: 'admin' | 'staff' | null =
         rawRole === 'admin' || rawRole === 'staff' ? rawRole : null;
+
       return {
         id: r.id,
         name: r.profiles?.full_name ?? r.full_name ?? 'Profissional',
@@ -110,14 +110,11 @@ export const listStaff = createServerFn({ method: 'GET' })
         avatarUrl: r.profiles?.avatar_url ?? null,
         isBookable: r.is_bookable,
         displayOrder: r.display_order,
+        color: r.color ?? null,        // <-- NOVO
         canEdit: role === 'admin' || isOwner,
         hasAccess,
         role: staffRole,
-        isArchived: r.archived_at != null, // <-- novo
+        isArchived: r.archived_at != null,
       };
-
     });
-
-
-  },
-);
+  });

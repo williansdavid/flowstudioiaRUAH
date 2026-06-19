@@ -12,11 +12,11 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import type { AppointmentItem } from '../types';
 import { toWhatsAppHref } from '@/lib/utils/whatsapp';
 import { useUpdateAppointmentStatus } from '../hooks';
+import { staffColor } from './DayCalendar/staffColor';
 
 type Status = AppointmentItem['status'];
 
@@ -28,7 +28,6 @@ const STATUS_LABEL: Record<Status, string> = {
   no_show: 'Não compareceu',
 };
 
-// Estilo Premium Translúcido para Dark Mode
 const STATUS_CLASS: Record<Status, string> = {
   pending: 'border-amber-500/30 bg-amber-500/10 text-amber-500',
   confirmed: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500',
@@ -36,26 +35,6 @@ const STATUS_CLASS: Record<Status, string> = {
   cancelled: 'border-red-500/30 bg-red-500/10 text-red-500',
   no_show: 'border-red-500/30 bg-red-500/10 text-red-500',
 };
-
-const STAFF_PALETTE = [
-  '#6366f1', // indigo
-  '#14b8a6', // teal
-  '#f59e0b', // amber
-  '#8b5cf6', // violet
-  '#06b6d4', // cyan
-  '#ef4444', // red
-  '#84cc16', // lime
-  '#ec4899', // pink
-] as const;
-
-function staffColor(staffId: string): string {
-  let hash = 5381;
-  for (let i = 0; i < staffId.length; i++) {
-    hash = (hash * 33) ^ staffId.charCodeAt(i);
-  }
-  const index = Math.abs(hash) % STAFF_PALETTE.length;
-  return STAFF_PALETTE[index]!;
-}
 
 /** Iniciais do nome para fallback do avatar (máx. 2 letras). */
 function initials(name: string): string {
@@ -85,6 +64,7 @@ interface StaffGroup {
   staffId: string;
   staffName: string;
   staffAvatarUrl: string | null;
+  staffColor: string | null; // ← NOVO
   appointments: AppointmentItem[];
 }
 
@@ -97,6 +77,7 @@ function groupByStaff(items: AppointmentItem[]): StaffGroup[] {
         staffId: a.staffId,
         staffName: a.staffName,
         staffAvatarUrl: a.staffAvatarUrl,
+        staffColor: a.staffColor ?? null, // ← NOVO
         appointments: [],
       };
       groups.set(a.staffId, group);
@@ -114,7 +95,7 @@ export function AppointmentsList({ items }: Props) {
     : items.filter((a) => a.status !== 'completed');
   const groups = groupByStaff(visibleItems);
   const hasToggle = completedCount > 0;
-  
+
   return (
     <div className="flex flex-col gap-4">
       {hasToggle && (
@@ -139,6 +120,7 @@ export function AppointmentsList({ items }: Props) {
           </Button>
         </div>
       )}
+
       {visibleItems.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-5 shadow-md">
           <p className="py-8 text-center text-sm text-text-muted">
@@ -191,7 +173,8 @@ function StaffAvatar({
 }
 
 function StaffCard({ group }: { group: StaffGroup }) {
-  const color = staffColor(group.staffId);
+  const color = group.staffColor ?? staffColor(group.staffId); // ← banco primeiro, fallback hash
+
   return (
     <div
       className="rounded-card border border-border bg-surface p-5 shadow-md border-l-4"
@@ -244,10 +227,8 @@ const ACTIONS_BY_STATUS: Record<Status, StatusAction[]> = {
 };
 
 const VARIANT_CLASS: Record<ActionVariant, string> = {
-  neutral:
-    'border-border bg-surface text-text-muted hover:bg-surface-2 hover:text-text-body',
-  positive:
-    'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+  neutral: 'border-border bg-surface text-text-muted hover:bg-surface-2 hover:text-text-body',
+  positive: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
   danger: 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100',
 };
 
@@ -255,31 +236,25 @@ function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
   const waHref = toWhatsAppHref(a.clientPhone, buildWhatsAppMessage(a));
   const { mutate, isPending, variables } = useUpdateAppointmentStatus();
   const queryClient = useQueryClient();
-
   const actions = ACTIONS_BY_STATUS[a.status];
   const isUpdatingThisRow = isPending && variables?.id === a.id;
 
   return (
     <li className="flex flex-col gap-2 py-3.5">
       <div className="flex items-center justify-between gap-2">
-        {/* HORÁRIO DESTACADO EM LARANJA */}
         <span className="flex items-center gap-1.5 text-base font-bold tabular-nums text-primary">
           <CalendarClock className="h-4 w-4" aria-hidden />
           {timeFmt.format(new Date(a.startsAt))}
         </span>
-        {/* STATUS PREMIUM TRANSLÚCIDO */}
         <span
           className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${STATUS_CLASS[a.status]}`}
         >
           {STATUS_LABEL[a.status]}
         </span>
       </div>
-      
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          {/* NOME EM BRANCO E MAIOR */}
           <p className="truncate text-base font-bold text-white">{a.clientName}</p>
-          {/* SERVIÇO DESTACADO (MAIÚSCULO, LARANJA, ESPAÇADO) */}
           <span className="mt-0.5 truncate text-sm font-bold uppercase tracking-wide text-primary">
             {a.serviceName}
           </span>
@@ -297,7 +272,6 @@ function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
           </a>
         )}
       </div>
-
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {actions.map((action) => {
           const Icon = action.icon;
@@ -306,7 +280,6 @@ function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
             positive: 'success',
             danger: 'danger',
           };
-          
           return (
             <Button
               key={action.status}

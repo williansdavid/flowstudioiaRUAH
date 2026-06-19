@@ -6,7 +6,8 @@ import type { BookableStaffItem } from '../types';
 interface RawRow {
   id: string;
   display_order: number;
-  profiles: { 
+  color: string | null;
+  profiles: {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
@@ -19,15 +20,13 @@ export const listBookableStaff = createServerFn({ method: 'GET' }).handler(
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
-
     if (userError || !user) {
       throw new Error('[appointments] Sessão inválida.');
     }
 
-    // Adicionado avatar_url no select do profile
     const { data, error } = await supabase
       .from('staff')
-      .select('id, display_order, profiles(full_name, avatar_url)')
+      .select('id, display_order, color, profiles(full_name, avatar_url)')
       .eq('is_bookable', true)
       .order('display_order', { ascending: true });
 
@@ -37,7 +36,8 @@ export const listBookableStaff = createServerFn({ method: 'GET' }).handler(
       id: r.id,
       name: r.profiles?.full_name ?? 'Profissional',
       displayOrder: r.display_order,
-      avatarUrl: r.profiles?.avatar_url ?? null, // ← Mapeado para o frontend
+      avatarUrl: r.profiles?.avatar_url ?? null,
+      color: r.color ?? null,
     }));
   },
 );

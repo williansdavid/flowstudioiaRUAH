@@ -11,6 +11,20 @@ import type { UpdateStaffInput } from '../server/updateStaff';
 import type { StaffListItem } from '../types';
 import { Button } from '@/components/ui/Button';
 
+// Nossa paleta de 10 cores premium
+const STAFF_PALETTE = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#f59e0b', // amber
+  '#84cc16', // lime
+  '#10b981', // emerald
+  '#06b6d4', // cyan
+  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+];
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -26,6 +40,7 @@ interface FormState {
   specialty: string;
   is_bookable: boolean;
   role: 'staff' | 'admin';
+  color: string;
 }
 
 const EMPTY: FormState = {
@@ -35,6 +50,7 @@ const EMPTY: FormState = {
   specialty: '',
   is_bookable: true,
   role: 'staff',
+  color: STAFF_PALETTE[0]!, // Cor padrão inicial
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,13 +63,12 @@ const fieldInputDisabled =
 
 export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props) {
   const isEdit = mode === 'edit';
-
   const [form, setForm] = useState<FormState>(EMPTY);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  // marca remoção explícita do avatar existente (null no submit)
   const [avatarRemoved, setAvatarRemoved] = useState(false);
 
   const createMut = useCreateStaff();
@@ -72,18 +87,17 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
       setForm({
         full_name: staff.name,
         email: staff.email ?? '',
-        // dado canônico/legado vira máscara pra exibir
         phone: formatPhoneBR(staff.phone),
         specialty: staff.specialty ?? '',
         is_bookable: staff.isBookable,
         role: 'staff',
+        color: staff.color ?? STAFF_PALETTE[0]!, // Carrega a cor do banco ou fallback
       });
     } else {
       setForm(EMPTY);
     }
   }, [open, isEdit, staff]);
 
-  // Libera o object URL do preview pra não vazar memória.
   useEffect(() => {
     return () => {
       if (avatarPreview?.startsWith('blob:')) {
@@ -98,7 +112,6 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
   const errors = useMemo(() => {
     const e: string[] = [];
     if (form.full_name.trim().length < 2) e.push('Informe o nome completo.');
-    // email só é validado no create (no edit é read-only)
     if (!isEdit && !EMAIL_RE.test(form.email.trim())) e.push('Email inválido.');
 
     const phone = form.phone.trim();
@@ -124,19 +137,14 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
       setFormError(err);
       return;
     }
+
     setFormError(null);
-
-    // escolher um arquivo novo cancela uma remoção pendente
     setAvatarRemoved(false);
-
-    // troca o preview, revogando o blob anterior se houver
     setAvatarPreview((prev) => {
       if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
     });
     setAvatarFile(file);
-
-    // permite reescolher o mesmo arquivo depois de remover
     ev.target.value = '';
   }
 
@@ -153,10 +161,10 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     if (!canSubmit) return;
+
     setEmailError(null);
     setFormError(null);
 
-    // Normaliza o phone (mascarado -> canônico) antes de enviar.
     const phoneParsed = phoneBRSchema.safeParse(form.phone.trim());
     if (!phoneParsed.success) {
       setFormError(phoneParsed.error.issues[0]?.message ?? 'Telefone inválido.');
@@ -168,10 +176,6 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
       if (isEdit) {
         if (!staff) return;
 
-        // Resolve o avatar_url do input (3 casos):
-        //   arquivo novo  -> URL do upload
-        //   removido      -> null
-        //   inalterado    -> undefined (não mexe)
         let avatarUrl: string | null | undefined;
         if (avatarFile) {
           const up = await uploadAvatar(avatarFile, staff.id);
@@ -190,13 +194,16 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
           phone: phoneCanonical,
           specialty: form.specialty.trim(),
           is_bookable: form.is_bookable,
+          color: form.color,
           ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
         };
+
         const res = await updateMut.mutateAsync(input);
         if (res.ok) {
           onClose();
           return;
         }
+
         switch (res.reason) {
           case 'FORBIDDEN':
             setFormError('Você não tem permissão para editar este profissional.');
@@ -211,7 +218,6 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         return;
       }
 
-      // create
       const input: CreateStaffInput = {
         full_name: form.full_name.trim(),
         email: form.email.trim(),
@@ -219,12 +225,15 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         specialty: form.specialty.trim(),
         is_bookable: form.is_bookable,
         role: form.role,
+        color: form.color,
       };
+
       const res = await createMut.mutateAsync(input);
       if (res.ok) {
         onClose();
         return;
       }
+
       switch (res.reason) {
         case 'EMAIL_TAKEN':
           setEmailError('Email já cadastrado.');
@@ -237,189 +246,225 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
           break;
       }
     } catch {
-      /* sessão inválida etc — toast já tratado no hook */
+      // toast já tratado no hook
     }
   }
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface shadow-md focus:outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-card border border-border bg-surface shadow-xl focus:outline-none">
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <Dialog.Title className="text-lg font-bold tracking-tight text-text-body">
+            <Dialog.Title className="text-base font-bold">
               {isEdit ? 'Editar profissional' : 'Novo profissional'}
             </Dialog.Title>
-            <Dialog.Close
-              className="inline-flex h-8 w-8 items-center justify-center rounded-pill text-text-muted transition-colors hover:bg-surface-2 hover:text-text-body"
-              aria-label="Fechar"
-            >
-              <X className="h-4 w-4" />
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="rounded-button p-1 text-text-muted hover:bg-surface-2 hover:text-text-body"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </Dialog.Close>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-4 overflow-y-auto px-5 py-4"
-          >
-            {isEdit && (
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  {avatarPreview ? (
-                    <img
-                      src={avatarPreview}
-                      alt="Pré-visualização do avatar"
-                      className="h-20 w-20 rounded-pill object-cover ring-1 ring-border"
-                    />
-                  ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-pill bg-surface-2 text-text-muted ring-1 ring-border">
-                      <Camera className="h-6 w-6" aria-hidden="true" />
+          <form onSubmit={handleSubmit} className="flex max-h-[80vh] flex-col">
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex flex-col gap-5">
+                {/* Avatar */}
+                {isEdit && (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative h-20 w-20 overflow-hidden rounded-full border border-border bg-surface-2">
+                      {avatarPreview ? (
+                        <img
+                          src={avatarPreview}
+                          alt="Avatar"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-text-muted">
+                          <Camera className="h-6 w-6" />
+                        </div>
+                      )}
+                      <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity hover:opacity-100">
+                        <Camera className="h-6 w-6 text-white" />
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          className="hidden"
+                          onChange={handleAvatarChange}
+                        />
+                      </label>
                     </div>
-                  )}
-                  <label
-                    className="absolute -bottom-1 -right-1 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-pill bg-primary text-white shadow-md transition-colors hover:bg-primary-hover"
-                    title="Trocar foto"
-                  >
-                    <Camera className="h-4 w-4" aria-hidden="true" />
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      className="sr-only"
-                      onChange={handleAvatarChange}
-                      disabled={isSaving}
-                    />
-                  </label>
-                </div>
-                <span className="text-xs text-text-muted">
-                  PNG, JPG ou WEBP · máx. 2 MB
-                </span>
-                {avatarPreview && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveAvatar}
-                    disabled={isSaving}
-                    className="text-xs font-medium text-red-600 transition-colors hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Remover foto
-                  </button>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-xs text-text-muted">
+                        PNG, JPG ou WEBP · máx. 2 MB
+                      </span>
+                      {avatarPreview && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveAvatar}
+                          className="text-xs text-red-500 hover:underline"
+                        >
+                          Remover foto
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
+
+                {/* Cor de Identificação */}
+                <div className="flex flex-col gap-2">
+                  <span className={fieldLabel}>Cor de identificação na agenda</span>
+                  <div className="flex flex-wrap gap-2">
+                    {STAFF_PALETTE.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => set('color', c)}
+                        className={`h-8 w-8 rounded-full transition-transform hover:scale-110 ${
+                          form.color === c
+                            ? 'ring-2 ring-white ring-offset-2 ring-offset-surface'
+                            : 'opacity-70 hover:opacity-100'
+                        }`}
+                        style={{ backgroundColor: c }}
+                        aria-label={`Selecionar cor ${c}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <label className="flex flex-col gap-1">
+                  <span className={fieldLabel}>Nome completo</span>
+                  <input
+                    autoFocus
+                    type="text"
+                    maxLength={120}
+                    className={fieldInput}
+                    value={form.full_name}
+                    onChange={(e) => set('full_name', e.target.value)}
+                    placeholder="Ex: João da Silva"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className={fieldLabel}>Email</span>
+                  <input
+                    type="email"
+                    maxLength={255}
+                    className={isEdit ? fieldInputDisabled : fieldInput}
+                    value={form.email}
+                    onChange={(e) => {
+                      if (isEdit) return;
+                      set('email', e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
+                    placeholder="obrigatório para login"
+                    disabled={isEdit}
+                    readOnly={isEdit}
+                    aria-invalid={emailError ? true : undefined}
+                  />
+                  {isEdit && (
+                    <span className="text-[11px] text-text-muted">
+                      O email não pode ser alterado.
+                    </span>
+                  )}
+                  {emailError && (
+                    <span className="text-xs font-medium text-red-500">
+                      {emailError}
+                    </span>
+                  )}
+                </label>
+
+                {!isEdit && (
+                  <label className="flex flex-col gap-1">
+                    <span className={fieldLabel}>Função</span>
+                    <select
+                      className={fieldInput}
+                      value={form.role}
+                      onChange={(e) => set('role', e.target.value as FormState['role'])}
+                    >
+                      <option value="staff">Profissional</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                    {form.role === 'admin' && (
+                      <span className="text-[11px] text-amber-500">
+                        Administradores têm acesso total ao painel.
+                      </span>
+                    )}
+                  </label>
+                )}
+
+                <label className="flex flex-col gap-1">
+                  <span className={fieldLabel}>Telefone</span>
+                  <PhoneInput
+                    className={fieldInput}
+                    value={form.phone}
+                    onChange={(masked) => set('phone', masked)}
+                    placeholder="(14) 99999-9999"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className={fieldLabel}>Especialidade</span>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    className={fieldInput}
+                    value={form.specialty}
+                    onChange={(e) => set('specialty', e.target.value)}
+                    placeholder="Opcional (ex: Cabelo, Barba)"
+                  />
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    checked={form.is_bookable}
+                    onChange={(e) => set('is_bookable', e.target.checked)}
+                  />
+                  <span className="text-sm font-medium text-text-body">
+                    Disponível para agendamento
+                  </span>
+                </label>
               </div>
-            )}
+            </div>
 
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Nome completo</span>
-              <input
-                type="text"
-                autoComplete="name"
-                className={fieldInput}
-                value={form.full_name}
-                onChange={(e) => set('full_name', e.target.value)}
-                placeholder="Ex: João da Silva"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Email</span>
-              <input
-                type="email"
-                autoComplete="off"
-                className={isEdit ? fieldInputDisabled : fieldInput}
-                value={form.email}
-                onChange={(e) => {
-                  if (isEdit) return;
-                  set('email', e.target.value);
-                  if (emailError) setEmailError(null);
-                }}
-                placeholder="obrigatório para login "
-                disabled={isEdit}
-                readOnly={isEdit}
-                aria-invalid={emailError ? true : undefined}
-              />
-              {isEdit && (
-                <span className="text-xs text-text-muted">
-                  O email não pode ser alterado.
-                </span>
-              )}
-              {emailError && (
-                <span className="text-xs text-red-600">{emailError}</span>
-              )}
-            </label>
-
-            {!isEdit && (
-              <label className="flex flex-col gap-1">
-                <span className={fieldLabel}>Função</span>
-                <select
-                  className={fieldInput}
-                  value={form.role}
-                  onChange={(e) => set('role', e.target.value as FormState['role'])}
-                >
-                  <option value="staff">Profissional</option>
-                  <option value="admin">Administrador</option>
-                </select>
-                {form.role === 'admin' && (
-                  <span className="text-xs text-text-muted">
-                    Administradores têm acesso total ao painel.
+            <div className="border-t border-border bg-surface-2 px-5 py-4">
+              <div className="flex flex-col items-end gap-3">
+                {errors.length > 0 && (
+                  <span className="text-xs font-medium text-orange-500">
+                    {errors[0]}
                   </span>
                 )}
-              </label>
-            )}
-
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Telefone</span>
-              <PhoneInput
-                className={fieldInput}
-                value={form.phone}
-                onChange={(masked) => set('phone', masked)}
-                placeholder="(14) 99999-9999"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className={fieldLabel}>Especialidade</span>
-              <input
-                type="text"
-                className={fieldInput}
-                value={form.specialty}
-                onChange={(e) => set('specialty', e.target.value)}
-                placeholder="Opcional (ex: Cabelo, Barba)"
-              />
-            </label>
-
-            <label className="flex cursor-pointer items-center gap-2.5 select-none">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-border text-primary focus:ring-1 focus:ring-primary"
-                checked={form.is_bookable}
-                onChange={(e) => set('is_bookable', e.target.checked)}
-              />
-              <span className="text-sm text-text-body">
-                Disponível para agendamento
-              </span>
-            </label>
-
-            {errors.length > 0 && (
-              <p className="text-xs text-red-600">{errors[0]}</p>
-            )}
-            {formError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-button border border-amber-300 bg-amber-100 px-3 py-2.5 text-sm font-medium text-amber-900"
-              >
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <span>{formError}</span>
+                {formError && (
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-red-500">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {formError}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={onClose}
+                    disabled={isSaving}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={!canSubmit}
+                    isLoading={isSaving}
+                  >
+                    {isEdit ? 'Salvar' : 'Cadastrar'}
+                  </Button>
+                </div>
               </div>
-            )}
-
-            <div className="mt-1 flex items-center justify-end">
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                disabled={!canSubmit}
-                isLoading={isSaving}
-              >
-                {isEdit ? 'Salvar' : 'Cadastrar'}
-              </Button>
             </div>
           </form>
         </Dialog.Content>

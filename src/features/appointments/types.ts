@@ -19,14 +19,10 @@ export interface AppointmentItem {
   staffId: string;
   staffName: string;
   staffAvatarUrl: string | null;
+  /** Cor personalizada do staff (do banco) */
+  staffColor: string | null;
   price: number;
   notes: string | null;
-}
-
-export interface BookableStaffItem {
-  id: string;
-  name: string;
-  displayOrder: number;
 }
 
 export interface ServiceOption {
@@ -42,11 +38,11 @@ export interface ClientOption {
   phone: string | null;
 }
 
-
 export interface BookableStaffItem {
   id: string;
   name: string;
   displayOrder: number;
-  avatarUrl?: string | null; // ← Adicionado para o header da agenda
+  avatarUrl?: string | null;
+  /** Cor personalizada do staff (do banco) */
+  color: string | null;
 }
-

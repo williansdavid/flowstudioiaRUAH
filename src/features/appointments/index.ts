@@ -2,6 +2,7 @@
 export { todayLocalDate } from './utils/todayLocalDate';
 export { AppointmentFormModal } from './components/AppointmentFormModal';
 export { getDayAppointments, type GetDayAppointmentsInput } from './server/getDayAppointments';
+export { getDayTimeOff, type GetDayTimeOffInput } from './server/getDayTimeOff';
 export { listBookableStaff } from './server/listBookableStaff';
 export { listActiveServices } from './server/listActiveServices';
 export { listClientsForSelect } from './server/listClientsForSelect';
