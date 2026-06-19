@@ -25,6 +25,7 @@ import { Route as AuthedAdminClientesRouteImport } from './routes/_authed/admin/
 import { Route as AuthedAdminAgendamentosRouteImport } from './routes/_authed/admin/agendamentos'
 import { Route as AuthedAdminAgendaRouteImport } from './routes/_authed/admin/agenda'
 import { Route as AuthedAdminEquipeIndexRouteImport } from './routes/_authed/admin/equipe/index'
+import { Route as AuthedAdminEquipeHorariosRouteImport } from './routes/_authed/admin/equipe/horarios'
 import { Route as AuthedAdminEquipeStaffIdHorariosRouteImport } from './routes/_authed/admin/equipe/$staffId/horarios'
 
 const AuthedRoute = AuthedRouteImport.update({
@@ -105,6 +106,12 @@ const AuthedAdminEquipeIndexRoute = AuthedAdminEquipeIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedAdminEquipeRoute,
 } as any)
+const AuthedAdminEquipeHorariosRoute =
+  AuthedAdminEquipeHorariosRouteImport.update({
+    id: '/horarios',
+    path: '/horarios',
+    getParentRoute: () => AuthedAdminEquipeRoute,
+  } as any)
 const AuthedAdminEquipeStaffIdHorariosRoute =
   AuthedAdminEquipeStaffIdHorariosRouteImport.update({
     id: '/$staffId/horarios',
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin/': typeof AuthedAdminIndexRoute
+  '/admin/equipe/horarios': typeof AuthedAdminEquipeHorariosRoute
   '/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
   '/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -141,6 +149,7 @@ export interface FileRoutesByTo {
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin': typeof AuthedAdminIndexRoute
+  '/admin/equipe/horarios': typeof AuthedAdminEquipeHorariosRoute
   '/admin/equipe': typeof AuthedAdminEquipeIndexRoute
   '/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/_authed/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
+  '/_authed/admin/equipe/horarios': typeof AuthedAdminEquipeHorariosRoute
   '/_authed/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
   '/_authed/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/admin/financeiro'
     | '/admin/servicos'
     | '/admin/'
+    | '/admin/equipe/horarios'
     | '/admin/equipe/'
     | '/admin/equipe/$staffId/horarios'
   fileRoutesByTo: FileRoutesByTo
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/admin/financeiro'
     | '/admin/servicos'
     | '/admin'
+    | '/admin/equipe/horarios'
     | '/admin/equipe'
     | '/admin/equipe/$staffId/horarios'
   id:
@@ -214,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authed/admin/financeiro'
     | '/_authed/admin/servicos'
     | '/_authed/admin/'
+    | '/_authed/admin/equipe/horarios'
     | '/_authed/admin/equipe/'
     | '/_authed/admin/equipe/$staffId/horarios'
   fileRoutesById: FileRoutesById
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminEquipeIndexRouteImport
       parentRoute: typeof AuthedAdminEquipeRoute
     }
+    '/_authed/admin/equipe/horarios': {
+      id: '/_authed/admin/equipe/horarios'
+      path: '/horarios'
+      fullPath: '/admin/equipe/horarios'
+      preLoaderRoute: typeof AuthedAdminEquipeHorariosRouteImport
+      parentRoute: typeof AuthedAdminEquipeRoute
+    }
     '/_authed/admin/equipe/$staffId/horarios': {
       id: '/_authed/admin/equipe/$staffId/horarios'
       path: '/$staffId/horarios'
@@ -365,11 +385,13 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthedAdminEquipeRouteChildren {
+  AuthedAdminEquipeHorariosRoute: typeof AuthedAdminEquipeHorariosRoute
   AuthedAdminEquipeIndexRoute: typeof AuthedAdminEquipeIndexRoute
   AuthedAdminEquipeStaffIdHorariosRoute: typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
 
 const AuthedAdminEquipeRouteChildren: AuthedAdminEquipeRouteChildren = {
+  AuthedAdminEquipeHorariosRoute: AuthedAdminEquipeHorariosRoute,
   AuthedAdminEquipeIndexRoute: AuthedAdminEquipeIndexRoute,
   AuthedAdminEquipeStaffIdHorariosRoute: AuthedAdminEquipeStaffIdHorariosRoute,
 }

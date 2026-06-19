@@ -86,6 +86,17 @@ export const getDayTimeOff = createServerFn({ method: 'GET' })
     for (const staff of staffList as StaffRow[]) {
       if (!staff.working_hours) continue;
       const daySchedule = staff.working_hours[wd];
+      // ✅ FOLGA FIXA: daySchedule === null → bloqueia o dia inteiro
+      if (daySchedule === null) {
+        result.push({
+          id: `off-${staff.id}-${wd}`,
+          staffId: staff.id,
+          startsAt: localTimeToUTC(data.date, '00:00'),
+          endsAt: localTimeToUTC(data.date, '23:59'),
+          reason: 'Folga fixa',
+        });
+        continue;
+      }      
       if (!daySchedule?.breaks?.length) continue;
 
       for (const [i, brk] of daySchedule.breaks.entries()) {

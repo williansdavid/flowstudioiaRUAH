@@ -222,6 +222,7 @@ function AgendaPage() {
         staff={staff}
         clients={clients}
         services={services}
+        timeOff={timeOff} 
         businessHours={businessHours}
       />
     </div>

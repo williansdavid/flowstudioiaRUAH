@@ -1,4 +1,5 @@
 // src/routes/_authed/admin/equipe/$staffId/horarios.tsx
+import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, CalendarRange } from 'lucide-react';
 import {
@@ -21,14 +22,48 @@ export const Route = createFileRoute(
 
 function HorariosPage() {
   const data = Route.useLoaderData();
+  const [isDirty, setIsDirty] = useState(false);
+
+  // beforeunload — refresh / fechar aba
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
+  // popstate — voltar/avançar no navegador
+  const handlePopState = useCallback(() => {
+    if (isDirty) {
+      const stay = window.confirm(
+        'Você tem alterações não salvas. Deseja realmente sair?',
+      );
+      if (!stay) {
+        window.history.pushState(null, '', window.location.href);
+      }
+    }
+  }, [isDirty]);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handlePopState]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 p-4 xl:max-w-6xl">
-      {/* Header da página */}
       <header className="space-y-1">
-        {/* Voltar para Equipe */}
         <Link
           to="/admin/equipe"
+          onClick={(e) => {
+            if (isDirty && !window.confirm('Você tem alterações não salvas. Deseja realmente sair?')) {
+              e.preventDefault();
+            }
+          }}
           className="mb-4 inline-flex items-center gap-1.5 rounded-md text-sm font-medium transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
           style={{ color: 'var(--color-text-muted)' }}
         >
@@ -80,19 +115,17 @@ function HorariosPage() {
         </p>
       </header>
 
-      {/* Grid das seções: empilhado no mobile, 2 colunas no xl */}
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[3fr_2fr] xl:items-start xl:gap-6">
-        {/* Seção 1 — Recorrente */}
         <section className="order-2 space-y-3 xl:order-1">
           <SectionLabel title="Horário de trabalho" hint="Repete toda semana" />
           <WorkingHoursEditor
             staffId={data.staffId}
             initial={data.workingHours ?? buildDefaultWorkingHours()}
             canEdit={data.canEdit}
+            onDirtyChange={setIsDirty}
           />
         </section>
 
-        {/* Seção 2 — Pontual */}
         <section className="order-1 space-y-3 xl:order-2">
           <SectionLabel
             title="Folgas e bloqueios"

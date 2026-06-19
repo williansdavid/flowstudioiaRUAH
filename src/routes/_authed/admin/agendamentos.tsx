@@ -6,6 +6,7 @@ import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import {
   getDayAppointments,
+  getDayTimeOff, 
   listClientsForSelect,
   listActiveServices,
   listBookableStaff,
@@ -41,14 +42,18 @@ const staffQuery = {
 
 export const Route = createFileRoute('/_authed/admin/agendamentos')({
   staticData: { title: 'Agendamentos' },
-  loader: async ({ context }) => {
-    const date = todayLocalDate();
-    await Promise.all([
-      context.queryClient.ensureQueryData(dayQuery(date)),
-      context.queryClient.ensureQueryData(clientsQuery),
-      context.queryClient.ensureQueryData(servicesQuery),
-      context.queryClient.ensureQueryData(staffQuery),
-    ]);
+loader: async ({ context }) => {
+  const date = todayLocalDate();
+  await Promise.all([
+    context.queryClient.ensureQueryData(dayQuery(date)),
+    context.queryClient.ensureQueryData(clientsQuery),
+    context.queryClient.ensureQueryData(servicesQuery),
+    context.queryClient.ensureQueryData(staffQuery),
+    context.queryClient.ensureQueryData({           // <-- NOVO
+      queryKey: ['dayTimeOff', date],
+      queryFn: () => getDayTimeOff({ data: { date } }),
+    }),
+  ]);
   },
   component: AgendamentosPage,
   errorComponent: AgendamentosError,
@@ -60,6 +65,10 @@ function AgendamentosPage() {
   const { data: clients } = useSuspenseQuery(clientsQuery);
   const { data: services } = useSuspenseQuery(servicesQuery);
   const { data: staff } = useSuspenseQuery(staffQuery);
+  const { data: timeOff = [] } = useSuspenseQuery({           // <-- NOVO
+    queryKey: ['dayTimeOff', date],
+    queryFn: () => getDayTimeOff({ data: { date } }),
+  });
 
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -81,6 +90,7 @@ function AgendamentosPage() {
         clients={clients}
         services={services}
         staff={staff}
+         timeOff={timeOff}
         businessHours={businessHours}
         onClose={() => setModalOpen(false)}
       />

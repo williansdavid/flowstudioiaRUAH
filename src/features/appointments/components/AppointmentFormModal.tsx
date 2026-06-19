@@ -1,19 +1,8 @@
 // src/features/appointments/components/AppointmentFormModal.tsx
-//
-// CORREÇÃO BUG DIA -1:
-// A função joinISO anterior somava manualmente +3h (UTC-3 → UTC), mas as strings
-// geradas pelo browser com new Date(`${date}T${time}:00`) já são interpretadas
-// no horário LOCAL da máquina. Se o servidor (Vercel/Node) também está em UTC,
-// a soma de +3h causava dupla conversão: horário ficava 3h adiantado / data virava
-// dia seguinte (ou anterior dependendo do horário), produzindo o bug do "dia -1".
-//
-// SOLUÇÃO: usar o construtor com offset explícito "-03:00" para forçar fuso fixo
-// de São Paulo independente do fuso do servidor ou do navegador.
-
 import { useEffect, useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Trash2, Loader2, UserPlus, AlertTriangle } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 import { QuickClientModal } from './QuickClientModal';
 import { ClientCombobox } from './ClientCombobox';
@@ -25,6 +14,8 @@ import type {
   ClientOption,
   ServiceOption,
 } from '../types';
+import type { TimeOffBlockItem } from '../server/getDayTimeOff';
+import { getDayTimeOff } from '../server/getDayTimeOff';
 import {
   useCreateAppointment,
   useUpdateAppointment,
@@ -42,14 +33,31 @@ interface Props {
   clients: ClientOption[];
   services: ServiceOption[];
   staff: BookableStaffItem[];
+  timeOff: TimeOffBlockItem[];
   businessHours: BusinessHours;
   onClose: () => void;
 }
 
-/**
- * ISO datetime → { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo.
- * Usa Intl.DateTimeFormat com timeZone explícito — funciona igual em servidor e browser.
- */
+function hasTimeOffConflict(
+  timeOff: TimeOffBlockItem[],
+  staffId: string,
+  startsAt: string,
+  endsAt: string,
+): TimeOffBlockItem | null {
+  if (!staffId || !startsAt || !endsAt) return null;
+  const start = new Date(startsAt).getTime();
+  const end = new Date(endsAt).getTime();
+  for (const block of timeOff) {
+    if (block.staffId !== staffId) continue;
+    const bStart = new Date(block.startsAt).getTime();
+    const bEnd = new Date(block.endsAt).getTime();
+    // overlap: [start, end) cruza [bStart, bEnd)
+    if (start < bEnd && end > bStart) return block;
+  }
+  return null;
+}
+
+/** ISO datetime → { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo. */
 function splitISO(iso: string): { date: string; time: string } {
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat('sv-SE', {
@@ -61,15 +69,11 @@ function splitISO(iso: string): { date: string; time: string } {
     minute: '2-digit',
     hour12: false,
   });
-  // sv-SE → "YYYY-MM-DD HH:mm"
   const [date, time] = fmt.format(d).split(' ');
   return { date: date!, time: time! };
 }
 
-/**
- * ✅ CORREÇÃO BUG DIA -1:
- * { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo → ISO UTC.
- */
+/** { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo → ISO UTC. */
 function joinISO(date: string, time: string): string {
   return new Date(`${date}T${time}:00-03:00`).toISOString();
 }
@@ -149,7 +153,8 @@ export function AppointmentFormModal({
   clients,
   services,
   staff,
-  businessHours, // Mantido na prop para compatibilidade, mas não bloqueia mais o Admin
+  timeOff = [],
+  businessHours,
   onClose,
 }: Props) {
   const isEdit = mode.kind === 'edit';
@@ -162,6 +167,13 @@ export function AppointmentFormModal({
   const createMutation = useCreateAppointment();
   const updateMutation = useUpdateAppointment();
   const cancelMutation = useCancelAppointment();
+
+  // Busca timeOff da data selecionada no formulário (não confia na prop do pai)
+  const { data: modalTimeOff = [] } = useQuery({
+    queryKey: ['dayTimeOff', form.date],
+    queryFn: () => getDayTimeOff({ data: { date: form.date } }),
+    enabled: !!form.date && open,
+  });
 
   // Reseta o formulário sempre que o modal abre ou o mode muda
   useEffect(() => {
@@ -185,10 +197,10 @@ export function AppointmentFormModal({
     set('endTime', addMinutes(form.startTime, selectedService.durationMinutes));
   }, [form.serviceId, form.startTime]);
 
-  // VALIDAÇÕES DINÂMICAS (Campos Obrigatórios e Data Retroativa)
+  // VALIDAÇÕES DINÂMICAS
   const missingFields: string[] = [];
   let isRetroactiveError = false;
-  
+
   if (!form.clientId) missingFields.push('Cliente');
   if (!form.serviceId) missingFields.push('Serviço');
   if (!form.staffId) missingFields.push('Profissional');
@@ -196,10 +208,9 @@ export function AppointmentFormModal({
   if (form.date && form.startTime) {
     const selectedDate = new Date(joinISO(form.date, form.startTime));
     const now = new Date();
-    
+
     let isRetroactive = selectedDate < now;
-    
-    // Se for edição, permite salvar se o horário não foi alterado (ex: apenas adicionando observação num agendamento passado)
+
     if (isEdit && isRetroactive) {
       const originalA = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
       const originalStart = new Date(originalA.startsAt);
@@ -213,16 +224,28 @@ export function AppointmentFormModal({
     }
   }
 
-  const canSubmit = missingFields.length === 0 && !isRetroactiveError && !!form.endTime;
+  // VALIDAÇÃO DE CONFLITO COM TIME OFF (usa dados frescos do modal)
+  const timeOffConflict = useMemo(() => {
+    if (!form.staffId || !form.date || !form.startTime || !form.endTime) return null;
+    const startsAt = joinISO(form.date, form.startTime);
+    const endsAt = joinISO(form.date, form.endTime);
+    return hasTimeOffConflict(modalTimeOff, form.staffId, startsAt, endsAt);
+  }, [modalTimeOff, form.staffId, form.date, form.startTime, form.endTime]);
+
+  const canSubmit =
+    missingFields.length === 0 &&
+    !isRetroactiveError &&
+    !timeOffConflict &&
+    !!form.endTime;
 
   const isSaving =
     createMutation.isPending ||
     updateMutation.isPending ||
     cancelMutation.isPending;
 
-  // Função centralizada para invalidar a query e fechar o modal
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    queryClient.invalidateQueries({ queryKey: ['dayTimeOff'] });
     onClose();
   };
 
@@ -266,6 +289,24 @@ export function AppointmentFormModal({
     const a = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
     cancelMutation.mutate({ id: a.id }, { onSuccess: handleSuccess });
   }
+
+  // Formata o label do conflito para exibição
+  const conflictLabel = timeOffConflict
+    ? (() => {
+        const reason = timeOffConflict.reason ?? 'Folga';
+        const fmtStart = new Date(timeOffConflict.startsAt).toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Sao_Paulo',
+        });
+        const fmtEnd = new Date(timeOffConflict.endsAt).toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Sao_Paulo',
+        });
+        return `${reason} (${fmtStart} — ${fmtEnd})`;
+      })()
+    : null;
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
@@ -312,7 +353,6 @@ export function AppointmentFormModal({
                       setQuickClientName('');
                       setQuickClientOpen(true);
                     }}
-                    // DESTAQUE COM A COR PRIMARY DO SEU TEMA 👇
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20 hover:text-primary-hover"
                   >
                     <UserPlus className="h-4 w-4" />
@@ -398,6 +438,18 @@ export function AppointmentFormModal({
               />
             </div>
 
+            {/* ⛔ BLOCO DE CONFLITO — aviso destacado acima da action bar */}
+            {timeOffConflict && (
+              <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-500">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    Horário conflita com <strong>{conflictLabel}</strong> para este profissional
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Ações e Erros */}
             <div className="flex items-center justify-between pt-2">
               {isEdit ? (
@@ -415,9 +467,9 @@ export function AppointmentFormModal({
                   Excluir
                 </button>
               ) : (
-                <span /> // Spacer para manter o alinhamento
+                <span />
               )}
-              
+
               <div className="flex items-center gap-3">
                 {/* Validações em Laranja */}
                 {(missingFields.length > 0 || isRetroactiveError) && (
@@ -433,7 +485,7 @@ export function AppointmentFormModal({
                     )}
                   </div>
                 )}
-                
+
                 <Button
                   type="submit"
                   variant="primary"

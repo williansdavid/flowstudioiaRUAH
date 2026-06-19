@@ -1,5 +1,5 @@
 // src/features/staff/components/WorkingHoursEditor.tsx
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,15 +14,32 @@ interface WorkingHoursEditorProps {
   staffId: string;
   initial: WorkingHours;
   canEdit: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 export function WorkingHoursEditor({
-  staffId, 
+  staffId,
   initial,
   canEdit,
+  onDirtyChange,
 }: WorkingHoursEditorProps) {
   const [draft, setDraft] = useState<WorkingHours>(initial);
   const mutation = useUpdateStaffWorkingHours(staffId);
+  const prevDirtyRef = useRef(false);
+
+  // Notifica o pai quando o rascunho diverge do original
+  useEffect(() => {
+    const isDirty = JSON.stringify(draft) !== JSON.stringify(initial);
+    if (isDirty !== prevDirtyRef.current) {
+      prevDirtyRef.current = isDirty;
+      onDirtyChange?.(isDirty);
+    }
+  }, [draft, initial, onDirtyChange]);
+
+  // Atualiza a referência quando o initial muda (recarregou dados)
+  useEffect(() => {
+    prevDirtyRef.current = false;
+  }, [initial]);
 
   function patchDay(key: keyof WorkingHours, value: DaySchedule | null) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -35,7 +52,15 @@ export function WorkingHoursEditor({
       toast.error(first?.message ?? 'Grade inválida.');
       return;
     }
-    mutation.mutate({ staffId, workingHours: parsed.data });
+    mutation.mutate(
+      { staffId, workingHours: parsed.data },
+      {
+        onSuccess: () => {
+          onDirtyChange?.(false);
+          prevDirtyRef.current = false;
+        },
+      },
+    );
   }
 
   return (
@@ -51,7 +76,6 @@ export function WorkingHoursEditor({
         boxShadow: 'var(--shadow-md)',
       }}
     >
-      {/* Filete dourado superior — assinatura Art Deco */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
@@ -60,9 +84,6 @@ export function WorkingHoursEditor({
             'linear-gradient(90deg, transparent, var(--color-accent) 50%, transparent)',
         }}
       />
-
-      {/* Header */}
-      {/* Header */}
       <div className="mb-5 flex items-center gap-2.5">
         <span
           className="shrink-0 rounded-xl p-2"
@@ -85,9 +106,6 @@ export function WorkingHoursEditor({
           </p>
         </div>
       </div>
-
-
-      {/* Grade de dias */}
       <div className="space-y-3">
         {WEEKDAY_ORDER.map((key, index) => (
           <motion.div
@@ -109,7 +127,6 @@ export function WorkingHoursEditor({
           </motion.div>
         ))}
       </div>
-
       {canEdit && (
         <div className="mt-6 flex justify-end">
           <Button onClick={handleSave} isLoading={mutation.isPending}>
