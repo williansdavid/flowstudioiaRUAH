@@ -9,9 +9,8 @@ const inputSchema = z.object({
   phone: z
     .string()
     .trim()
-    .max(30)
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
+    .min(8, 'Telefone é obrigatório e deve ter no mínimo 8 caracteres.')
+    .max(30),
   email: z
     .string()
     .trim()
@@ -20,6 +19,8 @@ const inputSchema = z.object({
     .optional()
     .or(z.literal(''))
     .transform((v) => (v && v.length > 0 ? v.toLowerCase() : null)),
+  birthDay: z.number().min(1).max(31).optional(),
+  birthMonth: z.number().min(1).max(12).optional(),
 });
 
 export type CreateQuickClientInput = z.input<typeof inputSchema>;
@@ -37,19 +38,29 @@ export const createQuickClient = createServerFn({ method: 'POST' })
       throw new Error('[appointments] Sessão inválida.');
     }
 
+    // Monta a data de aniversário se o usuário preencheu dia e mês.
+    // Usamos o ano 2000 como base padrão, já que queremos apenas celebrar o aniversário.
+    let birthDate: string | null = null;
+    if (data.birthDay && data.birthMonth) {
+      const m = String(data.birthMonth).padStart(2, '0');
+      const d = String(data.birthDay).padStart(2, '0');
+      birthDate = `2000-${m}-${d}`;
+    }
+
     const { data: row, error } = await supabase
       .from('clients')
       .insert({
         full_name: data.fullName,
         phone: data.phone,
         email: data.email,
+        birth_date: birthDate,
       })
       .select('id, full_name, phone')
       .single();
 
     if (error) {
       if (error.code === '23505') {
-        throw new Error('Já existe um cliente com este e-mail.');
+        throw new Error('Já existe um cliente com este e-mail ou telefone.');
       }
       throw error;
     }

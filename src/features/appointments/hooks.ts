@@ -117,20 +117,24 @@ export function useCreateQuickClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateQuickClientInput) =>
-      createQuickClient({ data: input }),
-    onSuccess: async () => {
-      toast.success('Cliente cadastrado.');
-      await queryClient.invalidateQueries({
-        queryKey: ['appointments', 'clients'],
-      });
+    mutationFn: async (data: {
+      fullName: string;
+      phone: string; // Agora é obrigatório
+      email?: string;
+      birthDay?: number;
+      birthMonth?: number;
+    }) => {
+      return createQuickClient({ data });
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Não foi possível cadastrar o cliente.');
+    onSuccess: () => {
+      toast.success('Cliente cadastrado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Erro ao cadastrar cliente');
     },
   });
 }
-
 interface UseAvailableSlotsParams {
   staffId: string | null;
   serviceId: string | null;

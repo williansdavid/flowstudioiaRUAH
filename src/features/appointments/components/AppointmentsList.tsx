@@ -11,6 +11,8 @@ import {
   UserX,
   RotateCcw,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import type { AppointmentItem } from '../types';
 import { toWhatsAppHref } from '@/lib/utils/whatsapp';
@@ -26,12 +28,13 @@ const STATUS_LABEL: Record<Status, string> = {
   no_show: 'Não compareceu',
 };
 
+// Estilo Premium Translúcido para Dark Mode
 const STATUS_CLASS: Record<Status, string> = {
-  pending: 'bg-amber-100 text-amber-700',
-  confirmed: 'bg-emerald-100 text-emerald-700',
-  completed: 'bg-blue-100 text-blue-700',
-  cancelled: 'bg-red-100 text-red-700',
-  no_show: 'bg-red-100 text-red-700',
+  pending: 'border-amber-500/30 bg-amber-500/10 text-amber-500',
+  confirmed: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500',
+  completed: 'border-blue-500/30 bg-blue-500/10 text-blue-500',
+  cancelled: 'border-red-500/30 bg-red-500/10 text-red-500',
+  no_show: 'border-red-500/30 bg-red-500/10 text-red-500',
 };
 
 const STAFF_PALETTE = [
@@ -105,16 +108,13 @@ function groupByStaff(items: AppointmentItem[]): StaffGroup[] {
 
 export function AppointmentsList({ items }: Props) {
   const [showCompleted, setShowCompleted] = useState(false);
-
   const completedCount = items.filter((a) => a.status === 'completed').length;
   const visibleItems = showCompleted
     ? items
     : items.filter((a) => a.status !== 'completed');
-
   const groups = groupByStaff(visibleItems);
-
   const hasToggle = completedCount > 0;
-
+  
   return (
     <div className="flex flex-col gap-4">
       {hasToggle && (
@@ -139,7 +139,6 @@ export function AppointmentsList({ items }: Props) {
           </Button>
         </div>
       )}
-
       {visibleItems.length === 0 ? (
         <div className="rounded-card border border-border bg-surface p-5 shadow-md">
           <p className="py-8 text-center text-sm text-text-muted">
@@ -169,7 +168,6 @@ function StaffAvatar({
   color: string;
 }) {
   const ring = { boxShadow: `0 0 0 2px ${color}` };
-
   if (avatarUrl) {
     return (
       <img
@@ -181,7 +179,6 @@ function StaffAvatar({
       />
     );
   }
-
   return (
     <span
       aria-hidden
@@ -195,7 +192,6 @@ function StaffAvatar({
 
 function StaffCard({ group }: { group: StaffGroup }) {
   const color = staffColor(group.staffId);
-
   return (
     <div
       className="rounded-card border border-border bg-surface p-5 shadow-md border-l-4"
@@ -258,31 +254,36 @@ const VARIANT_CLASS: Record<ActionVariant, string> = {
 function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
   const waHref = toWhatsAppHref(a.clientPhone, buildWhatsAppMessage(a));
   const { mutate, isPending, variables } = useUpdateAppointmentStatus();
+  const queryClient = useQueryClient();
 
   const actions = ACTIONS_BY_STATUS[a.status];
   const isUpdatingThisRow = isPending && variables?.id === a.id;
 
   return (
-    <li className="flex flex-col gap-1.5 py-3">
+    <li className="flex flex-col gap-2 py-3.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-sm font-medium tabular-nums">
-          <CalendarClock className="h-4 w-4 text-text-muted" aria-hidden />
+        {/* HORÁRIO DESTACADO EM LARANJA */}
+        <span className="flex items-center gap-1.5 text-base font-bold tabular-nums text-primary">
+          <CalendarClock className="h-4 w-4" aria-hidden />
           {timeFmt.format(new Date(a.startsAt))}
         </span>
-
+        {/* STATUS PREMIUM TRANSLÚCIDO */}
         <span
-          className={`shrink-0 rounded-pill px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[a.status]}`}
+          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${STATUS_CLASS[a.status]}`}
         >
           {STATUS_LABEL[a.status]}
         </span>
       </div>
-
+      
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-text-body">{a.clientName}</p>
-          <p className="truncate text-xs text-text-muted">{a.serviceName}</p>
+          {/* NOME EM BRANCO E MAIOR */}
+          <p className="truncate text-base font-bold text-white">{a.clientName}</p>
+          {/* SERVIÇO DESTACADO (MAIÚSCULO, LARANJA, ESPAÇADO) */}
+          <span className="mt-0.5 truncate text-sm font-bold uppercase tracking-wide text-primary">
+            {a.serviceName}
+          </span>
         </div>
-
         {waHref && (
           <a
             href={waHref}
@@ -290,39 +291,46 @@ function AppointmentRow({ appointment: a }: { appointment: AppointmentItem }) {
             rel="noopener noreferrer"
             aria-label={`Enviar WhatsApp para ${a.clientName}`}
             title="Conversar no WhatsApp"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-emerald-600 text-white transition-colors hover:bg-emerald-700"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-emerald-600 text-white transition-colors hover:bg-emerald-700"
           >
             <WhatsAppIcon className="h-4 w-4" />
           </a>
         )}
       </div>
 
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          {actions.map((action) => {           
-            const Icon = action.icon;
-            const variantMap: Record<ActionVariant, 'ghost' | 'success' | 'danger'> = {
-              neutral: 'ghost',
-              positive: 'success',
-              danger: 'danger',
-            };
-            return (
-              <Button
-                key={action.status}
-                type="button"
-                variant={variantMap[action.variant]}
-                size="sm"
-                disabled={isUpdatingThisRow}
-                onClick={() => mutate({ id: a.id, status: action.status })}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden />
-                {action.label}
-              </Button>
-            );
-          })}  
-        </div>   
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const variantMap: Record<ActionVariant, 'ghost' | 'success' | 'danger'> = {
+            neutral: 'ghost',
+            positive: 'success',
+            danger: 'danger',
+          };
+          
+          return (
+            <Button
+              key={action.status}
+              type="button"
+              variant={variantMap[action.variant]}
+              size="sm"
+              disabled={isUpdatingThisRow}
+              onClick={() => {
+                mutate(
+                  { id: a.id, status: action.status },
+                  {
+                    onSuccess: () => {
+                      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+                    },
+                  }
+                );
+              }}
+            >
+              <Icon className="h-3.5 w-3.5" aria-hidden />
+              {action.label}
+            </Button>
+          );
+        })}
+      </div>
     </li>
   );
 }
-
-
-

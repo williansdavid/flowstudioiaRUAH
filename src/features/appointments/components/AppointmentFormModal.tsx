@@ -12,10 +12,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { X, Trash2, Loader2, UserPlus, AlertTriangle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+
 import { QuickClientModal } from './QuickClientModal';
 import { ClientCombobox } from './ClientCombobox';
 import { Button } from '@/components/ui/Button';
+
 import type {
   AppointmentItem,
   BookableStaffItem,
@@ -28,7 +31,6 @@ import {
   useCancelAppointment,
 } from '../hooks';
 import type { BusinessHours } from '@/sites/ruah/types';
-import { validateAppointmentHours } from '@/sites/ruah/utils/validateAppointmentHours';
 
 type Mode =
   | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
@@ -67,15 +69,6 @@ function splitISO(iso: string): { date: string; time: string } {
 /**
  * ✅ CORREÇÃO BUG DIA -1:
  * { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo → ISO UTC.
- *
- * ANTES (bugado):
- *   const d = new Date(`${date}T${time}:00`);       // interpreta no fuso LOCAL do processo
- *   const utcTime = d.getTime() + 3 * 60 * 60 * 1000; // soma +3h manual
- *   return new Date(utcTime).toISOString();           // dupla conversão → dia errado
- *
- * DEPOIS (correto):
- *   Usa offset explícito "-03:00" → São Paulo fixo, sem depender do fuso do ambiente.
- *   new Date() parseia o offset e retorna o instante correto em UTC internamente.
  */
 function joinISO(date: string, time: string): string {
   return new Date(`${date}T${time}:00-03:00`).toISOString();
@@ -130,9 +123,11 @@ function buildInitialState(mode: Mode): FormState {
       notes: a.notes ?? '',
     };
   }
+
   const base = mode.defaults?.startsAt
     ? splitISO(mode.defaults.startsAt)
     : nextRoundHour();
+
   return {
     clientId: '',
     serviceId: '',
@@ -154,14 +149,16 @@ export function AppointmentFormModal({
   clients,
   services,
   staff,
-  businessHours,
+  businessHours, // Mantido na prop para compatibilidade, mas não bloqueia mais o Admin
   onClose,
 }: Props) {
   const isEdit = mode.kind === 'edit';
   const [form, setForm] = useState<FormState>(() => buildInitialState(mode));
+
   const [quickClientOpen, setQuickClientOpen] = useState(false);
   const [quickClientName, setQuickClientName] = useState('');
 
+  const queryClient = useQueryClient();
   const createMutation = useCreateAppointment();
   const updateMutation = useUpdateAppointment();
   const cancelMutation = useCancelAppointment();
@@ -188,29 +185,46 @@ export function AppointmentFormModal({
     set('endTime', addMinutes(form.startTime, selectedService.durationMinutes));
   }, [form.serviceId, form.startTime]);
 
-  const validationError = useMemo(() => {
-    if (!form.date || !form.startTime || !form.endTime) return null;
-    return validateAppointmentHours({
-      date: form.date,
-      startTime: form.startTime,
-      endTime: form.endTime,
-      hours: businessHours,
-    });
-  }, [form.date, form.startTime, form.endTime, businessHours]);
+  // VALIDAÇÕES DINÂMICAS (Campos Obrigatórios e Data Retroativa)
+  const missingFields: string[] = [];
+  let isRetroactiveError = false;
+  
+  if (!form.clientId) missingFields.push('Cliente');
+  if (!form.serviceId) missingFields.push('Serviço');
+  if (!form.staffId) missingFields.push('Profissional');
 
-  const canSubmit =
-    form.clientId &&
-    form.serviceId &&
-    form.staffId &&
-    form.date &&
-    form.startTime &&
-    form.endTime &&
-    !validationError;
+  if (form.date && form.startTime) {
+    const selectedDate = new Date(joinISO(form.date, form.startTime));
+    const now = new Date();
+    
+    let isRetroactive = selectedDate < now;
+    
+    // Se for edição, permite salvar se o horário não foi alterado (ex: apenas adicionando observação num agendamento passado)
+    if (isEdit && isRetroactive) {
+      const originalA = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
+      const originalStart = new Date(originalA.startsAt);
+      if (selectedDate.getTime() === originalStart.getTime()) {
+        isRetroactive = false;
+      }
+    }
+
+    if (isRetroactive) {
+      isRetroactiveError = true;
+    }
+  }
+
+  const canSubmit = missingFields.length === 0 && !isRetroactiveError && !!form.endTime;
 
   const isSaving =
     createMutation.isPending ||
     updateMutation.isPending ||
     cancelMutation.isPending;
+
+  // Função centralizada para invalidar a query e fechar o modal
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    onClose();
+  };
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -230,7 +244,7 @@ export function AppointmentFormModal({
           endsAt,
           notes: form.notes || null,
         },
-        { onSuccess: onClose },
+        { onSuccess: handleSuccess },
       );
     } else {
       createMutation.mutate(
@@ -242,7 +256,7 @@ export function AppointmentFormModal({
           endsAt,
           notes: form.notes || null,
         },
-        { onSuccess: onClose },
+        { onSuccess: handleSuccess },
       );
     }
   }
@@ -250,7 +264,7 @@ export function AppointmentFormModal({
   function handleDelete() {
     if (!isEdit) return;
     const a = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
-    cancelMutation.mutate({ id: a.id }, { onSuccess: onClose });
+    cancelMutation.mutate({ id: a.id }, { onSuccess: handleSuccess });
   }
 
   return (
@@ -298,7 +312,8 @@ export function AppointmentFormModal({
                       setQuickClientName('');
                       setQuickClientOpen(true);
                     }}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button border border-border bg-surface text-text-muted hover:bg-surface-2 hover:text-text-body"
+                    // DESTAQUE COM A COR PRIMARY DO SEU TEMA 👇
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20 hover:text-primary-hover"
                   >
                     <UserPlus className="h-4 w-4" />
                   </button>
@@ -371,10 +386,6 @@ export function AppointmentFormModal({
               </div>
             </div>
 
-            {validationError && (
-              <p className="text-xs text-red-600">{validationError}</p>
-            )}
-
             {/* Observações */}
             <div className="flex flex-col gap-1">
               <label className={fieldLabel}>Observações (opcional)</label>
@@ -387,8 +398,8 @@ export function AppointmentFormModal({
               />
             </div>
 
-            {/* Ações */}
-            <div className="flex items-center justify-between pt-1">
+            {/* Ações e Erros */}
+            <div className="flex items-center justify-between pt-2">
               {isEdit ? (
                 <button
                   type="button"
@@ -404,17 +415,35 @@ export function AppointmentFormModal({
                   Excluir
                 </button>
               ) : (
-                <span />
+                <span /> // Spacer para manter o alinhamento
               )}
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                disabled={!canSubmit}
-                isLoading={isSaving}
-              >
-                {isEdit ? 'Salvar' : 'Criar'}
-              </Button>
+              
+              <div className="flex items-center gap-3">
+                {/* Validações em Laranja */}
+                {(missingFields.length > 0 || isRetroactiveError) && (
+                  <div className="flex flex-col items-end text-sm font-medium text-orange-500 text-right max-w-[250px] leading-tight gap-1">
+                    {missingFields.length > 0 && (
+                      <span>Falta: {missingFields.join(', ')}</span>
+                    )}
+                    {isRetroactiveError && (
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4" />
+                        Data/hora no passado
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={!canSubmit}
+                  isLoading={isSaving}
+                >
+                  {isEdit ? 'Salvar' : 'Criar'}
+                </Button>
+              </div>
             </div>
           </form>
 

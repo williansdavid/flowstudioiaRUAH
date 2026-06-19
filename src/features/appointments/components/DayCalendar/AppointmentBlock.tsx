@@ -30,9 +30,9 @@ export function AppointmentBlock({ appointment, top, height, onClick }: Props) {
       <p className="truncate text-xs font-semibold tracking-wide leading-tight mb-0.5">
         {appointment.clientName}
       </p>
-      <p className="truncate text-[10px] opacity-80 leading-tight">
+      <span className="truncate text-[10px] opacity-80 leading-tight">
         {appointment.serviceName}
-      </p>
+      </span>
       <p className="truncate text-[10px] font-medium opacity-70 leading-tight mt-1">
         {new Date(appointment.startsAt).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
