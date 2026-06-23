@@ -211,8 +211,14 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
     <>
       <Dialog.Root open={open} onOpenChange={v => !v && onClose()}>
         <Dialog.Portal>
-          {/* ═══ OVERLAY — mais suave, menos agressivo ═══ */}
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+          {/* Overlay */}
+          <Dialog.Overlay
+            className={cn(
+              'fixed inset-0 z-40 bg-black/30 backdrop-blur-sm',
+              'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
+              'data-[state=open]:animate-in data-[state=open]:fade-in-0',
+            )}
+          />
 
           <Dialog.Content
             className={cn(
@@ -221,7 +227,6 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
               'sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2',
               'sm:w-full sm:max-w-md',
               'max-h-[100dvh]',
-              // ═══ FUNDO + BORDA premium ═══
               'bg-slate-900 border border-slate-700/30 ring-1 ring-slate-700/20 shadow-2xl',
               'sm:rounded-2xl focus:outline-none',
               'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
@@ -229,7 +234,7 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
               'pb-safe',
             )}
           >
-            {/* ── Scroll container ── */}
+            {/* Scroll container */}
             <div className="flex-1 overflow-y-auto min-h-0">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-700/20 px-5 py-4">
@@ -243,9 +248,8 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                 </Dialog.Close>
               </div>
 
-              {/* Body — mais espaçado, premium */}
+              {/* Body */}
               <div className="flex flex-col gap-5 p-5">
-
                 {isEdit && appointment && (
                   <>
                     {/* Nome + Status */}
@@ -260,7 +264,7 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                       </span>
                     </div>
 
-                    {/* ═══ INFO CARDS — neutros, premium, só o ícone mantém a cor ═══ */}
+                    {/* Info cards */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className={infoCard}>
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400"><Clock className="h-3.5 w-3.5" /></div>
@@ -306,9 +310,8 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                   </>
                 )}
 
-                {/* ═══ FORM ════════════════════════════════ */}
+                {/* Form */}
                 <form id="appointment-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
-                  {/* Cliente */}
                   <div className="flex flex-col gap-1.5">
                     <label className={fieldLabel}>Cliente</label>
                     <div className="flex gap-2">
@@ -327,7 +330,6 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     </div>
                   </div>
 
-                  {/* Serviço */}
                   <div className="flex flex-col gap-1.5">
                     <label className={fieldLabel}>Serviço</label>
                     <select className={fieldInput} value={form.serviceId} onChange={e => set('serviceId', e.target.value)}>
@@ -338,7 +340,6 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     </select>
                   </div>
 
-                  {/* Profissional */}
                   <div className="flex flex-col gap-1.5">
                     <label className={fieldLabel}>Profissional</label>
                     <select className={fieldInput} value={form.staffId} onChange={e => set('staffId', e.target.value)}>
@@ -347,7 +348,6 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     </select>
                   </div>
 
-                  {/* Data + Horários */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="flex flex-col gap-1.5">
                       <label className={fieldLabel}>Data</label>
@@ -363,13 +363,11 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     </div>
                   </div>
 
-                  {/* Observações */}
                   <div className="flex flex-col gap-1.5">
                     <label className={fieldLabel}>Observações (opcional)</label>
                     <textarea className={`${fieldInput} resize-none`} rows={1} value={form.notes} onChange={e => set('notes', e.target.value)} maxLength={1000} />
                   </div>
 
-                  {/* Conflito */}
                   {conflict && (
                     <div className="rounded-lg border border-orange-500/25 bg-orange-500/8 px-3 py-2.5 text-xs text-orange-400">
                       <div className="flex items-start gap-2">
@@ -379,13 +377,12 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     </div>
                   )}
 
-                  {/* Spacer pro footer fixo não encobrir o form */}
                   <div className="h-16 sm:h-0" />
                 </form>
               </div>
             </div>
 
-            {/* ═══ FOOTER FIXO — vidro premium ═══ */}
+            {/* Footer fixo */}
             <div className="shrink-0 border-t border-slate-700/20 bg-slate-900/80 backdrop-blur-xl px-5 py-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -400,27 +397,28 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {isEdit && waHref && <WhatsAppButton href={waHref}  />}
+                  {isEdit && waHref && <WhatsAppButton href={waHref} />}
                   <Button type="submit" form="appointment-form" variant="primary" size="sm" disabled={!canSubmit} isLoading={isSaving}>
                     {isEdit ? 'Salvar' : 'Criar'}
                   </Button>
                 </div>
               </div>
             </div>
+
+            {/* ═══ ConfirmDialog DENTRO do portal — recebe cliques sem interferência ═══ */}
+            <ConfirmDialog
+              open={cancelTarget}
+              onClose={() => setCancelTarget(false)}
+              onConfirm={() => { handleQuickStatus('cancelled'); setCancelTarget(false); }}
+              title="Cancelar agendamento?"
+              description={appointment ? `Tem certeza que deseja cancelar o agendamento de ${appointment.clientName}?` : ''}
+              confirmLabel="Sim, cancelar"
+              cancelLabel="Voltar"
+              variant="danger"
+            />
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-
-      <ConfirmDialog
-        open={cancelTarget}
-        onClose={() => setCancelTarget(false)}
-        onConfirm={() => { handleQuickStatus('cancelled'); setCancelTarget(false); }}
-        title="Cancelar agendamento?"
-        description={appointment ? `Tem certeza que deseja cancelar o agendamento de ${appointment.clientName}?` : ''}
-        confirmLabel="Sim, cancelar"
-        cancelLabel="Voltar"
-        variant="danger"
-      />
 
       <QuickClientModal
         open={quickClientOpen}

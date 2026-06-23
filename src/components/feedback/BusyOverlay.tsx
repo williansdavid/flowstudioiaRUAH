@@ -1,21 +1,5 @@
+// src/components/feedback/BusyOverlay.tsx
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-
-/**
- * BusyOverlay — glass premium durante I/O longo.
- * ----------------------------------------------------------------
- * Só renderiza após 400ms contínuos de operação (useGlobalBusy.showOverlay).
- * Sinaliza "sistema ocupado, aguarde" sem sensação de travamento.
- *
- * - Glass real: blur perceptível + saturate (cara de painel premium).
- * - transform:translateZ(0) + willChange → força camada GPU estável,
- *   matando o shimmer/tremor de subpixel do backdrop-filter em fullscreen.
- * - cursor:progress + pointer-events:auto → intercepta cliques (anti
- *   duplo-submit). Fade in/out suave só em opacity.
- * - Indicador central de 3 dots pulsando em onda (cor --color-accent).
- * - z-90 (abaixo da TopProgressBar = 100).
- * - prefers-reduced-motion: dots só pulsam opacidade, sem escala/delay.
- * ----------------------------------------------------------------
- */
 
 interface BusyOverlayProps {
   active: boolean
@@ -44,29 +28,36 @@ export function BusyOverlay({ active }: BusyOverlayProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
         >
-          <div
-            className="flex items-center gap-2"
-            role="status"
-            aria-label="Carregando"
-          >
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                className="block h-3 w-3 rounded-full"
-                style={{ background: 'var(--color-accent)' }}
-                animate={
-                  reduce
-                    ? { opacity: [0.4, 1, 0.4] }
-                    : { scale: [0.6, 1, 0.6], opacity: [0.4, 1, 0.4] }
-                }
-                transition={{
-                  duration: reduce ? 1.2 : 0.9,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: reduce ? 0 : i * 0.15,
-                }}
-              />
-            ))}
+          <div className="relative flex items-center justify-center" role="status" aria-label="Carregando">
+            {/* Anel externo giratório */}
+            <motion.div
+              className="absolute h-16 w-16"
+              style={{ border: '3px solid transparent', borderRadius: '50%', borderTopColor: 'var(--color-accent)' }}
+              animate={reduce ? {} : { rotate: 360 }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+            />
+            {/* Anel interno giratório (sentido oposto) */}
+            <motion.div
+              className="absolute h-10 w-10"
+              style={{ border: '2px solid transparent', borderRadius: '50%', borderBottomColor: 'var(--color-accent)' }}
+              animate={reduce ? {} : { rotate: -360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+            />
+            {/* Glow pulsante central */}
+            <motion.div
+              className="h-3 w-3 rounded-full"
+              style={{ background: 'var(--color-accent)' }}
+              animate={
+                reduce
+                  ? { opacity: [0.3, 1, 0.3] }
+                  : { scale: [0.8, 1.2, 0.8], opacity: [0.3, 1, 0.3], boxShadow: [
+                      '0 0 6px var(--color-accent)',
+                      '0 0 20px var(--color-accent)',
+                      '0 0 6px var(--color-accent)',
+                    ]}
+              }
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
           </div>
         </motion.div>
       )}

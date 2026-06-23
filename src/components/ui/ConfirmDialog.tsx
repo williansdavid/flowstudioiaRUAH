@@ -53,7 +53,8 @@ export function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          // 🔥 ALTERADO: z-50 → z-[60] para ficar acima de modais (AppointmentFormModal usa z-50)
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           initial="hidden"
           animate="visible"
           exit="hidden"
@@ -64,7 +65,6 @@ export function ConfirmDialog({
             onClick={onClose}
             aria-hidden
           />
-
           <motion.div
             className={cn(
               'relative w-full max-w-md rounded-2xl border border-border/60 bg-surface/95 p-6 shadow-2xl',
@@ -99,16 +99,10 @@ export function ConfirmDialog({
             )}
 
             <div className="flex flex-col gap-2 text-center">
-              <h2
-                id="confirm-title"
-                className="text-lg font-bold text-text-heading"
-              >
+              <h2 id="confirm-title" className="text-lg font-bold text-text-heading">
                 {title}
               </h2>
-              <p
-                id="confirm-desc"
-                className="text-sm leading-relaxed text-text-muted"
-              >
+              <p id="confirm-desc" className="text-sm leading-relaxed text-text-muted">
                 {description}
               </p>
             </div>
@@ -117,11 +111,7 @@ export function ConfirmDialog({
               <Button variant="ghost" onClick={onClose} disabled={isLoading}>
                 {cancelLabel}
               </Button>
-              <Button
-                variant={variant}
-                onClick={onConfirm}
-                isLoading={isLoading}
-              >
+              <Button variant={variant} onClick={onConfirm} isLoading={isLoading}>
                 {confirmLabel}
               </Button>
             </div>

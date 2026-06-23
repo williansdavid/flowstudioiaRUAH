@@ -11,30 +11,22 @@ export const Route = createFileRoute('/_authed/admin/equipe/')({
 function EquipePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Busca dados só para resolver o staff que está sendo editado
   const { data: staffList } = useStaffList(false);
-
   const editingStaff: StaffListItem | null =
     editingId !== null && staffList
       ? (staffList.find((s) => s.id === editingId) ?? null)
       : null;
 
   return (
-    <div className="space-y-6 p-4">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Equipe</h1>
-          <p className="text-sm text-text-muted">
-            Profissionais do studio e suas grades de horário.
-          </p>
+    <div className="h-full w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
+      <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-0">
+          <StaffList
+            onCreate={() => setCreateOpen(true)}
+            onEdit={(id) => setEditingId(id)}
+          />
         </div>
-      </header>
-
-      <StaffList
-        onCreate={() => setCreateOpen(true)}
-        onEdit={(id) => setEditingId(id)}
-      />
+      </div>
 
       {createOpen && (
         <StaffFormModal
@@ -43,7 +35,6 @@ function EquipePage() {
           mode="create"
         />
       )}
-
       <StaffFormModal
         open={editingStaff !== null}
         onClose={() => setEditingId(null)}

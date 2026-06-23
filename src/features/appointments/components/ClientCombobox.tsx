@@ -21,6 +21,37 @@ function normPhone(s: string): string {
   return s.replace(/\D/g, '');
 }
 
+// 🔥 NOVA: máscara de telefone brasileiro (14) 99999-0001
+function formatPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  let digits = phone.replace(/\D/g, '');
+  if (digits.length === 0) return null;
+
+  // Remove DDI 55 de números brasileiros
+  if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
+    digits = digits.slice(2);
+  }
+
+  if (digits.length === 0) return null;
+
+  // Celular: (XX) XXXXX-XXXX
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  // Fixo: (XX) XXXX-XXXX
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  // Fallback: retorna original se não conseguir formatar
+  return phone;
+}
+
+// Remove +55 para exibição limpa e aplica máscara
+function displayPhone(phone: string | null | undefined): string | null {
+  return formatPhone(phone);
+}
+
 const fieldInput =
   'w-full rounded-lg border border-slate-700/40 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-200 outline-none ' +
   'transition-all duration-200 placeholder:text-slate-500 ' +
@@ -45,8 +76,9 @@ export function ClientCombobox({
     [clients, value],
   );
 
+  // Telefone com máscara
   const selectedLabel = selected
-    ? `${selected.name}${selected.phone ? ` — ${selected.phone}` : ''}`
+    ? `${selected.name}${selected.phone ? ` — ${formatPhone(selected.phone)}` : ''}`
     : '';
 
   const filtered = useMemo(() => {
@@ -122,7 +154,6 @@ export function ClientCombobox({
     }
   }
 
-  // Modo edit: fixo, sem interação
   if (disabled) {
     return (
       <div className={`${fieldInput} cursor-not-allowed opacity-70 flex items-center`}>
@@ -142,7 +173,7 @@ export function ClientCombobox({
           <span className={selected ? 'text-slate-200' : 'text-slate-500'}>
             {selectedLabel || 'Selecione…'}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 shrink-0">
             {selected && (
               <span
                 role="button"
@@ -192,7 +223,7 @@ export function ClientCombobox({
                       <span className="truncate text-slate-200">
                         {c.name}
                         {c.phone ? (
-                          <span className="text-slate-500"> — {c.phone}</span>
+                          <span className="text-slate-500"> — {formatPhone(c.phone)}</span>
                         ) : null}
                       </span>
                       {isSel && (

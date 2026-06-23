@@ -1,4 +1,5 @@
 ﻿// src/features/staff/components/StaffList.tsx
+
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
@@ -79,16 +80,6 @@ function Avatar({
   );
 }
 
-function CreateButton({ onCreate }: { onCreate?: () => void }) {
-  if (!onCreate) return null;
-  return (
-    <Button type="button" variant="primary" size="md" onClick={onCreate}>
-      <Plus className="size-4" />
-      Novo profissional
-    </Button>
-  );
-}
-
 function StaffCardSkeleton() {
   return (
     <li className="flex flex-col gap-4 rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-sm">
@@ -157,15 +148,15 @@ function StaffCard({
             </span>
 
             {!staff.isArchived && (
-<Link
-  to="/admin/equipe/$staffId/horarios"
-  params={{ staffId: staff.id }}
-  aria-label={`Horários de ${staff.name}`}
-  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-orange-500/25 bg-orange-500/8 px-2.5 py-1 text-xs font-semibold text-orange-400 transition hover:bg-orange-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
->
-  <CalendarRange className="size-3.5" />
-  Horários
-</Link>
+              <Link
+                to="/admin/equipe/$staffId/horarios"
+                params={{ staffId: staff.id }}
+                aria-label={`Horários de ${staff.name}`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-orange-500/25 bg-orange-500/8 px-2.5 py-1 text-xs font-semibold text-orange-400 transition hover:bg-orange-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
+              >
+                <CalendarRange className="size-3.5" />
+                Horários
+              </Link>
             )}
           </div>
         </div>
@@ -274,61 +265,97 @@ export function StaffList({ onCreate, onEdit }: StaffListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowArchived((v) => !v)}
-          className="text-orange-400 hover:bg-orange-500/10"
-        >
-          <Archive className="size-4 text-orange-400" />
-          {showArchived ? 'Ver ativos' : 'Ver arquivados'}
-        </Button>
-        {!showArchived && <CreateButton onCreate={onCreate} />}
+    <div className="h-full w-full flex flex-col">
+      {/* Conteúdo scrollável */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="space-y-4">
+          {/* Header — desktop only */}
+          <div className="hidden sm:flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowArchived((v) => !v)}
+            >
+              <Archive className="size-4" />
+              {showArchived ? 'Ver ativos' : 'Ver arquivados'}
+            </Button>
+            {!showArchived && onCreate && (
+              <Button variant="primary" size="sm" onClick={onCreate}>
+                <Plus className="size-4" />
+                Novo profissional
+              </Button>
+            )}
+          </div>
+
+          {isLoading && (
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <StaffCardSkeleton key={i} />
+              ))}
+            </ul>
+          )}
+
+          {isError && !isLoading && (
+            <div className="flex items-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">
+              <AlertCircle className="size-4 shrink-0" />
+              Falha ao carregar profissionais.
+            </div>
+          )}
+
+          {!isLoading && !isError && (staff?.length ?? 0) === 0 && (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700/30 bg-slate-800/30 p-10 text-center">
+              <Users className="size-8 text-slate-600" />
+              <p className="text-sm text-slate-500">
+                {showArchived
+                  ? 'Nenhum profissional arquivado.'
+                  : 'Nenhum profissional cadastrado.'}
+              </p>
+              {!showArchived && onCreate && (
+                <Button variant="primary" size="sm" onClick={onCreate}>
+                  <Plus className="size-4" />
+                  Novo profissional
+                </Button>
+              )}
+            </div>
+          )}
+
+          {!isLoading && !isError && (staff?.length ?? 0) > 0 && (
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {staff!.map((s) => (
+                <StaffCard
+                  key={s.id}
+                  staff={s}
+                  onEdit={onEdit}
+                  onArchive={handleArchive}
+                  archivePending={archiveMut.isPending}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
-      {isLoading && (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <StaffCardSkeleton key={i} />
-          ))}
-        </ul>
-      )}
-
-      {isError && !isLoading && (
-        <div className="flex items-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">
-          <AlertCircle className="size-4 shrink-0" />
-          Falha ao carregar profissionais.
+      {/* Footer mobile — efeito vidro de verdade */}
+      <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-white/5 bg-black/20 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowArchived((v) => !v)}
+          >
+            <Archive className="size-4" />
+            {showArchived ? 'Ativos' : 'Arquivados'}
+          </Button>
+          {onCreate && (
+            <Button variant="primary" size="sm" onClick={onCreate}>
+              <Plus className="size-4" />
+              Novo
+            </Button>
+          )}
         </div>
-      )}
-
-      {!isLoading && !isError && (staff?.length ?? 0) === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700/30 bg-slate-800/30 p-10 text-center">
-          <Users className="size-8 text-slate-600" />
-          <p className="text-sm text-slate-500">
-            {showArchived
-              ? 'Nenhum profissional arquivado.'
-              : 'Nenhum profissional cadastrado.'}
-          </p>
-          {!showArchived && <CreateButton onCreate={onCreate} />}
-        </div>
-      )}
-
-      {!isLoading && !isError && (staff?.length ?? 0) > 0 && (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {staff!.map((s) => (
-            <StaffCard
-              key={s.id}
-              staff={s}
-              onEdit={onEdit}
-              onArchive={handleArchive}
-              archivePending={archiveMut.isPending}
-            />
-          ))}
-        </ul>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 // src/features/appointments/components/AppointmentsList.tsx
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/Button';
+import { motion } from 'framer-motion';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   CalendarClock,
@@ -13,7 +12,6 @@ import {
   UserX,
   RotateCcw,
   Calendar,
-  ChevronDown,
   Pencil,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +21,7 @@ import { toWhatsAppHref } from '@/lib/utils/whatsapp';
 import { useUpdateAppointmentStatus } from '../hooks';
 import { staffColor } from './DayCalendar/staffColor';
 import { cn } from '@/lib/cn';
+import { useSession } from '@/features/auth/hooks';
 
 type Status = AppointmentItem['status'];
 
@@ -104,12 +103,6 @@ const ACTIONS_BY_STATUS: Record<Status, StatusAction[]> = {
   cancelled: [],
 };
 
-const BUTTON_VARIANT: Record<ActionVariant, 'ghost' | 'success' | 'danger'> = {
-  neutral: 'ghost',
-  positive: 'success',
-  danger: 'danger',
-};
-
 const BUTTON_STYLE: Record<ActionVariant, string> = {
   neutral:
     'border-border/40 text-text-muted hover:bg-surface-alt hover:text-text-body hover:border-border',
@@ -148,7 +141,6 @@ const rowVariants = {
 
 interface Props {
   items: AppointmentItem[];
-  /** Callback disparado ao clicar no ícone de editar (lápis). */
   onEdit?: (appointment: AppointmentItem) => void;
 }
 
@@ -179,25 +171,11 @@ function groupByStaff(items: AppointmentItem[]): StaffGroup[] {
   return [...groups.values()];
 }
 
-function StaffAvatar({
-  name,
-  avatarUrl,
-  color,
-}: {
-  name: string;
-  avatarUrl: string | null;
-  color: string;
-}) {
+function StaffAvatar({ name, avatarUrl, color }: { name: string; avatarUrl: string | null; color: string }) {
   const ring = { boxShadow: `0 0 0 2px ${color}` };
   if (avatarUrl) {
     return (
-      <img
-        src={avatarUrl}
-        alt={name}
-        loading="lazy"
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-        style={ring}
-      />
+      <img src={avatarUrl} alt={name} loading="lazy" className="h-8 w-8 shrink-0 rounded-full object-cover" style={ring} />
     );
   }
   return (
@@ -228,13 +206,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-function EmptyState({
-  hasAnyItems,
-  showCompleted,
-}: {
-  hasAnyItems: boolean;
-  showCompleted: boolean;
-}) {
+function EmptyState({ hasAnyItems, showCompleted }: { hasAnyItems: boolean; showCompleted: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -255,69 +227,84 @@ function EmptyState({
   );
 }
 
+function StaffGrid({ groups, onEdit }: { groups: StaffGroup[]; onEdit?: (appointment: AppointmentItem) => void }) {
+  return (
+    <motion.div
+      className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {groups.map((group) => (
+        <StaffCard key={group.staffId} group={group} onEdit={onEdit} />
+      ))}
+    </motion.div>
+  );
+}
+
 export function AppointmentsList({ items, onEdit }: Props) {
+  const { data: session } = useSession();
+  const userId = session?.userId;
+
+  const myItems = userId ? items.filter((a) => a.staffId === userId) : items;
   const [showCompleted, setShowCompleted] = useState(false);
-  const completedCount = items.filter((a) => a.status === 'completed').length;
-  const visibleItems = showCompleted
-    ? items
-    : items.filter((a) => a.status !== 'completed');
-  const groups = groupByStaff(visibleItems);
-  const hasToggle = completedCount > 0;
+
+  const allFiltered = showCompleted ? items : items.filter((a) => a.status !== 'completed');
+  const groupsAll = groupByStaff(allFiltered);
+
+  const myFiltered = showCompleted ? myItems : myItems.filter((a) => a.status !== 'completed');
+  const groupsMy = groupByStaff(myFiltered);
 
   return (
     <div className="flex flex-col gap-5">
-      {hasToggle && (
-        <div className="flex items-center justify-end">
-          <button
-            type="button"
-            onClick={() => setShowCompleted((v) => !v)}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200',
-              'border border-slate-700/40 text-slate-500',
-              'hover:border-slate-600 hover:text-slate-300 hover:bg-slate-800/60',
-              'active:scale-95',
-            )}
-          >
-            {showCompleted ? (
-              <>
-                <EyeOff className="h-3.5 w-3.5" aria-hidden />
-                Ocultar concluídos
-              </>
-            ) : (
-              <>
-                <Eye className="h-3.5 w-3.5" aria-hidden />
-                Mostrar concluídos ({completedCount})
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      {visibleItems.length === 0 ? (
-        <EmptyState hasAnyItems={items.length > 0} showCompleted={showCompleted} />
-      ) : (
-        <motion.div
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+      {/* Toggle "Mostrar concluídos" */}
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setShowCompleted((v) => !v)}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200',
+            'border border-slate-700/40 text-slate-500',
+            'hover:border-slate-600 hover:text-slate-300 hover:bg-slate-800/60',
+            'active:scale-95',
+          )}
         >
-{groups.map((group) => (
-  <StaffCard key={group.staffId} group={group} onEdit={onEdit} />
-))}
-        </motion.div>
-      )}
+          {showCompleted ? (
+            <>
+              <EyeOff className="h-3.5 w-3.5" aria-hidden />
+              Ocultar concluídos
+            </>
+          ) : (
+            <>
+              <Eye className="h-3.5 w-3.5" aria-hidden />
+              Mostrar concluídos ({items.filter((a) => a.status === 'completed').length})
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* DESKTOP: todos os staffs */}
+      <div className="hidden sm:block">
+        {allFiltered.length === 0 ? (
+          <EmptyState hasAnyItems={items.length > 0} showCompleted={showCompleted} />
+        ) : (
+          <StaffGrid groups={groupsAll} onEdit={onEdit} />
+        )}
+      </div>
+
+      {/* MOBILE: só o staff logado */}
+      <div className="block sm:hidden">
+        {myFiltered.length === 0 ? (
+          <EmptyState hasAnyItems={myItems.length > 0} showCompleted={showCompleted} />
+        ) : (
+          <StaffGrid groups={groupsMy} onEdit={onEdit} />
+        )}
+      </div>
     </div>
   );
 }
 
-function StaffCard({
-  group,
-  onEdit,
-}: {
-  group: StaffGroup;
-  onEdit?: (appointment: AppointmentItem) => void;
-}) {
+function StaffCard({ group, onEdit }: { group: StaffGroup; onEdit?: (appointment: AppointmentItem) => void }) {
   const color = group.staffColor ?? staffColor(group.staffId);
   return (
     <motion.div
@@ -326,31 +313,17 @@ function StaffCard({
         'group relative overflow-hidden rounded-2xl border bg-slate-900/80 p-5 shadow-md',
         'transition-all duration-300 ease-out',
         'hover:shadow-lg hover:-translate-y-0.5',
-        'before:pointer-events-none before:absolute before:inset-0 before:rounded-2xl before:opacity-0 before:transition-opacity before:duration-300',
-        'hover:before:opacity-100',
       )}
       style={{ borderColor: `${color}20` }}
     >
-      <div
-        className="absolute left-0 top-0 h-full w-1 rounded-l-2xl"
-        style={{ backgroundColor: color }}
-      />
+      <div className="absolute left-0 top-0 h-full w-1 rounded-l-2xl" style={{ backgroundColor: color }} />
       <div className="mb-4 flex items-center gap-3 border-b border-slate-700/30 pb-3 pl-2">
-        <StaffAvatar
-          name={group.staffName}
-          avatarUrl={group.staffAvatarUrl}
-          color={color}
-        />
+        <StaffAvatar name={group.staffName} avatarUrl={group.staffAvatarUrl} color={color} />
         <h3 className="text-base font-bold tracking-tight" style={{ color }}>
           {group.staffName}
         </h3>
       </div>
-      <motion.ul
-        className="flex flex-col gap-2"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <motion.ul className="flex flex-col gap-2" variants={containerVariants} initial="hidden" animate="visible">
         {group.appointments.map((a) => (
           <AppointmentRow key={a.id} appointment={a} onEdit={onEdit} />
         ))}
@@ -359,14 +332,7 @@ function StaffCard({
   );
 }
 
-// ─── Appointment Row ──────────────────────────────────────────────
-function AppointmentRow({
-  appointment: a,
-  onEdit,
-}: {
-  appointment: AppointmentItem;
-  onEdit?: (appointment: AppointmentItem) => void;
-}) {
+function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentItem; onEdit?: (appointment: AppointmentItem) => void }) {
   const [cancelTarget, setCancelTarget] = useState<AppointmentItem | null>(null);
   const waHref = toWhatsAppHref(a.clientPhone, buildWhatsAppMessage(a));
   const { mutate, isPending, variables } = useUpdateAppointmentStatus();
@@ -395,15 +361,12 @@ function AppointmentRow({
 
         <div className="mb-3 flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-bold text-slate-100">
-              {a.clientName}
-            </p>
-            <p className="mt-0.5 truncate text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <p className="truncate text-[15px] font-bold text-slate-100">{a.clientName}</p>
+            <span className="mt-0.5 truncate text-xs font-semibold uppercase tracking-wider text-orange-400">
               {a.serviceName}
-            </p>
+            </span>
           </div>
 
-          {/* WhatsApp + Lápis */}
           <div className="flex items-center gap-1.5 shrink-0">
             {onEdit && (
               <button
@@ -434,21 +397,14 @@ function AppointmentRow({
                     } else {
                       mutate(
                         { id: a.id, status: action.status },
-                        {
-                          onSuccess: () => {
-                            queryClient.invalidateQueries({
-                              queryKey: ['appointments'],
-                            });
-                          },
-                        },
+                        { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
                       );
                     }
                   }}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5',
                     'text-[11px] font-bold uppercase tracking-wider',
-                    'transition-all duration-200',
-                    'active:scale-95',
+                    'transition-all duration-200 active:scale-95',
                     BUTTON_STYLE[action.variant],
                   )}
                 >

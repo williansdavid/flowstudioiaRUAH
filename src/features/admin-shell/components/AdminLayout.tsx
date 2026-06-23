@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useMatches } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -14,8 +14,22 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ session, studioName }: AdminLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [topOffset, setTopOffset] = useState(0);
   const signOut = useSignOut();
   const matches = useMatches();
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setTopOffset(Math.max(vv.offsetTop, 0));
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   // Pega o título do match mais profundo que define staticData.title.
   const title =
@@ -27,8 +41,12 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
 
   return (
     <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: 'var(--gradient-app)' }}
+      className="flex overflow-hidden"
+      style={{
+        height: topOffset > 0 ? `calc(100dvh - ${topOffset}px)` : '100dvh',
+        marginTop: topOffset > 0 ? topOffset : 0,
+        background: 'var(--gradient-app)',
+      }}
     >
       {/* Sidebar desktop */}
       <aside className="hidden w-64 shrink-0 lg:block">

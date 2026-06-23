@@ -1,6 +1,6 @@
 // src/routes/_authed/admin/agendamentos.tsx
 import { useState } from 'react';
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
@@ -18,6 +18,14 @@ import {
 import { ErrorState } from '@/components/feedback';
 import { businessHours } from '@/sites/ruah/config/businessHours';
 import type { AppointmentItem } from '@/features/appointments';
+
+
+type ModalState = {
+  open: boolean;
+  mode:
+    | { kind: 'create' }
+    | { kind: 'edit'; appointment: AppointmentItem };
+};
 
 function dayQuery(date: string) {
   return {
@@ -60,16 +68,8 @@ export const Route = createFileRoute('/_authed/admin/agendamentos')({
   errorComponent: AgendamentosError,
 });
 
-type ModalState =
-  | { open: false; mode: { kind: 'create' } }
-  | {
-      open: true;
-      mode:
-        | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
-        | { kind: 'edit'; appointment: AppointmentItem };
-    };
-
 function AgendamentosPage() {
+  const navigate = useNavigate();
   const today = todayLocalDate();
   const [date, setDate] = useState(today);
   const [modal, setModal] = useState<ModalState>({
@@ -101,7 +101,6 @@ function AgendamentosPage() {
   };
 
   const handleToday = () => setDate(today);
-
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value) setDate(e.target.value);
   };
@@ -146,9 +145,13 @@ function AgendamentosPage() {
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
+
+      {/* ÚNICO botão Novo — navega pro wizard */}
       <Button
-        onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
-        className="flex-shrink-0 gap-1.5 px-3 py-2.5 h-auto text-xs sm:text-sm sm:h-10 sm:px-4 active:scale-95"
+        onClick={() => navigate({ to: '/admin/agendar-novo' })}
+        variant="primary"
+        size="sm"
+        className="gap-1.5"
       >
         <Plus className="h-4 w-4" />
         Novo
@@ -159,7 +162,7 @@ function AgendamentosPage() {
   return (
     <div className="h-full w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6 min-h-0">
-        {/* Header — título + controles desktop */}
+        {/* Header desktop */}
         <div className="flex-shrink-0 hidden sm:flex items-center justify-between sm:p-0">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
@@ -182,17 +185,18 @@ function AgendamentosPage() {
           {renderControls(false)}
         </div>
 
-        {/* Lista de agendamentos */}
+        {/* Lista */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-0">
           <AppointmentsList items={appointments} onEdit={handleAppointmentClick} />
         </div>
 
-        {/* Rodapé mobile — vidro, igual à agenda */}
+        {/* Rodapé mobile */}
         <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-slate-800/60 bg-slate-950">
           {renderControls(true)}
         </div>
       </div>
 
+      {/* Modal só pra EDIÇÃO (quando clica no lápis) */}
       <AppointmentFormModal
         open={modal.open}
         onClose={() => setModal({ open: false, mode: { kind: 'create' } })}
