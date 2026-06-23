@@ -4,7 +4,8 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Loader2, UserPlus } from 'lucide-react';
 import type { ClientOption } from '../types';
 import { useCreateQuickClient } from '../hooks';
-
+import { cn } from '@/lib/cn';
+import { Button } from '@/components/ui/Button';
 interface Props {
   open: boolean;
   initialName?: string;
@@ -12,13 +13,12 @@ interface Props {
   onCreated: (client: ClientOption) => void;
 }
 
-const fieldLabel = 'text-xs font-medium text-text-muted';
+const fieldLabel = 'text-[11px] font-semibold uppercase tracking-widest text-slate-400';
 const fieldInput =
-  'w-full rounded-button border border-border bg-surface px-3 py-2 text-sm text-text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary';
+  'w-full rounded-lg border border-slate-700/30 bg-slate-800/60 px-3 py-2.5 text-sm text-slate-300 outline-none transition-all duration-200 placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-800';
 
-/** Formata o telefone dinamicamente para (XX) XXXXX-XXXX ou (XX) XXXX-XXXX */
 function formatPhone(value: string) {
-  const v = value.replace(/\D/g, ''); // Remove tudo que não é número
+  const v = value.replace(/\D/g, '');
   if (!v) return '';
   if (v.length <= 2) return `(${v}`;
   if (v.length <= 6) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
@@ -37,7 +37,7 @@ export function QuickClientModal({
   const [email, setEmail] = useState('');
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
-  
+
   const createMut = useCreateQuickClient();
 
   useEffect(() => {
@@ -50,11 +50,9 @@ export function QuickClientModal({
     }
   }, [open, initialName]);
 
-  // Validações dinâmicas em laranja
   const missingFields: string[] = [];
   if (fullName.trim().length < 2) missingFields.push('Nome');
-  
-  // Exige pelo menos 10 dígitos reais (DDD + 8 números)
+
   const phoneDigits = phone.replace(/\D/g, '');
   if (phoneDigits.length < 10) missingFields.push('Telefone');
 
@@ -81,26 +79,45 @@ export function QuickClientModal({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[60] flex w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col rounded-card border border-border bg-surface shadow-md focus:outline-none">
-          
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <Dialog.Title className="flex items-center gap-3 text-lg font-bold tracking-tight text-text-body">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+        {/* ═══ OVERLAY premium ═══ */}
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+
+        {/* ═══ CONTENT premium ═══ */}
+        <Dialog.Content
+          className={cn(
+            'fixed z-[60] flex w-[calc(100vw-2rem)] sm:max-w-md flex-col',
+            'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
+            // Fundo + borda premium, igual ao AppointmentFormModal
+            'bg-slate-900 border border-slate-700/30 ring-1 ring-slate-700/20 shadow-2xl',
+            'rounded-2xl focus:outline-none',
+            'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
+            'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+          )}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-700/20 px-5 py-4">
+            <Dialog.Title className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">
                 <UserPlus className="h-4 w-4" />
               </div>
-              Novo cliente
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                Novo cliente
+              </span>
             </Dialog.Title>
-            <Dialog.Close
-              className="inline-flex h-8 w-8 items-center justify-center rounded-pill text-text-muted transition-colors hover:bg-surface-2 hover:text-text-body"
-              aria-label="Fechar"
-            >
-              <X className="h-4 w-4" />
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </Dialog.Close>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-4">
-            <label className="flex flex-col gap-1">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 px-5 py-5">
+            <label className="flex flex-col gap-1.5">
               <span className={fieldLabel}>Nome *</span>
               <input
                 autoFocus
@@ -114,11 +131,11 @@ export function QuickClientModal({
               />
             </label>
 
-            <label className="flex flex-col gap-1">
+            <label className="flex flex-col gap-1.5">
               <span className={fieldLabel}>Telefone *</span>
               <input
                 type="tel"
-                maxLength={15} // (11) 99999-9999 tem 15 caracteres
+                maxLength={15}
                 className={fieldInput}
                 value={phone}
                 onChange={(e) => setPhone(formatPhone(e.target.value))}
@@ -127,7 +144,7 @@ export function QuickClientModal({
               />
             </label>
 
-            <label className="flex flex-col gap-1">
+            <label className="flex flex-col gap-1.5">
               <span className={fieldLabel}>E-mail (opcional)</span>
               <input
                 type="email"
@@ -139,9 +156,9 @@ export function QuickClientModal({
               />
             </label>
 
-            {/* Linha de Aniversário */}
+            {/* Aniversário */}
             <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1">
+              <label className="flex flex-col gap-1.5">
                 <span className={fieldLabel}>Dia de Nasc. (opcional)</span>
                 <input
                   type="number"
@@ -153,13 +170,9 @@ export function QuickClientModal({
                   placeholder="DD"
                 />
               </label>
-              <label className="flex flex-col gap-1">
+              <label className="flex flex-col gap-1.5">
                 <span className={fieldLabel}>Mês de Nasc. (opcional)</span>
-                <select
-                  className={fieldInput}
-                  value={birthMonth}
-                  onChange={(e) => setBirthMonth(e.target.value)}
-                >
+                <select className={fieldInput} value={birthMonth} onChange={(e) => setBirthMonth(e.target.value)}>
                   <option value="">Selecione...</option>
                   <option value="1">Janeiro</option>
                   <option value="2">Fevereiro</option>
@@ -177,24 +190,22 @@ export function QuickClientModal({
               </label>
             </div>
 
-            <div className="mt-1 flex items-center justify-end gap-3">
-              {/* Validações em Laranja */}
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-slate-700/20 pt-4">
               {missingFields.length > 0 && (
-                <span className="text-sm font-medium text-orange-500 text-right max-w-[200px] leading-tight">
+                <span className="text-right text-xs font-medium leading-tight text-orange-400 max-w-[200px]">
                   Falta: {missingFields.join(', ')}
                 </span>
               )}
-              
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="inline-flex items-center gap-1.5 rounded-button bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {createMut.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                Cadastrar
-              </button>
+<Button
+  type="submit"
+  variant="primary"
+  size="sm"
+  disabled={!canSubmit}
+  isLoading={createMut.isPending}
+>
+  {createMut.isPending ? 'Salvando…' : 'Cadastrar'}
+</Button>
             </div>
           </form>
         </Dialog.Content>

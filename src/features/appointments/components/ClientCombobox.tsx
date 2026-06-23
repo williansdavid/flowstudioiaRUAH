@@ -8,18 +8,13 @@ interface Props {
   value: string;
   disabled?: boolean;
   onChange: (clientId: string) => void;
-  /** Dispara o cadastro rápido, levando o termo digitado como nome inicial. */
   onCreateNew: (initialName: string) => void;
 }
 
 const MAX_VISIBLE = 50;
 
-/** Normaliza para busca: minúsculas, sem acento, sem separadores de telefone. */
 function norm(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function normPhone(s: string): string {
@@ -27,7 +22,9 @@ function normPhone(s: string): string {
 }
 
 const fieldInput =
-  'w-full rounded-button border border-border bg-surface px-3 py-2 text-sm text-text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary';
+  'w-full rounded-lg border border-slate-700/40 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-200 outline-none ' +
+  'transition-all duration-200 placeholder:text-slate-500 ' +
+  'focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-900';
 
 export function ClientCombobox({
   clients,
@@ -39,7 +36,6 @@ export function ClientCombobox({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
-
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -70,12 +66,8 @@ export function ClientCombobox({
     return out;
   }, [clients, query]);
 
-  // Reseta highlight quando a lista muda.
-  useEffect(() => {
-    setHighlight(0);
-  }, [query, open]);
+  useEffect(() => { setHighlight(0); }, [query, open]);
 
-  // Click-outside fecha.
   useEffect(() => {
     if (!open) return;
     function onDocClick(ev: MouseEvent) {
@@ -88,12 +80,9 @@ export function ClientCombobox({
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
-  // Mantém item destacado visível.
   useEffect(() => {
     if (!open || !listRef.current) return;
-    const el = listRef.current.querySelector<HTMLElement>(
-      `[data-idx="${highlight}"]`,
-    );
+    const el = listRef.current.querySelector<HTMLElement>(`[data-idx="${highlight}"]`);
     el?.scrollIntoView({ block: 'nearest' });
   }, [highlight, open]);
 
@@ -133,10 +122,10 @@ export function ClientCombobox({
     }
   }
 
-  // Modo edit: campo fixo, sem interação.
+  // Modo edit: fixo, sem interação
   if (disabled) {
     return (
-      <div className={`${fieldInput} cursor-not-allowed opacity-70`}>
+      <div className={`${fieldInput} cursor-not-allowed opacity-70 flex items-center`}>
         {selectedLabel || 'Selecione…'}
       </div>
     );
@@ -144,14 +133,13 @@ export function ClientCombobox({
 
   return (
     <div ref={rootRef} className="relative">
-      {/* Trigger / valor selecionado */}
       {!open ? (
         <button
           type="button"
           onClick={openDropdown}
           className={`${fieldInput} flex items-center justify-between text-left`}
         >
-          <span className={selected ? 'text-text-body' : 'text-text-muted'}>
+          <span className={selected ? 'text-slate-200' : 'text-slate-500'}>
             {selectedLabel || 'Selecione…'}
           </span>
           <span className="flex items-center gap-1">
@@ -160,16 +148,13 @@ export function ClientCombobox({
                 role="button"
                 tabIndex={-1}
                 aria-label="Limpar"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  clearSelection();
-                }}
-                className="inline-flex h-5 w-5 items-center justify-center rounded-pill text-text-muted hover:bg-surface-2 hover:text-text-body"
+                onClick={(e) => { e.stopPropagation(); clearSelection(); }}
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-slate-300"
               >
                 <X className="h-3.5 w-3.5" />
               </span>
             )}
-            <ChevronDown className="h-4 w-4 text-text-muted" />
+            <ChevronDown className="h-4 w-4 text-slate-500" />
           </span>
         </button>
       ) : (
@@ -185,14 +170,11 @@ export function ClientCombobox({
         />
       )}
 
-      {/* Dropdown */}
       {open && (
-        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-button border border-border bg-surface shadow-md">
+        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-700/40 bg-slate-900 shadow-lg shadow-slate-950/50">
           <ul ref={listRef} className="max-h-56 overflow-y-auto py-1">
             {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-text-muted">
-                Nenhum cliente encontrado.
-              </li>
+              <li className="px-3 py-2 text-sm text-slate-500">Nenhum cliente encontrado.</li>
             ) : (
               filtered.map((c, idx) => {
                 const active = idx === highlight;
@@ -204,17 +186,17 @@ export function ClientCombobox({
                       onMouseEnter={() => setHighlight(idx)}
                       onClick={() => pick(c)}
                       className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                        active ? 'bg-surface-2' : ''
+                        active ? 'bg-slate-800' : ''
                       }`}
                     >
-                      <span className="truncate text-text-body">
+                      <span className="truncate text-slate-200">
                         {c.name}
                         {c.phone ? (
-                          <span className="text-text-muted"> — {c.phone}</span>
+                          <span className="text-slate-500"> — {c.phone}</span>
                         ) : null}
                       </span>
                       {isSel && (
-                        <Check className="h-4 w-4 shrink-0 text-primary" />
+                        <Check className="h-4 w-4 shrink-0 text-orange-400" />
                       )}
                     </button>
                   </li>
@@ -222,20 +204,14 @@ export function ClientCombobox({
               })
             )}
           </ul>
-
-          {/* Rodapé fixo: cadastrar novo */}
-          <div className="border-t border-border">
+          <div className="border-t border-slate-700/30">
             <button
               type="button"
-              onClick={() => {
-                onCreateNew(query.trim());
-                setOpen(false);
-                setQuery('');
-              }}
-              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-primary transition-colors hover:bg-surface-2"
+              onClick={() => { onCreateNew(query.trim()); setOpen(false); setQuery(''); }}
+              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800"
             >
               <UserPlus className="h-4 w-4" />
-              {query.trim() ? `Cadastrar “${query.trim()}”` : 'Novo cliente'}
+              {query.trim() ? `Cadastrar "${query.trim()}"` : 'Novo cliente'}
             </button>
           </div>
         </div>

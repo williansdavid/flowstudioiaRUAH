@@ -49,21 +49,12 @@ export function DayRow({ label, value, onChange, canEdit = true }: DayRowProps) 
 
   return (
     <div
-      className="p-4 transition-colors duration-200"
-      style={{
-        borderRadius: 'var(--radius-card)',
-        border: '1px solid var(--color-border)',
-        backgroundColor: isWorking
-          ? 'color-mix(in srgb, var(--color-accent) 5%, transparent)'
-          : 'var(--color-surface)',
-      }}
+      className={`rounded-2xl border border-slate-700/20 p-4 transition-colors duration-200 ${
+        isWorking ? 'bg-slate-800/60' : 'bg-slate-800/30'
+      }`}
     >
-      {/* Cabeçalho do dia: nome + toggle */}
       <div className="flex items-center justify-between gap-4">
-        <span
-          className="font-medium"
-          style={{ color: 'var(--color-text-heading)' }}
-        >
+        <span className="font-semibold text-slate-100">
           {label}
         </span>
 
@@ -71,21 +62,17 @@ export function DayRow({ label, value, onChange, canEdit = true }: DayRowProps) 
           className={`flex select-none items-center gap-2 text-sm ${
             canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
           }`}
-          style={{
-            color: isWorking
-              ? 'var(--color-accent-bright)'
-              : 'var(--color-text-muted)',
-          }}
         >
           <input
             type="checkbox"
             checked={isWorking}
             disabled={!canEdit}
             onChange={(e) => toggleWorking(e.target.checked)}
-            className="h-4 w-4"
-            style={{ accentColor: 'var(--color-accent)' }}
+            className="h-4 w-4 accent-orange-500"
           />
-          {isWorking ? 'Trabalha' : 'Folga'}
+          <span className={isWorking ? 'text-orange-400 font-semibold' : 'text-slate-500'}>
+            {isWorking ? 'Trabalha' : 'Folga'}
+          </span>
         </label>
       </div>
 
@@ -108,33 +95,23 @@ export function DayRow({ label, value, onChange, canEdit = true }: DayRowProps) 
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span
-                className="text-sm"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+              <span className="text-sm text-slate-500">
                 Intervalos
               </span>
               {canEdit && (
                 <button
                   type="button"
                   onClick={addBreak}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors duration-200"
-                  style={{ color: 'var(--color-accent-bright)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      'color-mix(in srgb, var(--color-accent) 10%, transparent)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-orange-400 transition-colors hover:bg-orange-500/10"
                 >
-                  <Plus className="h-4 w-4" aria-hidden /> Adicionar
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Adicionar
                 </button>
               )}
             </div>
 
             {value.breaks.length === 0 && (
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="text-sm text-slate-500">
                 Nenhum intervalo.
               </p>
             )}
@@ -157,8 +134,7 @@ export function DayRow({ label, value, onChange, canEdit = true }: DayRowProps) 
                   <button
                     type="button"
                     onClick={() => removeBreak(idx)}
-                    className="mb-1 rounded-md p-1 transition-opacity duration-200 hover:opacity-70"
-                    style={{ color: 'var(--color-danger)' }}
+                    className="mb-1 rounded-md p-1 text-red-400 transition-opacity hover:opacity-70"
                     aria-label="Remover intervalo"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
@@ -186,18 +162,13 @@ function TimeField({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+      <span className="text-slate-500">{label}</span>
       <input
         type="time"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md px-2 py-1 outline-none transition-shadow duration-200 disabled:opacity-60"
-        style={{
-          border: '1px solid var(--color-border)',
-          backgroundColor: 'var(--color-surface-2)',
-          color: 'var(--color-text-heading)',
-        }}
+        className="rounded-lg border border-slate-700/30 bg-slate-800/60 px-2 py-1.5 text-sm text-slate-300 outline-none transition-shadow duration-200 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 disabled:opacity-60"
       />
     </label>
   );

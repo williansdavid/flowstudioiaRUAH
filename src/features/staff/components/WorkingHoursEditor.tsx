@@ -9,6 +9,7 @@ import type { WorkingHours, DaySchedule } from '@/lib/scheduling/workingHours.sc
 import { WEEKDAY_ORDER, WEEKDAY_LABEL } from '../types';
 import { useUpdateStaffWorkingHours } from '../hooks';
 import { DayRow } from './DayRow';
+import { useNavigate } from '@tanstack/react-router';
 
 interface WorkingHoursEditorProps {
   staffId: string;
@@ -27,16 +28,15 @@ export function WorkingHoursEditor({
   const mutation = useUpdateStaffWorkingHours(staffId);
   const prevDirtyRef = useRef(false);
 
-  // Notifica o pai quando o rascunho diverge do original
-  useEffect(() => {
-    const isDirty = JSON.stringify(draft) !== JSON.stringify(initial);
-    if (isDirty !== prevDirtyRef.current) {
-      prevDirtyRef.current = isDirty;
-      onDirtyChange?.(isDirty);
-    }
-  }, [draft, initial, onDirtyChange]);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
 
-  // Atualiza a referência quando o initial muda (recarregou dados)
+  useEffect(() => {
+    if (dirty !== prevDirtyRef.current) {
+      prevDirtyRef.current = dirty;
+      onDirtyChange?.(dirty);
+    }
+  }, [dirty, onDirtyChange]);
+
   useEffect(() => {
     prevDirtyRef.current = false;
   }, [initial]);
@@ -63,49 +63,29 @@ export function WorkingHoursEditor({
     );
   }
 
+const navigate = useNavigate();
+
+function handleCancel() {
+  navigate({ to: '/admin/equipe' });
+}
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden p-5"
-      style={{
-        backgroundColor: 'var(--color-surface-2)',
-        borderRadius: 'var(--radius-card)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--shadow-md)',
-      }}
+      className="relative rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md"
     >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-        style={{
-          background:
-            'linear-gradient(90deg, transparent, var(--color-accent) 50%, transparent)',
-        }}
-      />
       <div className="mb-5 flex items-center gap-2.5">
-        <span
-          className="shrink-0 rounded-xl p-2"
-          style={{
-            backgroundColor:
-              'color-mix(in srgb, var(--color-accent) 14%, transparent)',
-            color: 'var(--color-accent-bright)',
-            boxShadow:
-              'inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent)',
-          }}
-        >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/25">
           <CalendarClock className="h-5 w-5" aria-hidden />
-        </span>
+        </div>
         <div className="min-w-0">
-          <p
-            className="text-[11px] font-semibold uppercase leading-none tracking-[0.14em]"
-            style={{ color: 'var(--color-accent-bright)' }}
-          >
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-orange-400">
             Horários de trabalho
           </p>
         </div>
       </div>
+
       <div className="space-y-3">
         {WEEKDAY_ORDER.map((key, index) => (
           <motion.div
@@ -127,11 +107,33 @@ export function WorkingHoursEditor({
           </motion.div>
         ))}
       </div>
+
+      {/* ═══ FOOTER FIXO — vidro premium ═══ */}
+      {/* ═══ FOOTER FIXO — vidro premium ═══ */}
       {canEdit && (
-        <div className="mt-6 flex justify-end">
-          <Button onClick={handleSave} isLoading={mutation.isPending}>
-            Salvar horários
-          </Button>
+        <div className="sticky bottom-0 -mx-5 -mb-5 mt-6 flex items-center justify-between border-t border-slate-700/20 bg-slate-900/90 backdrop-blur-xl px-5 py-4 rounded-b-2xl">
+          {dirty ? (
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">
+              Alterações não salvas
+            </span>
+          ) : (
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              —
+            </span>
+          )}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleCancel}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} isLoading={mutation.isPending} size="sm">
+              Salvar horários
+            </Button>
+          </div>
         </div>
       )}
     </motion.div>

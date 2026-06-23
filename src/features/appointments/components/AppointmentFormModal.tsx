@@ -1,13 +1,17 @@
 // src/features/appointments/components/AppointmentFormModal.tsx
 import { useEffect, useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Trash2, Loader2, UserPlus, AlertTriangle } from 'lucide-react';
+import {
+  X, Loader2, UserPlus, AlertTriangle,
+  Clock, Scissors, User, DollarSign,
+  Check, CheckCheck,
+} from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-
 import { QuickClientModal } from './QuickClientModal';
 import { ClientCombobox } from './ClientCombobox';
 import { Button } from '@/components/ui/Button';
-
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 import type {
   AppointmentItem,
   BookableStaffItem,
@@ -20,8 +24,21 @@ import {
   useCreateAppointment,
   useUpdateAppointment,
   useCancelAppointment,
+  useUpdateAppointmentStatus,
 } from '../hooks';
 import type { BusinessHours } from '@/sites/ruah/types';
+import { cn } from '@/lib/cn';
+import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+
+// ── Status config ────────────────────────────────────────────────
+type Status = AppointmentItem['status'];
+const STATUS_CONFIG: Record<Status, { label: string; dot: string }> = {
+  pending:    { label: 'Pendente',      dot: 'bg-amber-400' },
+  confirmed:  { label: 'Confirmado',    dot: 'bg-emerald-400' },
+  completed:  { label: 'Concluído',     dot: 'bg-blue-400' },
+  cancelled:  { label: 'Cancelado',     dot: 'bg-red-400' },
+  no_show:    { label: 'Não compareceu', dot: 'bg-red-400' },
+};
 
 type Mode =
   | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
@@ -38,210 +55,120 @@ interface Props {
   onClose: () => void;
 }
 
-function hasTimeOffConflict(
-  timeOff: TimeOffBlockItem[],
-  staffId: string,
-  startsAt: string,
-  endsAt: string,
-): TimeOffBlockItem | null {
-  if (!staffId || !startsAt || !endsAt) return null;
-  const start = new Date(startsAt).getTime();
-  const end = new Date(endsAt).getTime();
-  for (const block of timeOff) {
-    if (block.staffId !== staffId) continue;
-    const bStart = new Date(block.startsAt).getTime();
-    const bEnd = new Date(block.endsAt).getTime();
-    // overlap: [start, end) cruza [bStart, bEnd)
-    if (start < bEnd && end > bStart) return block;
+// ── Helpers ──────────────────────────────────────────────────────
+function hasTimeOffConflict(t: TimeOffBlockItem[], sId: string, sA: string, eA: string) {
+  if (!sId || !sA || !eA) return null;
+  const s = new Date(sA).getTime(), e = new Date(eA).getTime();
+  for (const b of t) {
+    if (b.staffId !== sId) continue;
+    const bS = new Date(b.startsAt).getTime(), bE = new Date(b.endsAt).getTime();
+    if (s < bE && e > bS) return b;
   }
   return null;
 }
 
-/** ISO datetime → { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo. */
-function splitISO(iso: string): { date: string; time: string } {
+function splitISO(iso: string) {
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'America/Sao_Paulo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
   });
   const [date, time] = fmt.format(d).split(' ');
   return { date: date!, time: time! };
 }
 
-/** { date:'YYYY-MM-DD', time:'HH:mm' } no fuso de São Paulo → ISO UTC. */
-function joinISO(date: string, time: string): string {
+function joinISO(date: string, time: string) {
   return new Date(`${date}T${time}:00-03:00`).toISOString();
 }
 
-/** Próxima hora cheia (fuso studio) como default do create sem slot. */
-function nextRoundHour(): { date: string; time: string } {
+function nextRoundHour() {
   const now = new Date();
   const { date } = splitISO(now.toISOString());
-  const hh = Number(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'America/Sao_Paulo',
-      hour: '2-digit',
-      hour12: false,
-    }).format(now),
-  );
-  const next = Math.min(hh + 1, 23);
-  return { date, time: `${String(next).padStart(2, '0')}:00` };
+  const hh = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }).format(now));
+  return { date, time: `${String(Math.min(hh + 1, 23)).padStart(2, '0')}:00` };
 }
 
-/** Soma minutos a um 'HH:mm', sem virar o dia (clamp em 23:59). */
-function addMinutes(time: string, minutes: number): string {
+function addMinutes(time: string, min: number) {
   const [h, m] = time.split(':').map(Number);
-  const total = Math.min(h! * 60 + m! + minutes, 23 * 60 + 59);
-  const nh = Math.floor(total / 60);
-  const nm = total % 60;
-  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+  const total = Math.min(h! * 60 + m! + min, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
+
+const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
 interface FormState {
-  clientId: string;
-  serviceId: string;
-  staffId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  notes: string;
+  clientId: string; serviceId: string; staffId: string;
+  date: string; startTime: string; endTime: string; notes: string;
 }
 
 function buildInitialState(mode: Mode): FormState {
   if (mode.kind === 'edit') {
     const a = mode.appointment;
-    const start = splitISO(a.startsAt);
-    const end = splitISO(a.endsAt);
-    return {
-      clientId: a.clientId,
-      serviceId: a.serviceId,
-      staffId: a.staffId,
-      date: start.date,
-      startTime: start.time,
-      endTime: end.time,
-      notes: a.notes ?? '',
-    };
+    const s = splitISO(a.startsAt), e = splitISO(a.endsAt);
+    return { clientId: a.clientId, serviceId: a.serviceId, staffId: a.staffId, date: s.date, startTime: s.time, endTime: e.time, notes: a.notes ?? '' };
   }
-
-  const base = mode.defaults?.startsAt
-    ? splitISO(mode.defaults.startsAt)
-    : nextRoundHour();
-
-  return {
-    clientId: '',
-    serviceId: '',
-    staffId: mode.defaults?.staffId ?? '',
-    date: base.date,
-    startTime: base.time,
-    endTime: addMinutes(base.time, 30),
-    notes: '',
-  };
+  const base = mode.defaults?.startsAt ? splitISO(mode.defaults.startsAt) : nextRoundHour();
+  return { clientId: '', serviceId: '', staffId: mode.defaults?.staffId ?? '', date: base.date, startTime: base.time, endTime: addMinutes(base.time, 30), notes: '' };
 }
 
-const fieldLabel = 'text-xs font-medium text-text-muted';
+// ── Classes refinadas premium ─────────────────────────────────────
+const fieldLabel = 'text-[11px] font-semibold uppercase tracking-widest text-slate-400';
 const fieldInput =
-  'w-full rounded-button border border-border bg-surface px-3 py-2 text-sm text-text-body outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary';
+  'w-full rounded-lg border border-slate-700/30 bg-slate-800/60 px-3 py-2.5 text-sm text-slate-300 outline-none transition-all duration-200 placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-800';
+const infoCard = 'flex items-center gap-2.5 rounded-xl border border-slate-700/20 bg-slate-800/40 p-3';
+const quickBtn = 'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95';
 
-export function AppointmentFormModal({
-  open,
-  mode,
-  clients,
-  services,
-  staff,
-  timeOff = [],
-  businessHours,
-  onClose,
-}: Props) {
+export function AppointmentFormModal({ open, mode, clients, services, staff, timeOff = [], businessHours, onClose }: Props) {
   const isEdit = mode.kind === 'edit';
+  const appointment = isEdit ? mode.appointment : null;
   const [form, setForm] = useState<FormState>(() => buildInitialState(mode));
-
   const [quickClientOpen, setQuickClientOpen] = useState(false);
   const [quickClientName, setQuickClientName] = useState('');
-
+  const [cancelTarget, setCancelTarget] = useState(false);
   const queryClient = useQueryClient();
   const createMutation = useCreateAppointment();
   const updateMutation = useUpdateAppointment();
   const cancelMutation = useCancelAppointment();
+  const statusMutation = useUpdateAppointmentStatus();
 
-  // Busca timeOff da data selecionada no formulário (não confia na prop do pai)
   const { data: modalTimeOff = [] } = useQuery({
     queryKey: ['dayTimeOff', form.date],
     queryFn: () => getDayTimeOff({ data: { date: form.date } }),
     enabled: !!form.date && open,
   });
 
-  // Reseta o formulário sempre que o modal abre ou o mode muda
-  useEffect(() => {
-    if (open) {
-      setForm(buildInitialState(mode));
-    }
-  }, [open, mode]);
+  useEffect(() => { if (open) setForm(buildInitialState(mode)); }, [open, mode]);
 
-  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
+  function set<K extends keyof FormState>(k: K, v: FormState[K]) { setForm(p => ({ ...p, [k]: v })); }
 
-  // Quando serviço muda, auto-preenche endTime com base na duração
-  const selectedService = useMemo(
-    () => services.find((s) => s.id === form.serviceId) ?? null,
-    [services, form.serviceId],
-  );
+  const selectedService = useMemo(() => services.find(s => s.id === form.serviceId) ?? null, [services, form.serviceId]);
 
   useEffect(() => {
     if (!selectedService) return;
     set('endTime', addMinutes(form.startTime, selectedService.durationMinutes));
   }, [form.serviceId, form.startTime]);
 
-  // VALIDAÇÕES DINÂMICAS
+  // Validações
   const missingFields: string[] = [];
-  let isRetroactiveError = false;
-
+  let retroError = false;
   if (!form.clientId) missingFields.push('Cliente');
   if (!form.serviceId) missingFields.push('Serviço');
   if (!form.staffId) missingFields.push('Profissional');
-
   if (form.date && form.startTime) {
-    const selectedDate = new Date(joinISO(form.date, form.startTime));
-    const now = new Date();
-
-    let isRetroactive = selectedDate < now;
-
-    if (isEdit && isRetroactive) {
-      const originalA = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
-      const originalStart = new Date(originalA.startsAt);
-      if (selectedDate.getTime() === originalStart.getTime()) {
-        isRetroactive = false;
-      }
-    }
-
-    if (isRetroactive) {
-      isRetroactiveError = true;
-    }
+    const dt = new Date(joinISO(form.date, form.startTime));
+    let r = dt < new Date();
+    if (isEdit && r && appointment && dt.getTime() === new Date(appointment.startsAt).getTime()) r = false;
+    if (r) retroError = true;
   }
 
-  // VALIDAÇÃO DE CONFLITO COM TIME OFF (usa dados frescos do modal)
-  const timeOffConflict = useMemo(() => {
+  const conflict = useMemo(() => {
     if (!form.staffId || !form.date || !form.startTime || !form.endTime) return null;
-    const startsAt = joinISO(form.date, form.startTime);
-    const endsAt = joinISO(form.date, form.endTime);
-    return hasTimeOffConflict(modalTimeOff, form.staffId, startsAt, endsAt);
+    return hasTimeOffConflict(modalTimeOff, form.staffId, joinISO(form.date, form.startTime), joinISO(form.date, form.endTime));
   }, [modalTimeOff, form.staffId, form.date, form.startTime, form.endTime]);
 
-  const canSubmit =
-    missingFields.length === 0 &&
-    !isRetroactiveError &&
-    !timeOffConflict &&
-    !!form.endTime;
-
-  const isSaving =
-    createMutation.isPending ||
-    updateMutation.isPending ||
-    cancelMutation.isPending;
+  const canSubmit = missingFields.length === 0 && !retroError && !conflict && !!form.endTime;
+  const isSaving = createMutation.isPending || updateMutation.isPending || cancelMutation.isPending || statusMutation.isPending;
 
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -252,261 +179,255 @@ export function AppointmentFormModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-
-    const startsAt = joinISO(form.date, form.startTime);
-    const endsAt = joinISO(form.date, form.endTime);
-
-    if (isEdit) {
-      const a = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
-      updateMutation.mutate(
-        {
-          id: a.id,
-          staffId: form.staffId,
-          serviceId: form.serviceId,
-          startsAt,
-          endsAt,
-          notes: form.notes || null,
-        },
-        { onSuccess: handleSuccess },
-      );
+    const sA = joinISO(form.date, form.startTime), eA = joinISO(form.date, form.endTime);
+    if (isEdit && appointment) {
+      updateMutation.mutate({ id: appointment.id, staffId: form.staffId, serviceId: form.serviceId, startsAt: sA, endsAt: eA, notes: form.notes || null }, { onSuccess: handleSuccess });
     } else {
-      createMutation.mutate(
-        {
-          clientId: form.clientId,
-          serviceId: form.serviceId,
-          staffId: form.staffId,
-          startsAt,
-          endsAt,
-          notes: form.notes || null,
-        },
-        { onSuccess: handleSuccess },
-      );
+      createMutation.mutate({ clientId: form.clientId, serviceId: form.serviceId, staffId: form.staffId, startsAt: sA, endsAt: eA, notes: form.notes || null }, { onSuccess: handleSuccess });
     }
   }
 
-  function handleDelete() {
-    if (!isEdit) return;
-    const a = (mode as { kind: 'edit'; appointment: AppointmentItem }).appointment;
-    cancelMutation.mutate({ id: a.id }, { onSuccess: handleSuccess });
+  function handleQuickStatus(status: 'confirmed' | 'completed' | 'cancelled') {
+    if (!appointment) return;
+    statusMutation.mutate({ id: appointment.id, status }, { onSuccess: handleSuccess });
   }
 
-  // Formata o label do conflito para exibição
-  const conflictLabel = timeOffConflict
+  const conflictLabel = conflict
     ? (() => {
-        const reason = timeOffConflict.reason ?? 'Folga';
-        const fmtStart = new Date(timeOffConflict.startsAt).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'America/Sao_Paulo',
-        });
-        const fmtEnd = new Date(timeOffConflict.endsAt).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'America/Sao_Paulo',
-        });
-        return `${reason} (${fmtStart} — ${fmtEnd})`;
+        const r = conflict.reason ?? 'Folga';
+        const s = new Date(conflict.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+        const e = new Date(conflict.endsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+        return `${r} (${s} — ${e})`;
       })()
     : null;
 
+  const waHref = appointment?.clientPhone
+    ? toWhatsAppHref(appointment.clientPhone, `Olá ${appointment.clientName}! Seu horário das ${timeFmt.format(new Date(appointment.startsAt))} para ${appointment.serviceName} está confirmado.`)
+    : null;
+
+  const errorsVisible = missingFields.length > 0 || retroError;
+
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-card border border-border bg-surface p-6 shadow-xl focus:outline-none">
-          <div className="mb-4 flex items-center justify-between">
-            <Dialog.Title className="text-base font-bold">
-              {isEdit ? 'Editar agendamento' : 'Novo agendamento'}
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="rounded-button p-1 text-text-muted hover:bg-surface-2 hover:text-text-body"
-                aria-label="Fechar"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </Dialog.Close>
-          </div>
+    <>
+      <Dialog.Root open={open} onOpenChange={v => !v && onClose()}>
+        <Dialog.Portal>
+          {/* ═══ OVERLAY — mais suave, menos agressivo ═══ */}
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Cliente */}
-            <div className="flex flex-col gap-1">
-              <label className={fieldLabel}>Cliente</label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <ClientCombobox
-                    clients={clients}
-                    value={form.clientId}
-                    disabled={isEdit}
-                    onChange={(id) => set('clientId', id)}
-                    onCreateNew={(name) => {
-                      setQuickClientName(name);
-                      setQuickClientOpen(true);
-                    }}
-                  />
-                </div>
-                {!isEdit && (
-                  <button
-                    type="button"
-                    title="Cadastrar cliente rápido"
-                    onClick={() => {
-                      setQuickClientName('');
-                      setQuickClientOpen(true);
-                    }}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20 hover:text-primary-hover"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Serviço */}
-            <div className="flex flex-col gap-1">
-              <label className={fieldLabel}>Serviço</label>
-              <select
-                className={fieldInput}
-                value={form.serviceId}
-                onChange={(e) => set('serviceId', e.target.value)}
-              >
-                <option value="">Selecione…</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.durationMinutes}min)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Profissional */}
-            <div className="flex flex-col gap-1">
-              <label className={fieldLabel}>Profissional</label>
-              <select
-                className={fieldInput}
-                value={form.staffId}
-                onChange={(e) => set('staffId', e.target.value)}
-              >
-                <option value="">Selecione…</option>
-                {staff.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Data e Horários */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="flex flex-col gap-1">
-                <label className={fieldLabel}>Data</label>
-                <input
-                  type="date"
-                  className={fieldInput}
-                  value={form.date}
-                  onChange={(e) => set('date', e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className={fieldLabel}>Início</label>
-                <input
-                  type="time"
-                  className={fieldInput}
-                  value={form.startTime}
-                  onChange={(e) => set('startTime', e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className={fieldLabel}>Fim</label>
-                <input
-                  type="time"
-                  className={fieldInput}
-                  value={form.endTime}
-                  onChange={(e) => set('endTime', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Observações */}
-            <div className="flex flex-col gap-1">
-              <label className={fieldLabel}>Observações (opcional)</label>
-              <textarea
-                className={`${fieldInput} resize-none`}
-                rows={2}
-                value={form.notes}
-                onChange={(e) => set('notes', e.target.value)}
-                maxLength={1000}
-              />
-            </div>
-
-            {/* ⛔ BLOCO DE CONFLITO — aviso destacado acima da action bar */}
-            {timeOffConflict && (
-              <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-500">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    Horário conflita com <strong>{conflictLabel}</strong> para este profissional
-                  </span>
-                </div>
-              </div>
+          <Dialog.Content
+            className={cn(
+              'fixed z-50 flex flex-col',
+              'inset-0 sm:inset-auto',
+              'sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2',
+              'sm:w-full sm:max-w-md',
+              'max-h-[100dvh]',
+              // ═══ FUNDO + BORDA premium ═══
+              'bg-slate-900 border border-slate-700/30 ring-1 ring-slate-700/20 shadow-2xl',
+              'sm:rounded-2xl focus:outline-none',
+              'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
+              'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+              'pb-safe',
             )}
+          >
+            {/* ── Scroll container ── */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-700/20 px-5 py-4">
+                <Dialog.Title className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  {isEdit ? 'Detalhes do agendamento' : 'Novo agendamento'}
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300">
+                    <X className="h-4 w-4" />
+                  </button>
+                </Dialog.Close>
+              </div>
 
-            {/* Ações e Erros */}
-            <div className="flex items-center justify-between pt-2">
-              {isEdit ? (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isSaving}
-                  className="flex items-center gap-1.5 rounded-button px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                >
-                  {cancelMutation.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                  Excluir
-                </button>
-              ) : (
-                <span />
-              )}
+              {/* Body — mais espaçado, premium */}
+              <div className="flex flex-col gap-5 p-5">
 
-              <div className="flex items-center gap-3">
-                {/* Validações em Laranja */}
-                {(missingFields.length > 0 || isRetroactiveError) && (
-                  <div className="flex flex-col items-end text-sm font-medium text-orange-500 text-right max-w-[250px] leading-tight gap-1">
-                    {missingFields.length > 0 && (
-                      <span>Falta: {missingFields.join(', ')}</span>
-                    )}
-                    {isRetroactiveError && (
-                      <span className="flex items-center gap-1.5">
-                        <AlertTriangle className="h-4 w-4" />
-                        Data/hora no passado
+                {isEdit && appointment && (
+                  <>
+                    {/* Nome + Status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-base font-bold text-slate-100">{appointment.clientName}</h3>
+                        <p className="mt-0.5 truncate text-xs font-semibold uppercase tracking-wider text-cyan-400">{appointment.serviceName}</p>
+                      </div>
+                      <span className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700/30 bg-slate-800/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-300')}>
+                        <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_CONFIG[appointment.status]?.dot)} />
+                        {STATUS_CONFIG[appointment.status]?.label}
                       </span>
+                    </div>
+
+                    {/* ═══ INFO CARDS — neutros, premium, só o ícone mantém a cor ═══ */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={infoCard}>
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400"><Clock className="h-3.5 w-3.5" /></div>
+                        <div className="min-w-0"><p className="text-[9px] font-semibold uppercase tracking-widest text-slate-500">Horário</p><p className="text-xs font-bold text-slate-200 tabular-nums">{timeFmt.format(new Date(appointment.startsAt))}</p></div>
+                      </div>
+                      <div className={infoCard}>
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400"><DollarSign className="h-3.5 w-3.5" /></div>
+                        <div className="min-w-0"><p className="text-[9px] font-semibold uppercase tracking-widest text-slate-500">Valor</p><p className="text-xs font-bold text-slate-200 tabular-nums">{appointment.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></div>
+                      </div>
+                      <div className={infoCard}>
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400"><User className="h-3.5 w-3.5" /></div>
+                        <div className="min-w-0"><p className="text-[9px] font-semibold uppercase tracking-widest text-slate-500">Profissional</p><p className="truncate text-xs font-bold text-slate-200">{appointment.staffName}</p></div>
+                      </div>
+                      <div className={infoCard}>
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400"><Scissors className="h-3.5 w-3.5" /></div>
+                        <div className="min-w-0"><p className="text-[9px] font-semibold uppercase tracking-widest text-slate-500">Duração</p><p className="text-xs font-bold text-slate-200">{selectedService ? `${selectedService.durationMinutes}min` : '—'}</p></div>
+                      </div>
+                    </div>
+
+                    {/* Quick actions */}
+                    {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
+                      <div className="flex flex-wrap gap-1">
+                        {appointment.status === 'pending' && (
+                          <>
+                            <button type="button" onClick={() => handleQuickStatus('confirmed')} disabled={isSaving}
+                              className={cn(quickBtn, 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10')}><Check className="h-3 w-3" /> Confirmar</button>
+                            <button type="button" onClick={() => setCancelTarget(true)} disabled={isSaving}
+                              className={cn(quickBtn, 'border-red-500/20 text-red-400 hover:bg-red-500/10')}><X className="h-3 w-3" /> Cancelar</button>
+                          </>
+                        )}
+                        {appointment.status === 'confirmed' && (
+                          <>
+                            <button type="button" onClick={() => handleQuickStatus('completed')} disabled={isSaving}
+                              className={cn(quickBtn, 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10')}><CheckCheck className="h-3 w-3" /> Concluir</button>
+                            <button type="button" onClick={() => setCancelTarget(true)} disabled={isSaving}
+                              className={cn(quickBtn, 'border-red-500/20 text-red-400 hover:bg-red-500/10')}><X className="h-3 w-3" /> Cancelar</button>
+                          </>
+                        )}
+                      </div>
                     )}
-                  </div>
+
+                    <div className="border-t border-slate-700/20" />
+                  </>
                 )}
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  disabled={!canSubmit}
-                  isLoading={isSaving}
-                >
-                  {isEdit ? 'Salvar' : 'Criar'}
-                </Button>
+                {/* ═══ FORM ════════════════════════════════ */}
+                <form id="appointment-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+                  {/* Cliente */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className={fieldLabel}>Cliente</label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <ClientCombobox clients={clients} value={form.clientId} disabled={isEdit}
+                          onChange={id => set('clientId', id)}
+                          onCreateNew={name => { setQuickClientName(name); setQuickClientOpen(true); }} />
+                      </div>
+                      {!isEdit && (
+                        <button type="button" title="Cadastrar cliente rápido"
+                          onClick={() => { setQuickClientName(''); setQuickClientOpen(true); }}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400 transition-colors hover:bg-orange-500/20">
+                          <UserPlus className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Serviço */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className={fieldLabel}>Serviço</label>
+                    <select className={fieldInput} value={form.serviceId} onChange={e => set('serviceId', e.target.value)}>
+                      <option value="">Selecione…</option>
+                      {services.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.durationMinutes}min) — {s.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Profissional */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className={fieldLabel}>Profissional</label>
+                    <select className={fieldInput} value={form.staffId} onChange={e => set('staffId', e.target.value)}>
+                      <option value="">Selecione…</option>
+                      {staff.map(s => (<option key={s.id} value={s.id}>{s.name}</option>))}
+                    </select>
+                  </div>
+
+                  {/* Data + Horários */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col gap-1.5">
+                      <label className={fieldLabel}>Data</label>
+                      <input type="date" className={fieldInput} value={form.date} onChange={e => set('date', e.target.value)} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className={fieldLabel}>Início</label>
+                      <input type="time" className={fieldInput} value={form.startTime} onChange={e => set('startTime', e.target.value)} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className={fieldLabel}>Fim</label>
+                      <input type="time" className={fieldInput} value={form.endTime} onChange={e => set('endTime', e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Observações */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className={fieldLabel}>Observações (opcional)</label>
+                    <textarea className={`${fieldInput} resize-none`} rows={1} value={form.notes} onChange={e => set('notes', e.target.value)} maxLength={1000} />
+                  </div>
+
+                  {/* Conflito */}
+                  {conflict && (
+                    <div className="rounded-lg border border-orange-500/25 bg-orange-500/8 px-3 py-2.5 text-xs text-orange-400">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>Horário conflita com <strong>{conflictLabel}</strong></span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Spacer pro footer fixo não encobrir o form */}
+                  <div className="h-16 sm:h-0" />
+                </form>
               </div>
             </div>
-          </form>
 
-          <QuickClientModal
-            open={quickClientOpen}
-            initialName={quickClientName}
-            onClose={() => setQuickClientOpen(false)}
-            onCreated={(client) => set('clientId', client.id)}
-          />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            {/* ═══ FOOTER FIXO — vidro premium ═══ */}
+            <div className="shrink-0 border-t border-slate-700/20 bg-slate-900/80 backdrop-blur-xl px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  {errorsVisible ? (
+                    <div className="flex flex-col gap-0.5 text-right text-xs font-medium leading-tight text-orange-400">
+                      {missingFields.length > 0 && <span>Falta: {missingFields.join(', ')}</span>}
+                      {retroError && <span className="flex items-center justify-end gap-1"><AlertTriangle className="h-3 w-3" /> Data/hora no passado</span>}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-500">Pronto para salvar</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {isEdit && waHref && <WhatsAppButton href={waHref}  />}
+                  <Button type="submit" form="appointment-form" variant="primary" size="sm" disabled={!canSubmit} isLoading={isSaving}>
+                    {isEdit ? 'Salvar' : 'Criar'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <ConfirmDialog
+        open={cancelTarget}
+        onClose={() => setCancelTarget(false)}
+        onConfirm={() => { handleQuickStatus('cancelled'); setCancelTarget(false); }}
+        title="Cancelar agendamento?"
+        description={appointment ? `Tem certeza que deseja cancelar o agendamento de ${appointment.clientName}?` : ''}
+        confirmLabel="Sim, cancelar"
+        cancelLabel="Voltar"
+        variant="danger"
+      />
+
+      <QuickClientModal
+        open={quickClientOpen}
+        initialName={quickClientName}
+        onClose={() => setQuickClientOpen(false)}
+        onCreated={c => set('clientId', c.id)}
+      />
+    </>
   );
 }

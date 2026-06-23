@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Loader2, CalendarOff } from 'lucide-react';
 import { formatRange } from '@/lib/studioTime';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/cn';
 import {
   useStaffTimeOff,
   useDeleteTimeOff,
@@ -31,76 +32,39 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden p-5"
-      style={{
-        backgroundColor: 'var(--color-surface-2)',
-        borderRadius: 'var(--radius-card)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--shadow-md)',
-      }}
+      className="relative rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md"
     >
-      {/* Filete dourado superior — assinatura Art Deco */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-        style={{
-          background:
-            'linear-gradient(90deg, transparent, var(--color-accent) 50%, transparent)',
-        }}
-      />
-
       {/* Header */}
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span
-            className="shrink-0 rounded-xl p-2"
-            style={{
-              backgroundColor:
-                'color-mix(in srgb, var(--color-accent) 14%, transparent)',
-              color: 'var(--color-accent-bright)',
-              boxShadow:
-                'inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent)',
-            }}
-          >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/25">
             <CalendarOff className="h-5 w-5" aria-hidden />
-          </span>
+          </div>
           <div className="flex flex-col gap-1">
-            <h3
-              className="text-base font-semibold leading-none tracking-tight"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                color: 'var(--color-text-heading)',
-              }}
-            >
+            <h3 className="text-base font-bold leading-none tracking-tight text-slate-100">
               Folgas e bloqueios
             </h3>
-            <p
-              className="mt-1 text-sm"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
+            <p className="mt-1 text-sm text-slate-500">
               Períodos sem agendamentos
             </p>
           </div>
         </div>
 
         {canEdit && (
-          <Button          
-            variant='primary'
+          <Button
+            variant="primary"
             onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
             className="shrink-0"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            Adicionar 
+            Adicionar
           </Button>
         )}
       </div>
 
       {/* Loading */}
       {isLoading && (
-        <div
-          className="flex items-center gap-2 py-8 text-sm"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
+        <div className="flex items-center gap-2 py-8 text-sm text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           Carregando folgas…
         </div>
@@ -109,9 +73,7 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
       {/* Error */}
       {isError && (
         <div className="flex flex-col items-start gap-2 py-6 text-sm">
-          <span style={{ color: 'var(--color-danger)' }}>
-            Falha ao carregar folgas.
-          </span>
+          <span className="text-red-400">Falha ao carregar folgas.</span>
           <Button type="button" variant="ghost" size="sm" onClick={() => void refetch()}>
             Tentar novamente
           </Button>
@@ -121,14 +83,8 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
       {/* Empty */}
       {data && data.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <CalendarOff
-            className="h-8 w-8"
-            style={{ color: 'var(--color-text-muted)', opacity: 0.5 }}
-            aria-hidden
-          />
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            Nenhuma folga cadastrada.
-          </p>
+          <CalendarOff className="h-8 w-8 text-slate-600" aria-hidden />
+          <p className="text-sm text-slate-500">Nenhuma folga cadastrada.</p>
         </div>
       )}
 
@@ -145,24 +101,17 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
                 delay: index * 0.04,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="flex items-center justify-between gap-3 py-3"
-              style={{
-                borderTop:
-                  index === 0 ? 'none' : '1px solid var(--color-border)',
-              }}
+              className={cn(
+                'flex items-center justify-between gap-3 py-3',
+                index !== 0 && 'border-t border-slate-700/20',
+              )}
             >
               <div className="min-w-0">
-                <p
-                  className="truncate text-sm font-medium"
-                  style={{ color: 'var(--color-text-heading)' }}
-                >
+                <p className="truncate text-sm font-medium text-slate-200">
                   {formatRange(item.startsAt, item.endsAt)}
                 </p>
                 {item.reason && (
-                  <p
-                    className="truncate text-xs"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
+                  <p className="truncate text-xs text-slate-500">
                     {item.reason}
                   </p>
                 )}
@@ -205,19 +154,7 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
                             mode: { kind: 'edit', timeOff: item },
                           })
                         }
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200"
-                        style={{ color: 'var(--color-text-muted)' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor =
-                            'color-mix(in srgb, var(--color-accent) 10%, transparent)';
-                          e.currentTarget.style.color =
-                            'var(--color-text-heading)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          e.currentTarget.style.color =
-                            'var(--color-text-muted)';
-                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-orange-500/10 hover:text-slate-200"
                       >
                         <Pencil className="h-4 w-4" aria-hidden />
                       </button>
@@ -225,15 +162,7 @@ export function StaffTimeOffManager({ staffId, canEdit }: Props) {
                         type="button"
                         aria-label="Remover folga"
                         onClick={() => setConfirmId(item.id)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200"
-                        style={{ color: 'var(--color-danger)' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor =
-                            'color-mix(in srgb, var(--color-danger) 10%, transparent)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-red-400 transition-colors hover:bg-red-500/10"
                       >
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </button>
