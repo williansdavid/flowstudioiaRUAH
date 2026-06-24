@@ -316,7 +316,7 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     <label className={fieldLabel}>Cliente</label>
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <ClientCombobox clients={clients} value={form.clientId} disabled={isEdit}
+                        <ClientCombobox value={form.clientId} disabled={isEdit}
                           onChange={id => set('clientId', id)}
                           onCreateNew={name => { setQuickClientName(name); setQuickClientOpen(true); }} />
                       </div>
@@ -335,7 +335,9 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                     <select className={fieldInput} value={form.serviceId} onChange={e => set('serviceId', e.target.value)}>
                       <option value="">Selecione…</option>
                       {services.map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.durationMinutes}min) — {s.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>
+                        <option key={s.id} value={s.id}>
+                          {s.name}&nbsp;({s.durationMinutes}min)&nbsp;
+                        </option>
                       ))}
                     </select>
                   </div>

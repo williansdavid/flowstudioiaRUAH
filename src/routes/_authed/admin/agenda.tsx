@@ -38,7 +38,7 @@ export const Route = createFileRoute('/_authed/admin/agenda')({
       }),
       queryClient.ensureQueryData({
         queryKey: ['clients', 'select'],
-        queryFn: listClientsForSelect,
+        queryFn: () => listClientsForSelect({ data: { q: '' } }),
       }),
       queryClient.ensureQueryData({
         queryKey: ['services', 'active'],
@@ -83,7 +83,7 @@ function AgendaPage() {
 
   const { data: clients } = useSuspenseQuery({
     queryKey: ['clients', 'select'],
-    queryFn: listClientsForSelect,
+    queryFn: () => listClientsForSelect({ data: { q: '' } }),
   })
 
   const { data: services } = useSuspenseQuery({

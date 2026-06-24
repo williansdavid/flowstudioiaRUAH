@@ -1,55 +1,56 @@
 // src/features/appointments/components/ClientCombobox.tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, UserPlus, Check, X } from 'lucide-react';
+import { ChevronDown, UserPlus, Check, X, Loader2 } from 'lucide-react';
 import type { ClientOption } from '../types';
+import { useClientSearch } from '../hooks/useClientSearch';
+import { maskPhoneBRInput } from '@/lib/core/utils';
 
 interface Props {
-  clients: ClientOption[];
   value: string;
   disabled?: boolean;
   onChange: (clientId: string) => void;
   onCreateNew: (initialName: string) => void;
+  positionAbove?: boolean;
 }
 
-const MAX_VISIBLE = 50;
-
-function norm(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function normPhone(s: string): string {
-  return s.replace(/\D/g, '');
-}
-
-// 🔥 NOVA: máscara de telefone brasileiro (14) 99999-0001
 function formatPhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
   let digits = phone.replace(/\D/g, '');
   if (digits.length === 0) return null;
-
-  // Remove DDI 55 de números brasileiros
   if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {
     digits = digits.slice(2);
   }
-
   if (digits.length === 0) return null;
-
-  // Celular: (XX) XXXXX-XXXX
   if (digits.length === 11) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   }
-  // Fixo: (XX) XXXX-XXXX
   if (digits.length === 10) {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   }
-
-  // Fallback: retorna original se não conseguir formatar
   return phone;
 }
 
-// Remove +55 para exibição limpa e aplica máscara
-function displayPhone(phone: string | null | undefined): string | null {
-  return formatPhone(phone);
+/** Destaca o termo buscado dentro do texto */
+function highlightText(text: string, query: string): (string | { bold: string })[] {
+  if (!query.trim()) return [text];
+  const escaped = query.replace('/[.*+?^${}()|[\]\]/g', '\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(regex);
+  return parts.map((part) =>
+    regex.test(part) ? { bold: part } : part,
+  );
+}
+
+function renderHighlighted(parts: (string | { bold: string })[]) {
+  return parts.map((part, i) =>
+    typeof part === 'string' ? (
+      <span key={i}>{part}</span>
+    ) : (
+      <strong key={i} className="font-bold text-slate-100">
+        {part.bold}
+      </strong>
+    ),
+  );
 }
 
 const fieldInput =
@@ -58,45 +59,31 @@ const fieldInput =
   'focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-900';
 
 export function ClientCombobox({
-  clients,
   value,
   disabled = false,
   onChange,
   onCreateNew,
+  positionAbove = false,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  const { query, setQuery, data: clients = [], isLoading } = useClientSearch();
 
   const selected = useMemo(
     () => clients.find((c) => c.id === value) ?? null,
     [clients, value],
   );
 
-  // Telefone com máscara
   const selectedLabel = selected
     ? `${selected.name}${selected.phone ? ` — ${formatPhone(selected.phone)}` : ''}`
     : '';
 
-  const filtered = useMemo(() => {
-    const q = query.trim();
-    if (!q) return clients.slice(0, MAX_VISIBLE);
-    const nq = norm(q);
-    const pq = normPhone(q);
-    const out: ClientOption[] = [];
-    for (const c of clients) {
-      const byName = norm(c.name).includes(nq);
-      const byPhone = pq.length > 0 && c.phone && normPhone(c.phone).includes(pq);
-      if (byName || byPhone) {
-        out.push(c);
-        if (out.length >= MAX_VISIBLE) break;
-      }
-    }
-    return out;
-  }, [clients, query]);
+  const isPhoneSearch = /^\d+$/.test(query);
+  const displayValue = isPhoneSearch ? maskPhoneBRInput(query) : query;
 
   useEffect(() => { setHighlight(0); }, [query, open]);
 
@@ -110,7 +97,7 @@ export function ClientCombobox({
     }
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
-  }, [open]);
+  }, [open, setQuery]);
 
   useEffect(() => {
     if (!open || !listRef.current) return;
@@ -139,13 +126,13 @@ export function ClientCombobox({
   function handleKeyDown(ev: React.KeyboardEvent) {
     if (ev.key === 'ArrowDown') {
       ev.preventDefault();
-      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+      setHighlight((h) => Math.min(h + 1, clients.length - 1));
     } else if (ev.key === 'ArrowUp') {
       ev.preventDefault();
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (ev.key === 'Enter') {
       ev.preventDefault();
-      const item = filtered[highlight];
+      const item = clients[highlight];
       if (item) pick(item);
     } else if (ev.key === 'Escape') {
       ev.preventDefault();
@@ -193,8 +180,11 @@ export function ClientCombobox({
           ref={inputRef}
           type="text"
           className={fieldInput}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={displayValue}
+          onChange={(e) => {
+            const raw = e.target.value.replace(/\D/g, '');
+            setQuery(isPhoneSearch ? raw : e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Buscar por nome ou telefone…"
           autoComplete="off"
@@ -202,30 +192,44 @@ export function ClientCombobox({
       )}
 
       {open && (
-        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-700/40 bg-slate-900 shadow-lg shadow-slate-950/50">
+        <div
+          className={`absolute z-10 w-full overflow-hidden rounded-lg border border-slate-700/40 bg-slate-900 shadow-lg shadow-slate-950/50 ${
+            positionAbove ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}
+        >
           <ul ref={listRef} className="max-h-56 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <li className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Buscando…
+              </li>
+            ) : clients.length === 0 ? (
               <li className="px-3 py-2 text-sm text-slate-500">Nenhum cliente encontrado.</li>
             ) : (
-              filtered.map((c, idx) => {
+              clients.map((c, idx) => {
                 const active = idx === highlight;
                 const isSel = c.id === value;
+                const nameParts = highlightText(c.name, query);
+                const phoneFormatted = formatPhone(c.phone);
+                const phoneParts = phoneFormatted ? highlightText(phoneFormatted, query) : null;
                 return (
                   <li key={c.id} data-idx={idx}>
                     <button
                       type="button"
                       onMouseEnter={() => setHighlight(idx)}
                       onClick={() => pick(c)}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors ${
                         active ? 'bg-slate-800' : ''
                       }`}
                     >
-                      <span className="truncate text-slate-200">
-                        {c.name}
-                        {c.phone ? (
-                          <span className="text-slate-500"> — {formatPhone(c.phone)}</span>
-                        ) : null}
+                      <span className="min-w-0 truncate text-slate-300">
+                        {renderHighlighted(nameParts)}
                       </span>
+                      {phoneParts && (
+                        <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+                          {renderHighlighted(phoneParts)}
+                        </span>
+                      )}
                       {isSel && (
                         <Check className="h-4 w-4 shrink-0 text-orange-400" />
                       )}

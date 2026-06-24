@@ -19,7 +19,6 @@ import { ErrorState } from '@/components/feedback';
 import { businessHours } from '@/sites/ruah/config/businessHours';
 import type { AppointmentItem } from '@/features/appointments';
 
-
 type ModalState = {
   open: boolean;
   mode:
@@ -36,7 +35,7 @@ function dayQuery(date: string) {
 
 const clientsQuery = {
   queryKey: ['appointments', 'clients'] as const,
-  queryFn: () => listClientsForSelect(),
+  queryFn: () => listClientsForSelect({ data: { q: '' } }),
 };
 
 const servicesQuery = {
@@ -55,7 +54,10 @@ export const Route = createFileRoute('/_authed/admin/agendamentos')({
     const date = todayLocalDate();
     await Promise.all([
       context.queryClient.ensureQueryData(dayQuery(date)),
-      context.queryClient.ensureQueryData(clientsQuery),
+      context.queryClient.ensureQueryData({
+        queryKey: ['appointments', 'clients'],
+        queryFn: () => listClientsForSelect({ data: { q: '' } }),
+      }),
       context.queryClient.ensureQueryData(servicesQuery),
       context.queryClient.ensureQueryData(staffQuery),
       context.queryClient.ensureQueryData({
@@ -101,6 +103,7 @@ function AgendamentosPage() {
   };
 
   const handleToday = () => setDate(today);
+
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value) setDate(e.target.value);
   };
@@ -145,7 +148,6 @@ function AgendamentosPage() {
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-
       {/* ÚNICO botão Novo — navega pro wizard */}
       <Button
         onClick={() => navigate({ to: '/admin/agendar-novo' })}

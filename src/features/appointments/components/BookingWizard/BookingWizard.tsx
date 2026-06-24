@@ -14,13 +14,12 @@ import { StepConfirm } from './Steps/StepConfirm';
 import { Button } from '@/components/ui/Button';
 import type { WizardStep, WizardSelection } from './BookingWizard.types';
 import { STEP_LABELS, STEP_ORDER } from './BookingWizard.types';
-import type { BookableStaffItem, ClientOption, ServiceOption } from '@/features/appointments/types';
+import type { BookableStaffItem, ServiceOption } from '@/features/appointments/types';
 import type { BusinessHours } from '@/sites/ruah/types';
 import { cn } from '@/lib/cn';
 import type { AppointmentItem } from '@/features/appointments';
 
 interface Props {
-  clients: ClientOption[];
   services: ServiceOption[];
   staff: BookableStaffItem[];
   businessHours: BusinessHours;
@@ -138,7 +137,7 @@ function clearFutureFields(sel: WizardSelection, fromStep: number): WizardSelect
 }
 
 // ── Componente principal ──────────────────────────────────────
-export function BookingWizard({ clients, services, staff, businessHours }: Props) {
+export function BookingWizard({ services, staff, businessHours }: Props) {
   const navigate = useNavigate();
 
   // Mobile
@@ -251,7 +250,6 @@ export function BookingWizard({ clients, services, staff, businessHours }: Props
       case 'client':
         return (
           <StepClient
-            clients={clients}
             value={selection.clientId}
             onChange={(id, name) => updateSelection({ clientId: id, clientName: name })}
           />
