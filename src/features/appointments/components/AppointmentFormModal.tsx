@@ -29,6 +29,8 @@ import {
 import type { BusinessHours } from '@/sites/ruah/types';
 import { cn } from '@/lib/cn';
 import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { useNavigate } from '@tanstack/react-router';
+
 
 // ── Status config ────────────────────────────────────────────────
 type Status = AppointmentItem['status'];
@@ -206,6 +208,7 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
     : null;
 
   const errorsVisible = missingFields.length > 0 || retroError;
+  const navigate = useNavigate();
 
   return (
     <>
@@ -297,10 +300,16 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
                         )}
                         {appointment.status === 'confirmed' && (
                           <>
-                            <button type="button" onClick={() => handleQuickStatus('completed')} disabled={isSaving}
-                              className={cn(quickBtn, 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10')}><CheckCheck className="h-3 w-3" /> Concluir</button>
+                            <button type="button" onClick={() => {
+                              navigate({ to: '/admin/pdv', search: { appointmentId: appointment.id } });
+                            }} disabled={isSaving}
+                              className={cn(quickBtn, 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10')}>
+                              <CheckCheck className="h-3 w-3" /> Concluir
+                            </button>
                             <button type="button" onClick={() => setCancelTarget(true)} disabled={isSaving}
-                              className={cn(quickBtn, 'border-red-500/20 text-red-400 hover:bg-red-500/10')}><X className="h-3 w-3" /> Cancelar</button>
+                              className={cn(quickBtn, 'border-red-500/20 text-red-400 hover:bg-red-500/10')}>
+                              <X className="h-3 w-3" /> Cancelar
+                            </button>
                           </>
                         )}
                       </div>

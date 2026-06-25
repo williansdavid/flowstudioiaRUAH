@@ -3,32 +3,39 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { workingHoursSchema } from '@/lib/scheduling/workingHours.schema';
 import type { WorkingHours, DaySchedule } from '@/lib/scheduling/workingHours.schema';
 import { WEEKDAY_ORDER, WEEKDAY_LABEL } from '../types';
-import { useUpdateStaffWorkingHours } from '../hooks';
+import { staffWorkingHoursQuery, useUpdateStaffWorkingHours } from '../hooks';
 import { DayRow } from './DayRow';
+import { buildDefaultWorkingHours } from '../utils/defaultWorkingHours';
 import { useNavigate } from '@tanstack/react-router';
 
 interface WorkingHoursEditorProps {
   staffId: string;
-  initial: WorkingHours;
   canEdit: boolean;
   onDirtyChange?: (dirty: boolean) => void;
 }
 
 export function WorkingHoursEditor({
   staffId,
-  initial,
   canEdit,
   onDirtyChange,
 }: WorkingHoursEditorProps) {
-  const [draft, setDraft] = useState<WorkingHours>(initial);
+  const { data } = useQuery(staffWorkingHoursQuery(staffId));
+  const initialWorkingHours = data?.workingHours ?? buildDefaultWorkingHours();
+
+  const [draft, setDraft] = useState<WorkingHours>(initialWorkingHours);
   const mutation = useUpdateStaffWorkingHours(staffId);
   const prevDirtyRef = useRef(false);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(initialWorkingHours);
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
+  // Sincroniza draft quando o dado da query é refetchado (ex: após salvar)
+  useEffect(() => {
+    setDraft(initialWorkingHours);
+  }, [data?.workingHours]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (dirty !== prevDirtyRef.current) {
@@ -39,7 +46,7 @@ export function WorkingHoursEditor({
 
   useEffect(() => {
     prevDirtyRef.current = false;
-  }, [initial]);
+  }, [initialWorkingHours]);
 
   function patchDay(key: keyof WorkingHours, value: DaySchedule | null) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -63,11 +70,11 @@ export function WorkingHoursEditor({
     );
   }
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
+  function handleCancel() {
+    navigate({ to: '/admin/equipe' });
+  }
 
-function handleCancel() {
-  navigate({ to: '/admin/equipe' });
-}
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -85,7 +92,6 @@ function handleCancel() {
           </p>
         </div>
       </div>
-
       <div className="space-y-3">
         {WEEKDAY_ORDER.map((key, index) => (
           <motion.div
@@ -107,9 +113,6 @@ function handleCancel() {
           </motion.div>
         ))}
       </div>
-
-      {/* ═══ FOOTER FIXO — vidro premium ═══ */}
-      {/* ═══ FOOTER FIXO — vidro premium ═══ */}
       {canEdit && (
         <div className="sticky bottom-0 -mx-5 -mb-5 mt-6 flex items-center justify-between border-t border-slate-700/20 bg-slate-900/90 backdrop-blur-xl px-5 py-4 rounded-b-2xl">
           {dirty ? (

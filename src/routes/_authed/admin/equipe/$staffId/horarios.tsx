@@ -5,7 +5,6 @@ import { ArrowLeft, CalendarRange } from 'lucide-react';
 import {
   staffWorkingHoursQuery,
   WorkingHoursEditor,
-  buildDefaultWorkingHours,
   StaffTimeOffManager,
 } from '@/features/staff';
 
@@ -120,7 +119,6 @@ function HorariosPage() {
           <SectionLabel title="Horário de trabalho" hint="Repete toda semana" />
           <WorkingHoursEditor
             staffId={data.staffId}
-            initial={data.workingHours ?? buildDefaultWorkingHours()}
             canEdit={data.canEdit}
             onDirtyChange={setIsDirty}
           />

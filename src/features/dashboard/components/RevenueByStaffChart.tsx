@@ -141,7 +141,7 @@ export function RevenueByStaffChart() {
               {data.map((entry, i) => (
                 <Cell
                   key={entry.staffId ?? `none-${i}`}
-                  fill={COLORS[i % COLORS.length]}
+                  fill={entry.color}
                 />
               ))}
             </Pie>

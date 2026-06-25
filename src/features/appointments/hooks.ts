@@ -65,11 +65,9 @@ export function useCreateAppointment() {
   return useMutation({
     mutationFn: (input: CreateAppointmentInput) =>
       createAppointment({ data: input }),
-    onSuccess: async () => {
+      onSuccess: async () => {
       toast.success('Agendamento criado.');
-      await queryClient.invalidateQueries({
-        queryKey: APPOINTMENTS_TODAY_KEY,
-      });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Não foi possível criar o agendamento.');

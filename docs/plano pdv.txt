@@ -1,0 +1,143 @@
+Plano Completo — Módulo PDV (Ponto de Venda)
+1. Novas tabelas SQL
+-- 1. Formas de pagamento (flexível, admin cadastra)
+CREATE TABLE payment_methods (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name        TEXT NOT NULL,            -- "Dinheiro", "Cartão Crédito", "Débito", "PIX"
+  icon        TEXT,                     -- lucide icon name (opcional)
+  is_active   BOOLEAN DEFAULT true,
+  sort_order  INT DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- 2. Produtos avulsos
+CREATE TABLE products (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name        TEXT NOT NULL,
+  price       DECIMAL(10,2) NOT NULL,
+  avatar_url  TEXT,                     -- imagem do produto
+  is_active   BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- 3. Vendas (PDV)
+CREATE TABLE sales (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sale_type       TEXT NOT NULL DEFAULT 'product',  -- 'product' | 'appointment'
+  appointment_id  UUID REFERENCES appointments(id) ON DELETE SET NULL,
+  client_name     TEXT NOT NULL,
+  total_amount    DECIMAL(10,2) NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'draft',  -- draft | completed | cancelled
+  created_by      UUID REFERENCES profiles(id),
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+-- 4. Itens da venda
+CREATE TABLE sale_items (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sale_id     UUID REFERENCES sales(id) ON DELETE CASCADE,
+  item_type   TEXT NOT NULL,             -- 'product' | 'service'
+  item_id     UUID,                      -- products.id ou services.id
+  item_name   TEXT NOT NULL,
+  quantity    INT DEFAULT 1,
+  unit_price  DECIMAL(10,2) NOT NULL,
+  total_price DECIMAL(10,2) NOT NULL,
+  is_locked   BOOLEAN DEFAULT false      -- true = veio do agendamento (staff não remove)
+);
+
+-- 5. Split de pagamento
+CREATE TABLE sale_payments (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sale_id           UUID REFERENCES sales(id) ON DELETE CASCADE,
+  payment_method_id UUID REFERENCES payment_methods(id),
+  amount            DECIMAL(10,2) NOT NULL,
+  created_at        TIMESTAMPTZ DEFAULT now()
+);
+
+2. Fluxo completo
+PDV via agendamento:
+	Staff clica "Concluir" no agendamento
+	Navega para /admin/pdv?appointmentId=xxx
+	PDV carrega: cria sales com status='draft', insere sale_items com o serviço (is_locked=true)
+	Staff pode adicionar produtos avulsos ao carrinho
+	Define split de pagamento (validação: soma == total)
+	Finaliza → status='completed' + gera finance_transactions + atualiza appointment para completed
+PDV autônomo:
+	Navega para /admin/pdv (sem parâmetro)
+	Carrinho vazio — adiciona produtos e/ou serviços avulsos
+	Mesmo fluxo de pagamento e finalização
+Venda em andamento (interrupção):
+	sales.status = 'draft' é criada assim que o PDV é aberto com 1+ itens
+	Se operador sair e voltar, o PDV carrega o rascunho pendente mais recente
+	Futuro: alerta na reabertura
+3. UI do PDV (inspirada em maquininha)
+	Layout em página separada (/admin/pdv), duas colunas:
+	Coluna Esquerda — CatálogoColuna Direita — Carrinho
+	Grid de produtos com avatar, nome e preçoItens adicionados com quantidade
+	Campo de busca/filtroTotal acumulado
+	Seção de serviços (quando avulso)Split de pagamento
+	Botão Finalizar
+Interações:
+	Clique no produto → animação de voo pro carrinho (framer-motion layoutId)
+	Clique de novo no mesmo produto → incrementa quantidade (badge animado)
+	Carrinho mostra: item, quantidade, valor unitário, total por item
+	Staff não pode remover itens is_locked=true (serviço do agendamento) — botão de remover desabilitado
+	Admin pode remover qualquer item
+Split de pagamento:
+	Abaixo do carrinho: "Formas de pagamento"
+	Botão "Adicionar pagamento" → dropdown com métodos ativos + input de valor
+	Valida: soma dos splits == total da venda
+	Barra de progresso: "Faltam R$ XX,00"
+	Pode ter múltiplos splits (ex: R$ 20 dinheiro + R$ 35 cartão + R$ 15 PIX)	
+4. Regras de negócio
+	Regra					Detalhe
+	RegraDetalhe			Staff não remove item locked (serviço do agendamento). Admin pode tudo.
+	Split obrigatório		Soma dos splits deve ser exatamente igual ao total. Validado client + server.
+	Financeiro				Ao finalizar, gerar finance_transactions com type='income', category='sale', amount = total_amount, reference_id = sales.id
+	Status agendamento		Ao finalizar PDV vindo de agendamento, atualizar appointment para completed
+	Estoque					Sem controle por enquanto
+	Edição					Venda finalizada não pode ser editada — apenas cancelada (status='cancelled')
+	Rascunho				status='draft' criado na abertura do PDV. Se existir rascunho pendente, carregar ao invés de criar novo
+5. Estrutura de arquivos
+src/features/sales/
+  components/
+    PdvPage.tsx           — Página principal do PDV
+    ProductGrid.tsx       — Grid de produtos (catálogo)
+    ProductCard.tsx       — Card de produto com clique + animação
+    CartPanel.tsx         — Carrinho (coluna direita)
+    CartItem.tsx          — Item do carrinho com quantidade e locked
+    SplitPayment.tsx      — Seção de split de pagamento
+    PaymentRow.tsx        — Linha de método + valor
+    PdvHeader.tsx         — Header com info do agendamento (se houver)
+  server/
+    createSale.ts         — Finaliza venda (transação)
+    createSaleDraft.ts    — Cria/retoma rascunho
+    listProducts.ts       — Lista produtos ativos
+    listPaymentMethods.ts — Lista formas de pagamento ativas
+    getSaleDraft.ts       — Busca rascunho pendente do usuário
+    getAppointmentSaleData.ts — Dados do agendamento para o PDV
+  hooks.ts                — Mutations e queries
+  types.ts                — Tipos da feature
+  index.ts                — Barrel
+
+src/routes/_authed/admin/pdv.tsx  — Rota do PDV
+6. Integração com agendamentoNo 
+	componente de ação "Concluir" do agendamento (provavelmente em AppointmentsList ou AppointmentActions):
+	// Comportamento atual: mutate direto para completed
+	// Novo comportamento:
+	navigate({ to: '/admin/pdv', search: { appointmentId: a.id } });
+	O PDV então:
+	Chama getAppointmentSaleData(appointmentId) — busca cliente, serviço, valor
+	Chama createSaleDraft({ appointmentId, ... }) — cria sales + sale_items com is_locked=true
+	Renderiza o PDV com o serviço no carrinho (bloqueado para staff)	
+7. Seed de dados
+	-- Formas de pagamento padrão
+	INSERT INTO payment_methods (name, icon, sort_order) VALUES
+		('Dinheiro', 'banknote', 1),
+		('Cartão Crédito', 'credit-card', 2),
+		('Cartão Débito', 'credit-card', 3),
+		('PIX', 'qr-code', 4);
+		
+Riscos e observações
+TransaçãocreateSale precisa criar sales + sale_items + sale_payments + finance_transactions + atualizar appointment. Supabase não tem transação multi-tabela nativa — faremos via server function com Promise.all ou RPC do Postgres.Animaçãoframer-motion já está na stack. A animação de "voo" pro carrinho é viável com layoutId e AnimatePresence.SplitA validação de soma é client-side + server-side (dupla checagem no createSale).RascunhoBuscar rascunho pendente por created_by + status='draft'. Se existir, carregar. Se não, criar novo.

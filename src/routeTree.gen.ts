@@ -19,6 +19,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-pa
 import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
 import { Route as AuthedAdminServicosRouteImport } from './routes/_authed/admin/servicos'
+import { Route as AuthedAdminPdvRouteImport } from './routes/_authed/admin/pdv'
 import { Route as AuthedAdminFinanceiroRouteImport } from './routes/_authed/admin/financeiro'
 import { Route as AuthedAdminEquipeRouteImport } from './routes/_authed/admin/equipe'
 import { Route as AuthedAdminClientesRouteImport } from './routes/_authed/admin/clientes'
@@ -26,7 +27,6 @@ import { Route as AuthedAdminAgendarNovoRouteImport } from './routes/_authed/adm
 import { Route as AuthedAdminAgendamentosRouteImport } from './routes/_authed/admin/agendamentos'
 import { Route as AuthedAdminAgendaRouteImport } from './routes/_authed/admin/agenda'
 import { Route as AuthedAdminEquipeIndexRouteImport } from './routes/_authed/admin/equipe/index'
-import { Route as AuthedAdminEquipeHorariosRouteImport } from './routes/_authed/admin/equipe/horarios'
 import { Route as AuthedAdminEquipeStaffIdHorariosRouteImport } from './routes/_authed/admin/equipe/$staffId/horarios'
 
 const AuthedRoute = AuthedRouteImport.update({
@@ -77,6 +77,11 @@ const AuthedAdminServicosRoute = AuthedAdminServicosRouteImport.update({
   path: '/servicos',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
+const AuthedAdminPdvRoute = AuthedAdminPdvRouteImport.update({
+  id: '/pdv',
+  path: '/pdv',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
 const AuthedAdminFinanceiroRoute = AuthedAdminFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
@@ -112,12 +117,6 @@ const AuthedAdminEquipeIndexRoute = AuthedAdminEquipeIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedAdminEquipeRoute,
 } as any)
-const AuthedAdminEquipeHorariosRoute =
-  AuthedAdminEquipeHorariosRouteImport.update({
-    id: '/horarios',
-    path: '/horarios',
-    getParentRoute: () => AuthedAdminEquipeRoute,
-  } as any)
 const AuthedAdminEquipeStaffIdHorariosRoute =
   AuthedAdminEquipeStaffIdHorariosRouteImport.update({
     id: '/$staffId/horarios',
@@ -138,9 +137,9 @@ export interface FileRoutesByFullPath {
   '/admin/clientes': typeof AuthedAdminClientesRoute
   '/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
+  '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin/': typeof AuthedAdminIndexRoute
-  '/admin/equipe/horarios': typeof AuthedAdminEquipeHorariosRoute
   '/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
   '/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -155,9 +154,9 @@ export interface FileRoutesByTo {
   '/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/admin/clientes': typeof AuthedAdminClientesRoute
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
+  '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin': typeof AuthedAdminIndexRoute
-  '/admin/equipe/horarios': typeof AuthedAdminEquipeHorariosRoute
   '/admin/equipe': typeof AuthedAdminEquipeIndexRoute
   '/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -177,9 +176,9 @@ export interface FileRoutesById {
   '/_authed/admin/clientes': typeof AuthedAdminClientesRoute
   '/_authed/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/_authed/admin/financeiro': typeof AuthedAdminFinanceiroRoute
+  '/_authed/admin/pdv': typeof AuthedAdminPdvRoute
   '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
-  '/_authed/admin/equipe/horarios': typeof AuthedAdminEquipeHorariosRoute
   '/_authed/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
   '/_authed/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -198,9 +197,9 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/equipe'
     | '/admin/financeiro'
+    | '/admin/pdv'
     | '/admin/servicos'
     | '/admin/'
-    | '/admin/equipe/horarios'
     | '/admin/equipe/'
     | '/admin/equipe/$staffId/horarios'
   fileRoutesByTo: FileRoutesByTo
@@ -215,9 +214,9 @@ export interface FileRouteTypes {
     | '/admin/agendar-novo'
     | '/admin/clientes'
     | '/admin/financeiro'
+    | '/admin/pdv'
     | '/admin/servicos'
     | '/admin'
-    | '/admin/equipe/horarios'
     | '/admin/equipe'
     | '/admin/equipe/$staffId/horarios'
   id:
@@ -236,9 +235,9 @@ export interface FileRouteTypes {
     | '/_authed/admin/clientes'
     | '/_authed/admin/equipe'
     | '/_authed/admin/financeiro'
+    | '/_authed/admin/pdv'
     | '/_authed/admin/servicos'
     | '/_authed/admin/'
-    | '/_authed/admin/equipe/horarios'
     | '/_authed/admin/equipe/'
     | '/_authed/admin/equipe/$staffId/horarios'
   fileRoutesById: FileRoutesById
@@ -321,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminServicosRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
+    '/_authed/admin/pdv': {
+      id: '/_authed/admin/pdv'
+      path: '/pdv'
+      fullPath: '/admin/pdv'
+      preLoaderRoute: typeof AuthedAdminPdvRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
     '/_authed/admin/financeiro': {
       id: '/_authed/admin/financeiro'
       path: '/financeiro'
@@ -370,13 +376,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminEquipeIndexRouteImport
       parentRoute: typeof AuthedAdminEquipeRoute
     }
-    '/_authed/admin/equipe/horarios': {
-      id: '/_authed/admin/equipe/horarios'
-      path: '/horarios'
-      fullPath: '/admin/equipe/horarios'
-      preLoaderRoute: typeof AuthedAdminEquipeHorariosRouteImport
-      parentRoute: typeof AuthedAdminEquipeRoute
-    }
     '/_authed/admin/equipe/$staffId/horarios': {
       id: '/_authed/admin/equipe/$staffId/horarios'
       path: '/$staffId/horarios'
@@ -404,13 +403,11 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthedAdminEquipeRouteChildren {
-  AuthedAdminEquipeHorariosRoute: typeof AuthedAdminEquipeHorariosRoute
   AuthedAdminEquipeIndexRoute: typeof AuthedAdminEquipeIndexRoute
   AuthedAdminEquipeStaffIdHorariosRoute: typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
 
 const AuthedAdminEquipeRouteChildren: AuthedAdminEquipeRouteChildren = {
-  AuthedAdminEquipeHorariosRoute: AuthedAdminEquipeHorariosRoute,
   AuthedAdminEquipeIndexRoute: AuthedAdminEquipeIndexRoute,
   AuthedAdminEquipeStaffIdHorariosRoute: AuthedAdminEquipeStaffIdHorariosRoute,
 }
@@ -425,6 +422,7 @@ interface AuthedAdminRouteRouteChildren {
   AuthedAdminClientesRoute: typeof AuthedAdminClientesRoute
   AuthedAdminEquipeRoute: typeof AuthedAdminEquipeRouteWithChildren
   AuthedAdminFinanceiroRoute: typeof AuthedAdminFinanceiroRoute
+  AuthedAdminPdvRoute: typeof AuthedAdminPdvRoute
   AuthedAdminServicosRoute: typeof AuthedAdminServicosRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
 }
@@ -436,6 +434,7 @@ const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
   AuthedAdminClientesRoute: AuthedAdminClientesRoute,
   AuthedAdminEquipeRoute: AuthedAdminEquipeRouteWithChildren,
   AuthedAdminFinanceiroRoute: AuthedAdminFinanceiroRoute,
+  AuthedAdminPdvRoute: AuthedAdminPdvRoute,
   AuthedAdminServicosRoute: AuthedAdminServicosRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
 }

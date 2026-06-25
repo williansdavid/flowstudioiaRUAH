@@ -1,367 +1,501 @@
 # FlowStudio AI — Arquitetura do Sistema
-
-Data: 23 de junho de 2026
+Data: 25 de junho de 2026
 Stack: TanStack Start (SSR) + Router + React Query + TypeScript + Supabase + Tailwind + Vite + Netlify
 
 ---
 
-## 1. Visao Geral
+## 1. Visão Geral
+Plataforma white-label para studios de beleza (salões, barbearias, studios).
+Cada studio tem deploy isolado: seu próprio Netlify, seu próprio Supabase, seu próprio banco, sua própria landing page e identidade visual.
 
-Plataforma white-label para studios de beleza (saloes, barbearias, studios).
-Cada studio tem deploy isolado: seu proprio Netlify, seu proprio Supabase, seu proprio banco, sua propria landing page e identidade visual.
+### 1.1 Modelo de 2 Módulos
+**Módulo 1 — Sistema** (núcleo compartilhado entre studios)
+- `src/lib/`, `src/routes/` estruturais, `src/components/` core
+- Auth SSR, supabase clients, query, utils genéricos, guards, types do banco
 
-### 1.1 Modelo de 2 Modulos
+**Módulo 2 — Site** (individual por studio)
+- `src/sites/<slug>/`
+  - `config/` (branding, identity, content, businessHours, seo)
+  - `components/` (landing)
+  - `utils/` (fachadas)
+  - `types/`
+  - `studio.ts` (entry point)
 
-Modulo 1 — Sistema (nucleo compartilhado entre studios)
-- src/lib/, src/routes/ estruturais, src/components/ core
-- Auth SSR, supabase clients, query, utils genericos, guards, types do banco
-
-Modulo 2 — Site (individual por studio)
-- src/sites/<slug>/
-  - config/ (branding, identity, content, businessHours, seo)
-  - components/ (landing)
-  - utils/ (fachadas)
-  - types/
-  - studio.ts (entry point)
-
-Regra de ouro:
-- src/lib/ nunca importa de src/sites/
-- src/sites/ consome src/lib/core/ via fachadas (buildBrandingCss.ts, buildSeo.ts)
+**Regra de ouro:**
+- `src/lib/` nunca importa de `src/sites/`
+- `src/sites/` consome `src/lib/core/` via fachadas (`buildBrandingCss.ts`, `buildSeo.ts`)
 
 ---
 
 ## 2. Stack (travada)
+- **Framework:** TanStack Start (SSR)
+- **Roteamento:** TanStack Router
+- **Estado servidor:** TanStack React Query
+- **Linguagem:** TypeScript (`noUncheckedIndexedAccess: true`)
+- **Banco:** Supabase (Postgres + Auth + RLS)
+- **Estilização:** Tailwind CSS
+- **Build/Bundler:** Vite
+- **Deploy:** Netlify (1 por studio)
+- **Ícones:** lucide-react
+- **Notificações:** sonner
+- **Validação:** zod
+- **Animações:** framer-motion
+- **UI Componentes:** radix-ui (Dialog), Button próprio, ConfirmDialog, WhatsAppButton
 
-- Framework: TanStack Start (SSR)
-- Roteamento: TanStack Router
-- Estado servidor: TanStack React Query
-- Linguagem: TypeScript (noUncheckedIndexedAccess: true)
-- Banco: Supabase (Postgres + Auth + RLS)
-- Estilizacao: Tailwind CSS
-- Build/Bundler: Vite
-- Deploy: Netlify (1 por studio)
-- Icones: lucide-react
-- Notificacoes: sonner
-- Validacao: zod
-- Animacoes: framer-motion
-
-Proibido: microservicos, multi-tenant, dados compartilhados, Kubernetes, filas, CQRS, event sourcing.
+**Proibido:** microsserviços, multi-tenant, dados compartilhados, Kubernetes, filas, CQRS, event sourcing.
 
 ---
 
-## 3. Estrutura de Diretorios
-
+## 3. Estrutura de Diretórios
 src/
   components/             Componentes compartilhados (feedback, icons, ui)
-  config/                 Configuracoes globais
-  features/               Modulos de funcionalidades (feature-based)
+    ui/                   Button, ConfirmDialog, WhatsAppButton
+    feedback/             ErrorState
+  config/                 Configurações globais
+  features/               Módulos de funcionalidades (feature-based)
     admin-shell/          Layout administrativo (sidebar, topbar)
-    appointments/         Agenda, agendamentos, calendario
-    auth/                 Autenticacao (login, reset, primeiro acesso)
-    dashboard/            Dashboard com KPIs e graficos
-    services/             Servicos/produtos do studio
-    staff/                Profissionais, horarios, folgas
-  lib/                    Nucleo compartilhado
+      config/
+        nav-items.ts      Definição dos itens de navegação com seções e roles
+      components/
+        AdminLayout.tsx   Layout principal com sidebar + topbar
+        PlaceholderScreen.tsx  Tela genérica "Em construção"
+        Sidebar.tsx       Navegação lateral
+        SidebarItem.tsx   Item de navegação
+        Topbar.tsx        Barra superior
+      types.ts            Tipos do layout (NavItem, NavSection)
+    appointments/         Agenda, agendamentos, calendário, wizard
+    auth/                 Autenticação (login, reset, primeiro acesso)
+    dashboard/            Dashboard com KPIs e gráficos
+    sales/                PDV (Ponto de Venda)
+    services/             Serviços/produtos do studio
+    staff/                Profissionais, horários, folgas
+  lib/                    Núcleo compartilhado
     core/                 Sistema central (branding, seo, phone)
     errors/               Tratamento de erros
-    public/               Funcoes publicas (sem auth)
+    public/               Funções públicas (sem auth)
     query/                Config do TanStack Query
-    scheduling/           Schemas de horario de trabalho
+    scheduling/           Schemas de horário de trabalho
     supabase/             Clients (admin, server, client)
-    utils/                Utilitarios gerais
+    utils/                Utilitários gerais (whatsapp)
   routes/                 Rotas do TanStack Router
-    _auth/                Rotas publicas de auth
+    _auth/                Rotas públicas de auth
     _authed/              Rotas protegidas (admin)
-      admin/
-        agenda/
-        agendamentos/
-        clientes/
-        equipe/
-          $staffId/horarios/
-        financeiro/
-        servicos/
-    index.tsx             Home
-    __root.tsx            Root layout
-  server/                 Funcoes servidor (TanStack Start)
+      index.tsx           Home
+      __root.tsx          Root layout
+  server/                 Server functions de sistema
+    auth/                 getSession, signIn, signOut, requestPasswordReset
   sites/                  Sites por studio
     ruah/                 Exemplo: Studio Ruah
-      components/         Componentes da landing page
-      config/             Branding, identidade, conteudo
-      lib/                Lib especifica do studio
-      types/              Types especificos do studio
-      utils/              Utilitarios especificos
   styles/                 Estilos globais
 
 ---
 
-## 4. Features (modulos)
+## 4. Features (módulos)
 
 ### 4.1 admin-shell
-Layout administrativo compartilhado.
-- AdminLayout.tsx — Layout principal com sidebar + topbar
-- Sidebar.tsx — Navegacao lateral
-- SidebarItem.tsx — Item de navegacao
-- Topbar.tsx — Barra superior
-- config/nav-items.ts — Definicao dos itens de navegacao
-- types.ts — Tipos do layout
+Layout administrativo compartilhado com navegação por seções e controle de roles.
+- `AdminLayout.tsx` — Layout principal com sidebar + topbar
+- `Sidebar.tsx` — Navegação lateral
+- `SidebarItem.tsx` — Item de navegação
+- `Topbar.tsx` — Barra superior
+- `PlaceholderScreen.tsx` — Tela placeholder para rotas em construção
+- `config/nav-items.ts` — Definição dos itens de navegação com seções (`Operação`, `Cadastros`, `Gestão`), roles (`admin`, `staff`) e `readonlyFor`
+- `types.ts` — Tipos do layout (`NavItem`, `NavSection`)
+
+**Funções:**
+- `getNavItemsForRole(role)` — Filtra itens por role
+- `getGroupedNavItemsForRole(role)` — Itens agrupados por seção, respeitando ordem fixa
 
 ### 4.2 appointments
-Modulo central de agendamentos.
-- Componentes: AppointmentFormModal.tsx, AppointmentsList.tsx, ClientCombobox.tsx, QuickClientModal.tsx, SlotsStep.tsx
-- Calendario (DayCalendar/): DayCalendar.tsx, AppointmentBlock.tsx, StaffColumn.tsx, TimeAxis.tsx, NowLine.tsx, TimeOffBlock.tsx, staffColor.ts, geometry.ts
-- Utils: calendar/geometry.ts, calendarUtils.ts, todayLocalDate.ts
-- Server: createAppointment.ts, updateAppointment.ts, deleteAppointment.ts, getDayAppointments.ts, getDayTimeOff.ts, getAvailableSlots.ts, createQuickClient.ts, listActiveServices.ts, listBookableStaff.ts, listClientsForSelect.ts, updateAppointmentStatus.ts
-- Hooks: hooks.ts, hooks/useCalendarDrag.ts
-- Types: types.ts
+Módulo central de agendamentos. Contém dois fluxos de criação: **AppointmentFormModal** (modal único) e **BookingWizard** (wizard multi-step).
+
+**Componentes:**
+- `AppointmentFormModal.tsx` — Modal de criação/edição com formulário completo, quick actions de status, WhatsApp, detecção de conflito com timeOff, validação de horário passado
+- `AppointmentsList.tsx` — Lista de agendamentos do dia, agrupada por staff, com toggle "Mostrar concluídos", ações rápidas por status (Confirmar/Concluir/Cancelar/Reabrir), botão de editar e WhatsApp, animações framer-motion
+- `ClientCombobox.tsx` — Combobox de seleção de cliente
+- `QuickClientModal.tsx` — Modal de cadastro rápido de cliente
+- `SlotsStep.tsx` — (legado) Step de seleção de horário
+
+**BookingWizard** (novo fluxo de criação):
+- `BookingWizard/BookingWizard.tsx` — Wizard multi-step com 4 passos, responsivo (desktop colunas / mobile slides)
+- `BookingWizard/BookingWizard.types.ts` — `WizardStep`, `WizardSelection`, `STEP_ORDER`, `STEP_LABELS`
+- `BookingWizard/BookingWizardHeader.tsx` — Stepper visual com dots + linha conectora
+- `BookingWizard/BookingWizardFooter.tsx` — Navegação (voltar/continuar/confirmar) com sticky bottom
+- `BookingWizard/Steps/StepClient.tsx` — Seleção de cliente + botão cadastro rápido
+- `BookingWizard/Steps/StepService.tsx` — Seleção de serviço com cards
+- `BookingWizard/Steps/StepProfessional.tsx` — Seleção de profissional com avatar
+- `BookingWizard/Steps/StepDateSlots.tsx` — Calendário semanal + slots disponíveis (integra `useAvailableSlots`)
+- `BookingWizard/Steps/StepConfirm.tsx` — Resumo final antes de confirmar
+- `BookingWizard/Steps/StepDate.tsx` — (legado, não usado)
+- `BookingWizard/Steps/StepSlots.tsx` — (legado, não usado)
+
+**Calendário (DayCalendar/):**
+- `DayCalendar.tsx`, `AppointmentBlock.tsx`, `StaffColumn.tsx`, `TimeAxis.tsx`, `NowLine.tsx`, `TimeOffBlock.tsx`
+- `staffColor.ts` — Geração de cor por staffId
+- `geometry.ts` — Cálculo de posicionamento (top/height/width/left)
+
+**Utils:**
+- `utils/calendarUtils.ts`
+- `utils/todayLocalDate.ts` — Data local UTC-3 no formato YYYY-MM-DD
+
+**Server functions:**
+- `createAppointment.ts` — Cria agendamento (valida sessão, busca price do serviço, insere com status 'pending')
+- `updateAppointment.ts` — Atualiza agendamento
+- `deleteAppointment.ts` — Exclui agendamento
+- `updateAppointmentStatus.ts` — Altera status
+- `getDayAppointments.ts` — Busca agendamentos do dia (filtra cancelled, retorna camelCase via mapRow)
+- `getDayTimeOff.ts` — Busca bloqueios/folgas do dia
+- `getAvailableSlots.ts` — Calcula slots disponíveis (businessHours ∩ working_hours − breaks − timeOff − appointments, granularidade 30min, valida serviço ativo e staff bookable)
+- `createQuickClient.ts` — Cria cliente rápido
+- `listActiveServices.ts` — Lista serviços ativos
+- `listBookableStaff.ts` — Lista profissionais disponíveis
+- `listClientsForSelect.ts` — Lista clientes para select
+
+**Hooks:**
+- `useCreateAppointment` — Mutation com invalidação de `['appointments', 'today']`
+- `useUpdateAppointment` — Mutation com invalidação
+- `useCancelAppointment` — Mutation com invalidação
+- `useUpdateAppointmentStatus` — Mutation com toast de sucesso por status
+- `useCreateQuickClient` — Mutation com invalidação de `['clients']`
+- `useAvailableSlots` — Query com staleTime 30s, enabled apenas quando staffId e serviceId preenchidos
+
+**Types (`types.ts`):**
+- `AppointmentItem` — `id, startsAt, endsAt, status, clientId, clientName, clientPhone, serviceId, serviceName, staffId, staffName, staffAvatarUrl, staffColor, price, notes`
+- `ServiceOption`, `ClientOption`, `BookableStaffItem`
+
+**Barrel (`index.ts`):**
+- Exporta: `todayLocalDate`, `AppointmentFormModal`, `AppointmentsList`, todas server functions, todos hooks, todos types
 
 ### 4.3 auth
-Autenticacao e recuperacao de senha.
-- LoginForm.tsx, ForgotPasswordForm.tsx, ResetPasswordForm.tsx
-- RecoverySessionGate.tsx
-- login/ — Layouts dos paineis de login
-- hooks.ts, queries.ts
+Autenticação e recuperação de senha.
+- `LoginForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx`
+- `RecoverySessionGate.tsx`
+- `login/` — Layouts dos painéis de login (LoginSplitLayout, LoginBrandPanel, LoginRedirectOverlay, FirstAccessLayout, ForgotPasswordLayout, ResetPasswordLayout)
+- `hooks.ts`, `queries.ts`
 
 ### 4.4 dashboard
 Painel inicial com indicadores.
-- KpiCard.tsx, KpiGrid.tsx, RecentLeads.tsx, RevenueByStaffChart.tsx
-- server/getDashboardData.ts, server/getRevenueByStaff.ts
+- `KpiCard.tsx`, `KpiGrid.tsx`, `RecentLeads.tsx`, `RevenueByStaffChart.tsx`
+- `server/getDashboardData.ts`, `server/getRevenueByStaff.ts`
 
 ### 4.5 services
-Gerenciamento de servicos/produtos.
-- ServiceFormModal.tsx, ServicesList.tsx
-- server/ — CRUD completo (create, update, deactivate, list)
+Gerenciamento de serviços/produtos.
+- `ServiceFormModal.tsx`, `ServicesList.tsx`
+- `server/` — CRUD completo (create, update, deactivate, list)
 
 ### 4.6 staff
-Gerenciamento de profissionais, horarios e folgas.
-- StaffFormModal.tsx, StaffList.tsx
-- WorkingHoursEditor.tsx, DayRow.tsx
-- StaffTimeOffManager.tsx, TimeOffFormModal.tsx
-- server/ — CRUD completo (staff + timeOff)
-- utils/ — defaultWorkingHours.ts, uploadAvatar.ts
+Gerenciamento de profissionais, horários e folgas.
+- `StaffFormModal.tsx`, `StaffList.tsx`
+- `WorkingHoursEditor.tsx`, `DayRow.tsx`
+- `StaffTimeOffManager.tsx`, `TimeOffFormModal.tsx`
+- `server/` — CRUD completo (staff + timeOff)
+- `utils/` — `defaultWorkingHours.ts`, `uploadAvatar.ts`
+
+### 4.7 sales (PDV)
+Módulo de Ponto de Venda. Dois fluxos de entrada: via agendamento (staff clica "Concluir" e vai para o PDV com o serviço bloqueado) ou autônomo (carrinho vazio, adiciona produtos avulsos).
+
+**Layout:** Página separada `/admin/pdv`, duas colunas (catálogo à esquerda, carrinho à direita). Inspirada em maquininha de cartão.
+
+**Componentes:**
+- `PdvPage.tsx` — Página principal do PDV. Gerencia estado do carrinho, split de pagamento, fluxo de finalização. Recebe `appointmentId` opcional via search params.
+- `ProductGrid.tsx` — Grid de produtos (catálogo) com busca/filtro
+- `ProductCard.tsx` — Card de produto com clique + animação de voo pro carrinho (framer-motion layoutId)
+- `CartPanel.tsx` — Carrinho (coluna direita). Mostra itens, quantidades, total acumulado
+- `CartItem.tsx` — Item do carrinho com quantidade, valor unitário, total por item. Botão de remover desabilitado para itens `is_locked=true` (staff não remove serviço do agendamento)
+- `SplitPayment.tsx` — Seção de split de pagamento. Botão "Adicionar pagamento" → dropdown com métodos ativos + input de valor. Barra de progresso "Faltam R$ XX,00". Valida soma dos splits == total.
+- `PaymentRow.tsx` — Linha de método + valor no split
+- `PdvHeader.tsx` — Header com info do agendamento (cliente, serviço, valor) quando veio de agendamento
+
+**Server functions:**
+- `createSale.ts` — Finaliza venda: insere `sale_payments`, atualiza `sales` para `completed`, gera `finance_transactions` (type='income', category='product', amount=total, reference_id=sales.id), atualiza appointment para `completed` se veio de agendamento. Valida soma dos splits no servidor.
+- `createSaleDraft.ts` — Cria rascunho da venda (`sales` com status='draft' + `sale_items`). Se existir rascunho pendente do mesmo usuário, retoma em vez de criar novo.
+- `listProducts.ts` — Lista produtos ativos
+- `listPaymentMethods.ts` — Lista formas de pagamento ativas (ordenadas por sort_order)
+- `getSaleDraft.ts` — Busca rascunho pendente do usuário logado (por created_by + status='draft')
+- `getAppointmentSaleData.ts` — Dados do agendamento para o PDV (cliente, serviço, valor)
+
+**Hooks:**
+- `useCreateSale` — Mutation para finalizar venda
+- `useCreateSaleDraft` — Mutation para criar/retomar rascunho
+- `useProducts` — Query para listar produtos ativos
+- `usePaymentMethods` — Query para listar formas de pagamento
+- `useSaleDraft` — Query para buscar rascunho pendente
+- `useAppointmentSaleData` — Query para dados do agendamento (enabled apenas quando appointmentId presente)
+
+**Types (`types.ts`):**
+- `PaymentMethod` — `id, name, icon, isActive, sortOrder`
+- `ProductItem` — `id, name, price, avatarUrl, isActive`
+- `SaleItem` — `id, saleId, itemType, itemId, itemName, quantity, unitPrice, totalPrice, isLocked`
+- `Sale` — `id, saleType, appointmentId, clientName, totalAmount, status, createdBy`
+- `SplitPayment` — `paymentMethodId, amount`
+- `SaleDraft` — `saleId, items, totalAmount`
+
+**Regras de negócio:**
+- Staff não remove item locked (serviço do agendamento). Admin pode tudo.
+- Soma dos splits deve ser exatamente igual ao total. Validado client + server.
+- Ao finalizar, gerar `finance_transactions` com `type='income'`, `category='product'`, `amount=total_amount`, `reference_id=sales.id`
+- Ao finalizar PDV vindo de agendamento, atualizar appointment para `completed` com `payment_method_id` do primeiro split
+- Venda finalizada não pode ser editada — apenas cancelada (status='cancelled')
+- Rascunho (status='draft') criado na abertura do PDV. Se existir rascunho pendente, carregar ao invés de criar novo
 
 ---
 
 ## 5. Rotas
-
-/                                    Home (publica)
+/                                    Home (pública)
 _auth/login                          Login
 _auth/forgot-password                Esqueci senha
 _auth/reset-password                 Resetar senha
 _auth/primeiro-acesso                Primeiro acesso
 _authed/admin                        Dashboard
-_authed/admin/agenda                 Agenda (calendario visual)
-_authed/admin/agendamentos           Lista de agendamentos
+_authed/admin/agenda                 Agenda (calendário visual DayCalendar)
+_authed/admin/agendamentos           Lista de agendamentos (AppointmentsList)
+_authed/admin/agendar-novo           Wizard de novo agendamento (BookingWizard)
 _authed/admin/clientes               Clientes
 _authed/admin/equipe                 Equipe (profissionais)
-_authed/admin/equipe/$staffId/horarios   Horarios do profissional
+_authed/admin/equipe/horarios        Horários (rota fixa)
+_authed/admin/equipe/$staffId/horarios  Horários do profissional
 _authed/admin/financeiro             Financeiro
-_authed/admin/servicos               Servicos
+_authed/admin/pdv                    PDV (Ponto de Venda) — aceita ?appointmentId=xxx opcional
+_authed/admin/servicos               Serviços
+
+**Detalhes de rotas específicas:**
+- `agenda.tsx` — Loader SSR com `getDayAppointments`, `getDayTimeOff`, `listBookableStaff`, `listClientsForSelect`, `listActiveServices`. State local para data e modal. Abre `AppointmentFormModal` para criação (via clique em slot) e edição (via clique em appointment).
+- `agendamentos.tsx` — Loader SSR próprio. State local para data e modal. Botão "Novo" navega para `/admin/agendar-novo`. Modal `AppointmentFormModal` usado apenas para edição (quando clica no lápis). Possui `errorComponent` (`AgendamentosError`) que invalida queries e reseta.
+- `agendar-novo.tsx` — Loader SSR com `listActiveServices` e `listBookableStaff`. Renderiza `BookingWizard` passando `services`, `staff` e `businessHours`.
+- `pdv.tsx` — Loader SSR com `listProducts`, `listPaymentMethods`, `getSaleDraft`. Se `?appointmentId=xxx`, também carrega `getAppointmentSaleData`. Renderiza `PdvPage`.
 
 ---
 
 ## 6. Banco de Dados (Supabase)
 
 ### 6.1 Tabelas
-- profiles — Usuarios (id, email, role, full_name, phone, avatar_url, is_active)
-- clients — Clientes (profile_id opcional)
-- staff — Profissionais (profile_id, working_hours JSON, is_bookable)
-- services — Servicos (name, duration_minutes, price, color, is_active)
-- appointments — Agendamentos (client_id, staff_id, service_id, starts_at, ends_at, status, price)
-- staff_time_off — Bloqueios/folgas (staff_id, starts_at, ends_at, reason)
-- finance_transactions — Transacoes financeiras (type, category, amount, date)
-- leads — Leads (name, phone, status, source)
+- `profiles` — Usuários (id, email, role, full_name, phone, avatar_url, is_active)
+- `clients` — Clientes (profile_id opcional)
+- `staff` — Profissionais (profile_id, working_hours JSON, is_bookable, color)
+- `services` — Serviços (name, duration_minutes, price, color, is_active)
+- `appointments` — Agendamentos (client_id, staff_id, service_id, starts_at, ends_at, status, price, notes, created_by, payment_method_id)
+- `staff_time_off` — Bloqueios/folgas (staff_id, starts_at, ends_at, reason)
+- `finance_transactions` — Transações financeiras (type, category, amount, date, appointment_id, staff_id, payment_method_id, occurred_at, created_by, reference_id)
+- `leads` — Leads (name, phone, status, source)
+- `payment_methods` — Formas de pagamento (name, icon, is_active, sort_order)
+- `products` — Produtos avulsos (name, price, avatar_url, is_active)
+- `sales` — Vendas (sale_type, appointment_id, client_name, total_amount, status, created_by)
+- `sale_items` — Itens da venda (sale_id, item_type, item_id, item_name, quantity, unit_price, total_price, is_locked)
+- `sale_payments` — Split de pagamento (sale_id, payment_method_id, amount)
 
 ### 6.2 Views
-- clients_view — Juncao clientes + profiles
+- `clients_view` — Junção clientes + profiles
 
 ### 6.3 Enums
-- appointment_status: pending, confirmed, completed, cancelled, no_show
-- user_role: admin, staff, client
-- lead_source, lead_status, transaction_category, transaction_type
+- `appointment_status`: pending, confirmed, completed, cancelled, no_show
+- `user_role`: admin, staff, client
+- `lead_source`, `lead_status`, `transaction_category`: service, product, commission, rent, utilities, supplies, marketing, salary, other
+- `transaction_type`: income, expense
 
 ### 6.4 Functions
-- current_user_role() — Usar em RLS policies
+- `current_user_role()` — Usar em RLS policies
+- `handle_appointment_lifecycle()` — Trigger que gerencia transações financeiras ao alterar status do appointment. Exige `payment_method_id` ao marcar como `completed`.
 
-### 6.5 Tabelas planejadas (nao existem)
-- whatsapp_messages, whatsapp_settings, ai_messages
+### 6.5 Tabelas planejadas (não existem)
+- `whatsapp_messages`, `whatsapp_settings`, `ai_messages`
 
 ---
 
 ## 7. Server Functions
+Todas as funções de servidor usam `createServerFn` do TanStack Start.
 
-Todas as funcoes de servidor usam createServerFn do TanStack Start.
+### appointments/
+| Função | Descrição |
+|--------|-----------|
+| `createAppointment.ts` | Criar agendamento (valida sessão, busca price do serviço) |
+| `updateAppointment.ts` | Atualizar agendamento |
+| `deleteAppointment.ts` | Excluir agendamento |
+| `updateAppointmentStatus.ts` | Alterar status |
+| `getDayAppointments.ts` | Buscar agendamentos do dia (filtra cancelled, retorna camelCase) |
+| `getDayTimeOff.ts` | Buscar bloqueios/folgas do dia |
+| `getAvailableSlots.ts` | Calcular slots disponíveis (businessHours ∩ working_hours − breaks − timeOff − appointments, 30min step) |
+| `createQuickClient.ts` | Criar cliente rápido |
+| `listActiveServices.ts` | Listar serviços ativos |
+| `listBookableStaff.ts` | Listar profissionais disponíveis |
+| `listClientsForSelect.ts` | Listar clientes para select |
 
-appointments/
-  createAppointment.ts        Criar agendamento
-  updateAppointment.ts        Atualizar agendamento
-  deleteAppointment.ts        Excluir agendamento
-  updateAppointmentStatus.ts  Alterar status
-  getDayAppointments.ts       Buscar agendamentos do dia
-  getDayTimeOff.ts            Buscar bloqueios/folgas do dia
-  getAvailableSlots.ts        Calcular slots disponiveis
-  createQuickClient.ts        Criar cliente rapido
-  listActiveServices.ts       Listar servicos ativos
-  listBookableStaff.ts        Listar profissionais disponiveis
-  listClientsForSelect.ts     Listar clientes para select
+### dashboard/
+| Função | Descrição |
+|--------|-----------|
+| `getDashboardData.ts` | Dados do dashboard |
+| `getRevenueByStaff.ts` | Receita por profissional |
 
-dashboard/
-  getDashboardData.ts         Dados do dashboard
-  getRevenueByStaff.ts        Receita por profissional
+### sales/ (PDV)
+| Função | Descrição |
+|--------|-----------|
+| `createSale.ts` | Finalizar venda (valida split, insere pagamentos, gera financeiro, atualiza appointment) |
+| `createSaleDraft.ts` | Criar/retomar rascunho de venda |
+| `listProducts.ts` | Listar produtos ativos |
+| `listPaymentMethods.ts` | Listar formas de pagamento ativas |
+| `getSaleDraft.ts` | Buscar rascunho pendente do usuário |
+| `getAppointmentSaleData.ts` | Dados do agendamento para o PDV |
 
-services/
-  createService.ts            Criar servico
-  updateService.ts            Atualizar servico
-  deactivateService.ts        Desativar servico
-  listServices.ts             Listar servicos
+### services/
+| Função | Descrição |
+|--------|-----------|
+| `createService.ts` | Criar serviço |
+| `updateService.ts` | Atualizar serviço |
+| `deactivateService.ts` | Desativar serviço |
+| `listServices.ts` | Listar serviços |
 
-staff/
-  createStaff.ts              Criar profissional
-  updateStaff.ts              Atualizar profissional
-  archiveStaff.ts             Arquivar profissional
-  resendStaffInvite.ts        Reenviar convite
-  getStaffWorkingHours.ts     Buscar horarios
-  updateStaffWorkingHours.ts  Atualizar horarios
-  createTimeOff.ts            Criar folga
-  updateTimeOff.ts            Atualizar folga
-  deleteTimeOff.ts            Excluir folga
-  listTimeOff.ts              Listar folgas
-  listStaff.ts                Listar profissionais
-  _buildTimeOffConflicts.ts   (interno) Detectar conflitos
+### staff/
+| Função | Descrição |
+|--------|-----------|
+| `createStaff.ts` | Criar profissional |
+| `updateStaff.ts` | Atualizar profissional |
+| `archiveStaff.ts` | Arquivar profissional |
+| `resendStaffInvite.ts` | Reenviar convite |
+| `getStaffWorkingHours.ts` | Buscar horários |
+| `updateStaffWorkingHours.ts` | Atualizar horários |
+| `createTimeOff.ts` | Criar folga |
+| `updateTimeOff.ts` | Atualizar folga |
+| `deleteTimeOff.ts` | Excluir folga |
+| `listTimeOff.ts` | Listar folgas |
+| `listStaff.ts` | Listar profissionais |
+| `_buildTimeOffConflicts.ts` | (interno) Detectar conflitos |
+
+### auth/ (em `src/server/auth/`)
+| Função | Descrição |
+|--------|-----------|
+| `getSession.ts` | Obter sessão atual |
+| `signIn.ts` | Login |
+| `signOut.ts` | Logout |
+| `requestPasswordReset.ts` | Solicitar reset de senha |
 
 ---
 
-## 8. Lib (nucleo compartilhado)
-
+## 8. Lib (núcleo compartilhado)
 lib/
-  cn.ts                       Utilitario classnames
-  env.ts                      Validacao de env vars (zod)
-  studioTime.ts               Utilitarios de fuso horario (joinISO, splitISO)
-
+  cn.ts                       Utilitário classnames
+  env.ts                      Validação de env vars (zod)
+  studioTime.ts               Utilitários de fuso horário (joinISO, splitISO)
   core/
     system/branding.ts        Branding do sistema
     types/                    Types base (branding, identity, seo)
-    utils/                    Utilitarios (buildBrandingCss, buildSeo, phone)
-
+    utils/                    Utilitários (buildBrandingCss, buildSeo, phone)
   errors/
-    parseBusinessError.ts     Parse de erros de negocio
-
+    parseBusinessError.ts     Parse de erros de negócio
   public/
-    services.ts               Funcoes publicas
-    types.ts                  Types publicos
-
+    services.ts               Funções públicas
+    types.ts                  Types públicos
   query/
     client.ts                 Config do TanStack Query
-
   scheduling/
-    workingHours.schema.ts    Schema Zod de horarios de trabalho
-
+    workingHours.schema.ts    Schema Zod de horários de trabalho (DaySchedule, WeekdayKey, parseWorkingHours)
   supabase/
     admin.ts                  Client admin (service role)
     client.ts                 Client browser
     server.ts                 Client servidor (SSR)
     types.ts                  Types do banco
-
   utils/
-    whatsapp.ts               Utilitario WhatsApp
+    whatsapp.ts               Utilitário WhatsApp (toWhatsAppHref)
 
 ---
 
 ## 9. Sites (por studio)
 
-### 9.1 Estrutura padrao
-
+### 9.1 Estrutura padrão
 src/sites/<slug>/
   config/
     branding.ts               Cores, fontes, logo
-    identity.ts               Nome, descricao, redes sociais
-    content.ts                Conteudo textual
-    businessHours.ts          Horario de funcionamento
+    identity.ts               Nome, descrição, redes sociais
+    content.ts                Conteúdo textual
+    businessHours.ts          Horário de funcionamento (tipo BusinessHours)
     seo/jsonLd.ts             Schema JSON-LD
     index.ts                  Barrel export
-
   components/
     floating/                 Componentes flutuantes (WhatsApp)
-    icons/                    Icones personalizados
+    icons/                    Ícones personalizados
     layout/                   Header, Footer
-    motion/                   Providers de animacao
-    sections/                 Seccoes da landing (Hero, About, Services, Gallery)
-
-  lib/                        Lib especifica (hours, whatsapp)
-  types/                      Types especificos
-  utils/                      Utilitarios especificos
+    motion/                   Providers de animação
+    sections/                 Seções da landing (Hero, About, Services, Gallery)
+  lib/                        Lib específica (hours, whatsapp)
+  types/                      Types específicos (BusinessHours)
+  utils/                      Utilitários específicos
   studio.ts                   Entry point do studio
 
 ### 9.2 Studio atual: Ruah
-Unico studio em producao. Landing page completa com:
+Único studio em produção. Landing page completa com:
 - HeroSection, AboutSection, ServicesSection, GallerySection
 - HoursSection, TestimonialsSection
 - WhatsApp Floating button
 - SEO com JSON-LD
 
+**Business Hours (Ruah):**
+- Terça a Sexta: 09:00–19:00
+- Sábado: 08:00–16:00
+- Domingo e Segunda: Fechado
+
 ---
 
-## 10. Configuracao e Infra
+## 10. Configuração e Infra
 
-### 10.1 Variaveis de ambiente (validadas por zod em src/lib/env.ts)
-- SUPABASE_SERVICE_ROLE_KEY   (server)
-- VITE_APP_URL
-- VITE_STUDIO_NAME
-- VITE_STUDIO_SLUG
-- VITE_SUPABASE_ANON_KEY
-- VITE_SUPABASE_URL
+### 10.1 Variáveis de ambiente (validadas por zod em `src/lib/env.ts`)
+- `SUPABASE_SERVICE_ROLE_KEY` (server)
+- `VITE_APP_URL`
+- `VITE_STUDIO_NAME`
+- `VITE_STUDIO_SLUG`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_URL`
 
-Identidade do studio nao fica em env — fica em src/sites/<slug>/config/.
+Identidade do studio não fica em env — fica em `src/sites/<slug>/config/`.
 
 ### 10.2 Deploy
-- Plataforma: Netlify
-- Modelo: 1 deploy por studio
-- Build: Vite
-- SSR: TanStack Start (server-side rendering)
+- **Plataforma:** Netlify
+- **Modelo:** 1 deploy por studio
+- **Build:** Vite
+- **SSR:** TanStack Start (server-side rendering)
 
-### 10.3 Arquivos de configuracao raiz
-- package.json, tsconfig.json, vite.config.ts
-- tailwind.config.ts, postcss.config.js, netlify.toml
+### 10.3 Arquivos de configuração raiz
+- `package.json`, `tsconfig.json`, `vite.config.ts`
+- `tailwind.config.ts`, `postcss.config.js`, `netlify.toml`
 
 ---
 
-## 11. Convencoes e Padroes
+## 11. Convenções e Padrões
 
 ### 11.1 Feature-based Architecture
-Cada feature em src/features/<feature>/ e auto-contida:
-  <feature>/
-    components/     Componentes React
-    hooks.ts        Hooks + mutations/queries
-    server/         Server functions (createServerFn)
-    types.ts        Tipos da feature
-    utils/          Utilitarios
-    index.ts        Barrel publico (opcional)
+Cada feature em `src/features/<feature>/` é autocontida:
+  /
+  components/     Componentes React
+  hooks.ts        Hooks + mutations/queries
+  server/         Server functions (createServerFn)
+  types.ts        Tipos da feature
+  utils/          Utilitários
+  index.ts        Barrel público (opcional)
 
 ### 11.2 Fluxo de trabalho (engenharia)
-1. Investigar — validar codigo real / API
-2. Confirmar — resumir entendimento
-3. Propor — abordagem + impacto + riscos
-4. Aguardar OK — so executar apos autorizacao
-5. Entregar — codigo completo, tipado, loading/error/empty states, SSR-safe, mobile-first
+1. **Investigar** — validar código real / API
+2. **Confirmar** — resumir entendimento
+3. **Propor** — abordagem + impacto + riscos
+4. **Aguardar OK** — só executar após autorização
+5. **Entregar** — código completo, tipado, loading/error/empty states, SSR-safe, mobile-first
 
 ### 11.3 Regras de UI
-- Mobile-first — toda interface prioriza mobile
+- **Mobile-first** — toda interface prioriza mobile
 - Componentes com loading, error, empty states
-- Modal com protecao contra perda de dados nao salvos (beforeunload + confirm)
+- Modal com proteção contra perda de dados não salvos (beforeunload + confirm)
+- Animações com framer-motion (spring, staggerChildren)
+- Botões com `active:scale-95` para feedback tátil
 
 ### 11.4 Tipagem estrita
-noUncheckedIndexedAccess: true no tsconfig — todo acesso a array exige verificacao de undefined.
+`noUncheckedIndexedAccess: true` no tsconfig — todo acesso a array exige verificação de undefined.
 
----
-
-## 12. Glossario
-
-- Studio: Cliente da plataforma (ex: "Ruah")
-- Staff: Profissional do studio
-- TimeOff: Bloqueio de agenda (folga, almoco)
-- WorkingHours: Grade semanal de horarios
-- Bookable: Staff disponivel para agendamento
-- Slot: Intervalo de tempo disponivel
-
----
-
-Documento gerado em 23 de junho de 2026.
+### 11.5 Query Keys (convenção)
+- `['appointments', 'day', date]` — Agendamentos do dia
+- `['appointments', 'today']` — (legado, usado em hooks)
+- `['appointments', 'services']` — Serviços ativos
+- `['appointments', 'staff']` — Profissionais bookable
+- `['appointments', 'clients']` — Clientes para select
+- `['appointments', 'slots', staffId, serviceId, startDate, days]` — Slots disponíveis
+- `['dayTimeOff', date]` — Bloqueios do dia
+- `['staff', 'bookable']`
+- `['sales', 'products']` — Produtos ativos
+- `['sales', 'paymentMethods']` — Formas de pagamento ativas
+- `['sales', 'draft']` — Rascunho pendente do usuário
+- `['sales', 'appointmentData', appointmentId]` — Dados do agendamento para o PDV

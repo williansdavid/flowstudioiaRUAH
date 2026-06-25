@@ -22,6 +22,8 @@ import { useUpdateAppointmentStatus } from '../hooks';
 import { staffColor } from './DayCalendar/staffColor';
 import { cn } from '@/lib/cn';
 import { useSession } from '@/features/auth/hooks';
+import { useNavigate } from '@tanstack/react-router';
+
 
 type Status = AppointmentItem['status'];
 
@@ -339,6 +341,7 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
   const queryClient = useQueryClient();
   const actions = ACTIONS_BY_STATUS[a.status];
   const isUpdatingThisRow = isPending && variables?.id === a.id;
+  const navigate = useNavigate();
 
   return (
     <>
@@ -391,16 +394,18 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
                   key={action.status}
                   type="button"
                   disabled={isUpdatingThisRow}
-                  onClick={() => {
-                    if (action.status === 'cancelled') {
-                      setCancelTarget(a);
-                    } else {
-                      mutate(
-                        { id: a.id, status: action.status },
-                        { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
-                      );
-                    }
-                  }}
+                    onClick={() => {
+                      if (action.status === 'completed') {
+                        navigate({ to: '/admin/pdv', search: { appointmentId: a.id } });
+                      } else if (action.status === 'cancelled') {
+                        setCancelTarget(a);
+                      } else {
+                        mutate(
+                          { id: a.id, status: action.status },
+                          { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
+                        );
+                      }
+                    }}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5',
                     'text-[11px] font-bold uppercase tracking-wider',

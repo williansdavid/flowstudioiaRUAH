@@ -1,39 +1,42 @@
 import { Link } from '@tanstack/react-router';
+import { ShoppingCart } from 'lucide-react';
 import type { NavItem } from '../types';
 
 interface SidebarItemProps {
   item: NavItem;
   onNavigate?: () => void;
+  hasBadge?: boolean;
 }
 
-/**
- * Estilo via classes Tailwind + data-[status=active] (setado pelo
- * TanStack Router). Sem manipulacao imperativa de style no mouse:
- * Router governa o ativo, CSS governa o hover. Os dois nao brigam.
- *
- * Camadas:
- *  - idle  : texto muted, fundo transparente
- *  - hover : texto heading, fundo surface-alt (camada leve)
- *  - active: texto heading, fundo surface-2 (camada elevada)
- *            + barra dourada + shadow-sm + translateX
- */
-const itemClass = [
-  'group relative flex items-center gap-3 rounded-[var(--radius-button)]',
+// ─── Cores do sistema ───────────────────────────────────────
+const COLORS = {
+  active: '#1895AD',     // ciano — destaque / glow
+  activeBg: '#1895AD',   // fundo do item ativo (misturado com transparente via color-mix)
+  text: '#94A3B8',       // texto padrão (slate-400)
+  textHover: '#F1F5F9',  // texto no hover (slate-100)
+  badge: '#EF4444',      // vermelho — badge do carrinho
+} as const;
+// ────────────────────────────────────────────────────────────
+
+const itemBase = [
+  'group relative flex items-center gap-3 rounded-xl',
   'px-3 py-2.5 text-sm font-medium',
-  // normal: cinza-quente #8A857C — blindado contra .theme-*-dark a { color }
-  'text-[var(--color-sidebar-text)]!',
-  'transition-all duration-200',
-  // hover (nao ativo): fundo discreto branco + clareia o texto
-  'hover:bg-white/5',
-  'hover:text-[var(--color-text-heading)]!',
+  `text-[${COLORS.text}]!`,
+  'transition-all duration-300',
+  'hover:bg-white/[0.06]',
+  'hover:backdrop-blur-sm',
+  `hover:text-[${COLORS.textHover}]!`,
   'hover:translate-x-0.5',
-  // active: texto + icone dourados, fundo dourado discreto
-  'data-[status=active]:text-[var(--color-sidebar-active)]!',
-  'data-[status=active]:bg-[color-mix(in_srgb,var(--color-sidebar-active)_10%,transparent)]',
+  // Active: fundo rgba direto + borda sutil com glow
+  `data-[status=active]:text-[${COLORS.active}]!`,
+  `data-[status=active]:bg-[rgba(24,149,173,0.15)]`,
+  'data-[status=active]:backdrop-blur-sm',
+  `data-[status=active]:border-[${COLORS.active}]/25`,
+  'data-[status=active]:border',
   'data-[status=active]:translate-x-0.5',
 ].join(' ');
 
-export function SidebarItem({ item, onNavigate }: SidebarItemProps) {
+export function SidebarItem({ item, onNavigate, hasBadge }: SidebarItemProps) {
   const Icon = item.icon;
 
   return (
@@ -41,15 +44,37 @@ export function SidebarItem({ item, onNavigate }: SidebarItemProps) {
       to={item.to}
       onClick={onNavigate}
       activeOptions={{ exact: item.to === '/admin' }}
-      className={itemClass}
+      className={itemBase}
     >
-      {/* Barra dourada lateral — visivel so no ativo */}
+      {/* Barra lateral com glow */}
       <span
         aria-hidden
-        className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[var(--color-sidebar-active)] opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100"
+        className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full opacity-0 transition-all duration-300 group-data-[status=active]:opacity-100 group-hover:opacity-40"
+        style={{
+          backgroundColor: COLORS.active,
+          boxShadow: `0 0 8px 1px ${COLORS.active}`,
+        }}
       />
-      <Icon className="h-[18px] w-[18px] shrink-0" />
+
+      {/* Ícone com glow no active */}
+      <span className="relative shrink-0">
+        <Icon className="h-[18px] w-[18px] transition-transform duration-300 group-data-[status=active]:scale-110" />
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-full opacity-0 blur-md transition-opacity duration-300 group-data-[status=active]:opacity-25"
+          style={{ backgroundColor: COLORS.active }}
+        />
+      </span>
+
       <span className="truncate">{item.label}</span>
+
+      {/* Carrinho espelhado colado logo após o texto */}
+      {hasBadge && item.label === 'PDV' && (
+        <ShoppingCart
+          className="h-3 w-3 shrink-0 -ml-1 -mt-2 scale-x-[-1]"
+          style={{ color: COLORS.badge }}
+        />
+      )}
     </Link>
   );
 }

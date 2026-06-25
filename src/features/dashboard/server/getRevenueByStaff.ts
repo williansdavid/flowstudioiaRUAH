@@ -1,9 +1,7 @@
-// src/features/dashboard/server/getRevenueByStaff.ts
 import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import type { RevenueByStaffItem } from '@/features/dashboard/types';
 
-/** Início do mês corrente em ISO (UTC) — mesmo padrão do getDashboardData. */
 function monthStartISO(): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
@@ -12,7 +10,10 @@ function monthStartISO(): string {
 interface RawRow {
   amount: number | string;
   staff_id: string | null;
-  staff: { profiles: { full_name: string | null } | null } | null;
+  staff: {
+    color: string | null;
+    profiles: { full_name: string | null } | null;
+  } | null;
 }
 
 export const getRevenueByStaff = createServerFn({ method: 'GET' }).handler(
@@ -41,9 +42,8 @@ export const getRevenueByStaff = createServerFn({ method: 'GET' }).handler(
 
     const { data, error } = await supabase
       .from('finance_transactions')
-      .select('amount, staff_id, staff(profiles(full_name))')
+      .select('amount, staff_id, staff!inner(color, profiles!inner(full_name))')
       .eq('type', 'income')
-      .eq('category', 'service')
       .gte('occurred_at', monthStartISO());
 
     if (error) throw error;
@@ -65,6 +65,7 @@ export const getRevenueByStaff = createServerFn({ method: 'GET' }).handler(
           staffId: row.staff_id,
           staffName: name,
           total: Number(row.amount),
+          color: row.staff?.color ?? '#6366f1',
         });
       }
     }

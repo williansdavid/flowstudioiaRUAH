@@ -23,7 +23,7 @@ export function useSignIn() {
     mutationFn: (input: SignInInput) => signIn({ data: input }),
     onSuccess: async (session) => {
       queryClient.setQueryData(authKeys.session, session);
-      await queryClient.invalidateQueries({ queryKey: authKeys.session });
+      queryClient.clear();
       await router.navigate({ to: '/admin' });
     },
     onError: (error: Error) => {
