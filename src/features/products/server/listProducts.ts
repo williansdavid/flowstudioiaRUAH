@@ -1,22 +1,14 @@
-// src/features/sales/server/listProducts.ts
+// src/features/products/server/listProducts.ts
 import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
-
-export interface ProductItem {
-  id: string;
-  name: string;
-  price: number;
-  avatarUrl: string | null;
-  department: string | null;
-}
+import type { ProductItem } from '../types';
 
 export const listProducts = createServerFn({ method: 'GET' }).handler(
   async (): Promise<ProductItem[]> => {
     const supabase = createSupabaseServer();
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, price, avatar_url, department')
-      .eq('is_active', true)
+      .select('id, name, price, avatar_url, department, is_active')
       .order('name');
 
     if (error) throw error;
@@ -27,6 +19,7 @@ export const listProducts = createServerFn({ method: 'GET' }).handler(
       price: Number(p.price),
       avatarUrl: p.avatar_url,
       department: p.department,
+      isActive: p.is_active,
     }));
   },
 );

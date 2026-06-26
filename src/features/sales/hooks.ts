@@ -4,19 +4,18 @@ import { useRouter } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { listProducts } from './server/listProducts';
 import { listPaymentMethods } from './server/listPaymentMethods';
-import { getSaleDraft } from './server/getSaleDraft';
-import { createSaleDraft } from './server/createSaleDraft';
 import { createSale } from './server/createSale';
 import { getAppointmentSaleData } from './server/getAppointmentSaleData';
-import type { CreateSaleDraftInput } from './server/createSaleDraft';
-import { deleteSaleDraft } from './server/deleteSaleDraft';
+import type { CreateSaleInput } from './server/createSale';
 import { listServicesForSale } from './server/listServicesForSale';
+import { useCallback } from 'react';
+import type { CartItem, SplitPayment } from './types';
+
 
 export const salesKeys = {
   products: ['sales', 'products'] as const,
-  services: ['sales', 'services'] as const,  // <-- adicionar
+  services: ['sales', 'services'] as const,
   paymentMethods: ['sales', 'payment-methods'] as const,
-  draft: ['sales', 'draft'] as const,
   appointmentData: (appointmentId: string) => ['sales', 'appointment', appointmentId] as const,
 };
 
@@ -44,34 +43,12 @@ export function usePaymentMethods() {
   });
 }
 
-export function useSaleDraft() {
-  return useQuery({
-    queryKey: salesKeys.draft,
-    queryFn: () => getSaleDraft(),
-    staleTime: 0,
-    retry: false,
-  });
-}
-
 export function useAppointmentSaleData(appointmentId: string | undefined) {
   return useQuery({
     queryKey: salesKeys.appointmentData(appointmentId ?? ''),
-    queryFn: () => getAppointmentSaleData({ data: { appointmentId: appointmentId! } }),  // <-- corrigido
+    queryFn: () => getAppointmentSaleData({ data: { appointmentId: appointmentId! } }),
     enabled: !!appointmentId,
     staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useCreateSaleDraft() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: CreateSaleDraftInput) => createSaleDraft({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: salesKeys.draft });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Erro ao criar rascunho da venda.');
-    },
   });
 }
 
@@ -79,10 +56,8 @@ export function useFinalizeSale() {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation({
-    mutationFn: (input: { saleId: string; payments: Array<{ paymentMethodId: string; amount: number }> }) =>
-      createSale({ data: input }),
+    mutationFn: (input: CreateSaleInput) => createSale({ data: input }),
     onSuccess: () => {
-      // Hard refresh completo — limpa TUDO
       queryClient.invalidateQueries();
       toast.success('Venda finalizada com sucesso!');
       router.invalidate().then(() => {
@@ -95,32 +70,39 @@ export function useFinalizeSale() {
   });
 }
 
+// ── PDV Cart — estado global em memória via React Query ──────────
+export const PDV_CART_KEY = ['pdv', 'cart'] as const;
 
-import { updateSaleDraft } from './server/updateSaleDraft';
-import type { UpdateSaleDraftInput } from './server/updateSaleDraft';
-
-export function useUpdateSaleDraft() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: UpdateSaleDraftInput) => updateSaleDraft({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: salesKeys.draft });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Erro ao salvar rascunho.');
-    },
-  });
+export interface PdvCartState {
+  items: CartItem[];
+  payments: SplitPayment[];
 }
 
-export function useDeleteSaleDraft() {
+export function usePdvCart() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: { saleId: string }) => deleteSaleDraft({ data: input }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: salesKeys.draft });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Erro ao remover rascunho.');
-    },
+
+  const cart = useQuery<PdvCartState>({
+    queryKey: PDV_CART_KEY,
+    initialData: { items: [], payments: [] },
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
+
+  const setCart = useCallback(
+    (updater: PdvCartState | ((prev: PdvCartState) => PdvCartState)) => {
+      queryClient.setQueryData<PdvCartState>(PDV_CART_KEY, (prev) => {
+        const base = prev ?? { items: [], payments: [] };
+        return typeof updater === 'function' ? updater(base) : updater;
+      });
+    },
+    [queryClient],
+  );
+
+  const clearCart = useCallback(() => {
+    queryClient.setQueryData<PdvCartState>(PDV_CART_KEY, { items: [], payments: [] });
+  }, [queryClient]);
+
+  return { cart: cart.data!, setCart, clearCart };
 }
+// ── PDV Cart — bridge entre Zustand e React Query ─────────────────
+export { usePdvStore, persistPdvState, loadPdvState, clearPdvState } from './stores/pdv-store';

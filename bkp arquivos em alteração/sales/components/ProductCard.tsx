@@ -1,7 +1,6 @@
 // src/features/sales/components/ProductCard.tsx
 import { motion } from 'framer-motion';
 import { Package, Scissors } from 'lucide-react';
-import { usePdvStore } from '../stores/pdv-store';
 import type { ProductItem } from '../types';
 import type { ServiceForSaleItem } from '../server/listServicesForSale';
 
@@ -14,13 +13,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ item, type, onAdd }: ProductCardProps) {
-  const items = usePdvStore((s) => s.items);
-
-  // Busca a quantidade deste item no carrinho
-  const quantity = items
-    .filter((i) => i.itemType === type && i.itemId === item.id)
-    .reduce((sum, i) => sum + i.quantity, 0);
-
   const isService = type === 'service';
   const serviceItem = isService ? (item as ServiceForSaleItem) : null;
 
@@ -31,13 +23,6 @@ export function ProductCard({ item, type, onAdd }: ProductCardProps) {
       className="group relative flex flex-col items-center gap-2 rounded-xl border border-slate-700/20 bg-slate-800/40 p-4 text-center transition-colors hover:border-orange-500/40 hover:bg-slate-800/60 active:scale-95"
       whileTap={{ scale: 0.95 }}
     >
-      {/* Badge de quantidade */}
-      {quantity > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-orange-500 px-1.5 text-xs font-bold text-white shadow-lg">
-          {quantity}
-        </span>
-      )}
-
       {'avatarUrl' in item && item.avatarUrl ? (
         <img
           src={item.avatarUrl}
@@ -53,7 +38,7 @@ export function ProductCard({ item, type, onAdd }: ProductCardProps) {
           )}
         </div>
       )}
-      <span className="text-sm font-medium text-slate-200 ">
+      <span className="text-sm font-medium text-slate-200 line-clamp-2">
         {item.name}
       </span>
       {isService && serviceItem && (

@@ -1,8 +1,9 @@
 // src/features/sales/types.ts
 import type { ProductItem } from './server/listProducts';
 import type { PaymentMethodItem } from './server/listPaymentMethods';
+import type { SaleDraftResult } from './server/getSaleDraft';
 
-export type { ProductItem, PaymentMethodItem };
+export type { ProductItem, PaymentMethodItem, SaleDraftResult };
 export type { ServiceForSaleItem } from './server/listServicesForSale';
 
 export interface CartItem {
@@ -21,5 +22,3 @@ export interface SplitPayment {
   paymentMethodName: string;
   amount: number;
 }
-
-

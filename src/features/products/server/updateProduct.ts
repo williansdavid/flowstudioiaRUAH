@@ -1,24 +1,22 @@
-// src/features/services/server/updateService.ts
+// src/features/products/server/updateProduct.ts
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import type { ServiceItem } from '../types';
+import type { ProductItem } from '../types';
 
-const BUCKET = 'services';
+const BUCKET = 'products';
 
-const updateServiceSchema = z.object({
+const updateProductSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().trim().min(1, 'Informe o nome do serviço.'),
-  description: z.string().trim().nullable(),
-  category: z.string().trim().nullable(),
-  durationMinutes: z.number().int().positive('Duração inválida.'),
+  name: z.string().trim().min(1, 'Informe o nome do produto.'),
   price: z.number().nonnegative('Preço inválido.'),
+  department: z.string().trim().nullable(),
+  avatarUrl: z.string().nullable().optional(),
   isActive: z.boolean(),
-  imageUrl: z.string().nullable().optional(),
 });
 
-export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
 function extractStoragePath(url: string): string | null {
   const marker = `/object/public/${BUCKET}/`;
@@ -31,50 +29,46 @@ function extractStoragePath(url: string): string | null {
   return path;
 }
 
-export const updateService = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => updateServiceSchema.parse(data))
-  .handler(async ({ data }): Promise<ServiceItem> => {
+export const updateProduct = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => updateProductSchema.parse(data))
+  .handler(async ({ data }): Promise<ProductItem> => {
     const supabase = createSupabaseServer();
 
-    // Busca image_url ANTES do update
+    // Se avatarUrl vai mudar, busca o valor ANTES do update
     let oldUrl: string | null = null;
-    if (data.imageUrl !== undefined) {
+    if (data.avatarUrl !== undefined) {
       const { data: current } = await supabase
-        .from('services')
-        .select('image_url')
+        .from('products')
+        .select('avatar_url')
         .eq('id', data.id)
         .single();
-      oldUrl = current?.image_url ?? null;
+      oldUrl = current?.avatar_url ?? null;
     }
 
     const updateData: Record<string, unknown> = {
       name: data.name,
-      description: data.description,
-      category: data.category,
-      duration_minutes: data.durationMinutes,
       price: data.price,
+      department: data.department,
       is_active: data.isActive,
     };
 
-    if (data.imageUrl !== undefined) {
-      updateData.image_url = data.imageUrl;
+    if (data.avatarUrl !== undefined) {
+      updateData.avatar_url = data.avatarUrl;
     }
 
     const { data: row, error } = await supabase
-      .from('services')
+      .from('products')
       .update(updateData)
       .eq('id', data.id)
-      .select(
-        'id, name, description, category, duration_minutes, price, image_url, display_order, is_active',
-      )
+      .select('id, name, price, avatar_url, department, is_active')
       .single();
 
     if (error || !row) {
-      throw new Error('Não foi possível atualizar o serviço.');
+      throw new Error('Não foi possível atualizar o produto.');
     }
 
     // Remove imagem antiga do bucket se mudou
-    if (oldUrl && oldUrl !== data.imageUrl) {
+    if (oldUrl && oldUrl !== data.avatarUrl) {
       const oldPath = extractStoragePath(oldUrl);
       if (oldPath) {
         const admin = createSupabaseAdmin();
@@ -83,7 +77,7 @@ export const updateService = createServerFn({ method: 'POST' })
           .remove([oldPath]);
         if (removeErr) {
           console.warn(
-            `[updateService] Falha ao remover imagem órfã "${oldPath}": ${removeErr.message}`,
+            `[updateProduct] Falha ao remover imagem órfã "${oldPath}": ${removeErr.message}`,
           );
         }
       }
@@ -92,12 +86,9 @@ export const updateService = createServerFn({ method: 'POST' })
     return {
       id: row.id,
       name: row.name,
-      description: row.description,
-      category: row.category,
-      durationMinutes: row.duration_minutes,
       price: Number(row.price),
-      imageUrl: row.image_url,
-      displayOrder: row.display_order,
+      avatarUrl: row.avatar_url,
+      department: row.department,
       isActive: row.is_active,
     };
   });

@@ -8,11 +8,10 @@ const inputSchema = z.object({
 });
 
 export interface AppointmentSaleData {
-  appointmentId: string;
   clientName: string;
   serviceName: string;
   servicePrice: number;
-  serviceId: string;
+  serviceId: string;        // ← ADICIONADO
   staffId: string;
 }
 
@@ -58,12 +57,11 @@ export const getAppointmentSaleData = createServerFn({ method: 'GET' })
       throw new Error('Serviço do agendamento não encontrado.');
     }
 
-        return {
-      appointmentId: data.appointmentId,
+    return {
       clientName: clientData.full_name,
       serviceName: serviceData.name,
       servicePrice: Number(appointment.price),
-      serviceId: appointment.service_id,
+      serviceId: appointment.service_id,   // ← ADICIONADO
       staffId: appointment.staff_id,
     };
   });

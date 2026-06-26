@@ -1,30 +1,26 @@
-// src/features/services/components/ServiceFormModal.tsx
+// src/features/products/components/ProductFormModal.tsx
 import { useEffect, useState } from 'react';
 import { Loader2, X, Camera } from 'lucide-react';
-import { useCreateService, useUpdateService } from '../hooks';
-import { uploadServiceImage, validateServiceImage } from '../utils/uploadServiceImage';
-import type { ServiceItem } from '../types';
+import { useCreateProduct, useUpdateProduct } from '../hooks';
+import { uploadProductImage, validateProductImage } from '../utils/uploadProductImage';
+import type { ProductItem } from '../types';
 
-interface ServiceFormModalProps {
+interface ProductFormModalProps {
   open: boolean;
-  service: ServiceItem | null;
+  product: ProductItem | null;
   onClose: () => void;
 }
 
 interface FormState {
   name: string;
-  category: string;
-  description: string;
-  durationMinutes: string;
+  department: string;
   price: string;
   isActive: boolean;
 }
 
 const EMPTY_FORM: FormState = {
   name: '',
-  category: '',
-  description: '',
-  durationMinutes: '',
+  department: '',
   price: '',
   isActive: true,
 };
@@ -32,47 +28,46 @@ const EMPTY_FORM: FormState = {
 const inputCls =
   'w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 outline-none transition-colors focus:border-amber-500';
 
-export function ServiceFormModal({ open, service, onClose }: ServiceFormModalProps) {
-  const isEdit = service !== null;
-  const createMutation = useCreateService();
-  const updateMutation = useUpdateService();
+export function ProductFormModal({ open, product, onClose }: ProductFormModalProps) {
+  const isEdit = product !== null;
+  const createMutation = useCreateProduct();
+  const updateMutation = useUpdateProduct();
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageRemoved, setImageRemoved] = useState(false);
+  // Avatar state
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    if (service) {
+    if (product) {
       setForm({
-        name: service.name,
-        category: service.category ?? '',
-        description: service.description ?? '',
-        durationMinutes: String(service.durationMinutes),
-        price: service.price.toFixed(2),
-        isActive: service.isActive,
+        name: product.name,
+        department: product.department ?? '',
+        price: product.price.toFixed(2),
+        isActive: product.isActive,
       });
-      setImagePreview(service.imageUrl);
+      setAvatarPreview(product.avatarUrl);
     } else {
       setForm(EMPTY_FORM);
-      setImagePreview(null);
+      setAvatarPreview(null);
     }
-    setImageFile(null);
-    setImageRemoved(false);
+    setAvatarFile(null);
+    setAvatarRemoved(false);
     setError(null);
-  }, [open, service]);
+  }, [open, product]);
 
   useEffect(() => {
     return () => {
-      if (imagePreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview);
+      if (avatarPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
       }
     };
-  }, [imagePreview]);
+  }, [avatarPreview]);
 
   if (!open) return null;
 
@@ -80,31 +75,31 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleImageChange(ev: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarChange(ev: React.ChangeEvent<HTMLInputElement>) {
     const file = ev.target.files?.[0];
     if (!file) return;
 
-    const err = validateServiceImage(file);
+    const err = validateProductImage(file);
     if (err) {
       setError(err);
       return;
     }
 
     setError(null);
-    setImageRemoved(false);
-    setImagePreview((prev) => {
+    setAvatarRemoved(false);
+    setAvatarPreview((prev) => {
       if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
     });
-    setImageFile(file);
+    setAvatarFile(file);
     ev.target.value = '';
   }
 
-  function handleRemoveImage() {
+  function handleRemoveAvatar() {
     setError(null);
-    setImageFile(null);
-    setImageRemoved(true);
-    setImagePreview((prev) => {
+    setAvatarFile(null);
+    setAvatarRemoved(true);
+    setAvatarPreview((prev) => {
       if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
       return null;
     });
@@ -114,62 +109,57 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
     e.preventDefault();
     setError(null);
 
-    const duration = Number(form.durationMinutes);
     const price = Number(form.price.replace(',', '.'));
 
-    if (!form.name.trim()) return setError('Informe o nome do serviço.');
-    if (!Number.isInteger(duration) || duration <= 0) return setError('Duração inválida.');
+    if (!form.name.trim()) return setError('Informe o nome do produto.');
     if (Number.isNaN(price) || price < 0) return setError('Preço inválido.');
 
     try {
-      if (isEdit && service) {
-        let imageUrl: string | null | undefined;
-        if (imageFile) {
-          const up = await uploadServiceImage(imageFile, service.id);
+      if (isEdit && product) {
+        // Upload da imagem se tiver arquivo novo
+        let avatarUrl: string | null | undefined;
+        if (avatarFile) {
+          const up = await uploadProductImage(avatarFile, product.id);
           if (!up.ok) {
             setError(up.message);
             return;
           }
-          imageUrl = up.url;
-        } else if (imageRemoved) {
-          imageUrl = null;
+          avatarUrl = up.url;
+        } else if (avatarRemoved) {
+          avatarUrl = null;
         }
 
         await updateMutation.mutateAsync({
-          id: service.id,
+          id: product.id,
           name: form.name.trim(),
-          description: form.description.trim() || null,
-          category: form.category.trim() || null,
-          durationMinutes: duration,
           price,
+          department: form.department.trim() || null,
           isActive: form.isActive,
-          ...(imageUrl !== undefined ? { imageUrl } : {}),
+          ...(avatarUrl !== undefined ? { avatarUrl } : {}),
         });
       } else {
+        // Criação: primeiro cria o produto, depois faz upload se tiver imagem
         const created = await createMutation.mutateAsync({
           name: form.name.trim(),
-          description: form.description.trim() || null,
-          category: form.category.trim() || null,
-          durationMinutes: duration,
           price,
+          department: form.department.trim() || null,
           isActive: form.isActive,
         });
 
-        if (imageFile) {
-          const up = await uploadServiceImage(imageFile, created.id);
+        if (avatarFile) {
+          const up = await uploadProductImage(avatarFile, created.id);
           if (!up.ok) {
             setError(up.message);
             return;
           }
+          // Atualiza o avatar_url no produto recem-criado
           await updateMutation.mutateAsync({
             id: created.id,
             name: form.name.trim(),
-            description: form.description.trim() || null,
-            category: form.category.trim() || null,
-            durationMinutes: duration,
             price,
+            department: form.department.trim() || null,
             isActive: form.isActive,
-            imageUrl: up.url,
+            avatarUrl: up.url,
           });
         }
       }
@@ -182,9 +172,10 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
       <div className="w-full max-w-md rounded-t-2xl bg-zinc-900 p-5 shadow-xl sm:rounded-2xl border border-zinc-800">
+        {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-amber-500">
-            {isEdit ? 'Editar serviço' : 'Novo serviço'}
+            {isEdit ? 'Editar produto' : 'Novo produto'}
           </h2>
           <button
             onClick={onClose}
@@ -195,13 +186,13 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Imagem do serviço */}
+          {/* Avatar / Imagem do produto */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative h-24 w-24 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800">
-              {imagePreview ? (
+              {avatarPreview ? (
                 <img
-                  src={imagePreview}
-                  alt="Serviço"
+                  src={avatarPreview}
+                  alt="Produto"
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -215,7 +206,7 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
                   type="file"
                   accept="image/png, image/jpeg, image/webp"
                   className="hidden"
-                  onChange={handleImageChange}
+                  onChange={handleAvatarChange}
                 />
               </label>
             </div>
@@ -223,10 +214,10 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
               <span className="text-xs text-zinc-500">
                 PNG, JPG ou WEBP · máx. 2 MB
               </span>
-              {imagePreview && (
+              {avatarPreview && (
                 <button
                   type="button"
-                  onClick={handleRemoveImage}
+                  onClick={handleRemoveAvatar}
                   className="text-xs text-red-400 hover:underline"
                 >
                   Remover imagem
@@ -235,8 +226,11 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
             </div>
           </div>
 
+          {/* Nome */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-400">Nome</label>
+            <label className="mb-1.5 block text-sm font-medium text-zinc-400">
+              Nome
+            </label>
             <input
               type="text"
               value={form.name}
@@ -246,52 +240,36 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
             />
           </div>
 
+          {/* Departamento */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-400">Categoria</label>
+            <label className="mb-1.5 block text-sm font-medium text-zinc-400">
+              Departamento
+            </label>
             <input
               type="text"
-              value={form.category}
-              onChange={(e) => update('category', e.target.value)}
-              placeholder="Ex: Cabelo, Barba…"
+              value={form.department}
+              onChange={(e) => update('department', e.target.value)}
+              placeholder="Ex: Finalização, Coloração, Cabelo…"
               className={inputCls}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-400">Duração (min)</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={form.durationMinutes}
-                onChange={(e) => update('durationMinutes', e.target.value)}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-400">Preço (R$)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={form.price}
-                onChange={(e) => update('price', e.target.value)}
-                placeholder="0.00"
-                className={inputCls}
-              />
-            </div>
-          </div>
-
+          {/* Preço */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-400">Descrição</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => update('description', e.target.value)}
-              rows={3}
-              className={`${inputCls} resize-none`}
+            <label className="mb-1.5 block text-sm font-medium text-zinc-400">
+              Preço (R$)
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={form.price}
+              onChange={(e) => update('price', e.target.value)}
+              placeholder="0.00"
+              className={inputCls}
             />
           </div>
 
+          {/* Ativo */}
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-400">
             <input
               type="checkbox"
@@ -299,13 +277,17 @@ export function ServiceFormModal({ open, service, onClose }: ServiceFormModalPro
               onChange={(e) => update('isActive', e.target.checked)}
               className="h-4 w-4 rounded border-zinc-600 accent-amber-500"
             />
-            Serviço ativo
+            Produto ativo
           </label>
 
+          {/* Erro */}
           {error && (
-            <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-400">{error}</p>
+            <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-400">
+              {error}
+            </p>
           )}
 
+          {/* Ações */}
           <div className="flex gap-3 pt-1">
             <button
               type="button"

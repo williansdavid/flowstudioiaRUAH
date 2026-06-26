@@ -7,15 +7,15 @@ export interface ProductItem {
   name: string;
   price: number;
   avatarUrl: string | null;
-  department: string | null;
 }
 
 export const listProducts = createServerFn({ method: 'GET' }).handler(
   async (): Promise<ProductItem[]> => {
     const supabase = createSupabaseServer();
+
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, price, avatar_url, department')
+      .select('id, name, price, avatar_url')
       .eq('is_active', true)
       .order('name');
 
@@ -26,7 +26,6 @@ export const listProducts = createServerFn({ method: 'GET' }).handler(
       name: p.name,
       price: Number(p.price),
       avatarUrl: p.avatar_url,
-      department: p.department,
     }));
   },
 );

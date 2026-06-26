@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+// src/features/sales/components/PdvPage.tsx
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -6,20 +7,20 @@ import {
   useProducts,
   usePaymentMethods,
   useAppointmentSaleData,
-  useCreateSaleDraft,
   useFinalizeSale,
-  useSaleDraft,
   useServicesForSale,
-  useUpdateSaleDraft,
-  useDeleteSaleDraft,
 } from '../hooks';
+import { usePdvStore, persistPdvState, loadPdvState, clearPdvState } from '../stores/pdv-store';
 import { ProductGrid } from './ProductGrid';
 import { CartPanel } from './CartPanel';
-import { SplitPaymentSection } from './SplitPayment';
+import { CartFloatingFooter } from './CartFloatingFooter';
+import { CartModal } from './CartModal';
 import { PdvHeader } from './PdvHeader';
 import type { ProductItem, CartItem, SplitPayment } from '../types';
 import type { ServiceForSaleItem } from '../server/listServicesForSale';
 import { useSession } from '@/features/auth/hooks';
+import { SplitPaymentSection } from './SplitPayment';
+
 
 export function PdvPage() {
   const search = useSearch({ from: '/_authed/admin/pdv' });
@@ -27,268 +28,119 @@ export function PdvPage() {
   const navigate = useNavigate();
   const { data: session } = useSession();
   const canEdit = session?.profile.role === 'admin';
-
   const { data: appointmentData } = useAppointmentSaleData(appointmentId);
   const { data: products = [] } = useProducts();
   const { data: services = [] } = useServicesForSale();
   const { data: paymentMethods = [] } = usePaymentMethods();
-  const { data: existingDraft, isLoading: draftLoading } = useSaleDraft();
-  const createDraft = useCreateSaleDraft();
-  const updateDraft = useUpdateSaleDraft();
-  const deleteDraft = useDeleteSaleDraft();
   const finalizeSale = useFinalizeSale();
 
-  const clientName = appointmentData?.clientName ?? 'Cliente Avulso';
+  // Mobile state
+  const [cartOpen, setCartOpen] = useState(false);
 
-  // Estado do carrinho e pagamentos
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [payments, setPayments] = useState<SplitPayment[]>([]);
-  const [saleDraftId, setSaleDraftId] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Store
+  const status = usePdvStore((s) => s.status);
+  const items = usePdvStore((s) => s.items);
+  const payments = usePdvStore((s) => s.payments);
+  const clientName = usePdvStore((s) => s.clientName);
+  const isDirty = usePdvStore((s) => s.isDirty);
+  const storeAppointmentId = usePdvStore((s) => s.appointmentId);
+  const {
+    loadFromAppointment,
+    addItem,
+    updateQuantity,
+    removeItem,
+    addPayment,
+    removePayment,
+    hydrate,
+    reset,
+    setStatus,
+  } = usePdvStore();
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-
-  // Inicializa: carrega rascunho existente OU cria estado inicial do agendamento
+  // Hydrate do IndexedDB na montagem
   useEffect(() => {
-    if (isInitialized || draftLoading) return;
-
-    if (existingDraft) {
-      setCartItems(
-        existingDraft.items.map((i) => ({
-          id: `${i.itemType}-${i.itemId ?? i.itemName}`,
-          itemType: i.itemType,
-          itemId: i.itemId,
-          itemName: i.itemName,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice,
-          totalPrice: i.totalPrice,
-          isLocked: i.isLocked,
-        })),
-      );
-      setPayments(
-        existingDraft.payments.map((p) => ({
-          paymentMethodId: p.paymentMethodId,
-          paymentMethodName: '',
-          amount: p.amount,
-        })),
-      );
-      setSaleDraftId(existingDraft.id);
-      setIsInitialized(true);
-      } else if (appointmentData) {
-        const initialItems: CartItem[] = [
-          {
-            id: `service-${appointmentData.serviceName}`,
-            itemType: 'service',
-            itemId: appointmentData.serviceId,
-            itemName: appointmentData.serviceName,
-            quantity: 1,
-            unitPrice: appointmentData.servicePrice,
-            totalPrice: appointmentData.servicePrice,
-            isLocked: true,
-          },
-        ];
-        setCartItems(initialItems);
-        saveDraft(initialItems, saleDraftId);  // ← ADICIONADO
-        setIsInitialized(true);
+    if (storeAppointmentId) return;
+    loadPdvState().then((saved) => {
+      if (saved) {
+        hydrate(saved);
       }
-  }, [existingDraft, draftLoading, appointmentData, appointmentId, isInitialized]);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Salva rascunho no banco a cada alteração (com debounce)
-  const saveDraft = useCallback(
-    (items: CartItem[], saleId: string | null) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+  // Se veio de agendamento e store está vazia, carrega
+  useEffect(() => {
+    if (!appointmentData) return;
+    if (storeAppointmentId === appointmentId) return;
+    loadFromAppointment({
+      appointmentId: appointmentData.appointmentId,
+      clientName: appointmentData.clientName,
+      serviceId: appointmentData.serviceId,
+      serviceName: appointmentData.serviceName,
+      servicePrice: appointmentData.servicePrice,
+    });
+  }, [appointmentData, appointmentId, storeAppointmentId, loadFromAppointment]);
 
-      debounceRef.current = setTimeout(async () => {
-        if (items.length === 0) {
-          if (saleId) {
-            try {
-              await deleteDraft.mutateAsync({ saleId });
-              setSaleDraftId(null);
-            } catch {
-              // toast já tratado no hook
-            }
-          }
-          return;
-        }
-
-        try {
-          if (saleId) {
-            await updateDraft.mutateAsync({
-              saleId,
-              clientName,
-              items: items.map((item) => ({
-                itemType: item.itemType,
-                itemId: item.itemId,
-                itemName: item.itemName,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                isLocked: item.isLocked,
-              })),
-            });
-          } else {
-            const result = await createDraft.mutateAsync({
-              appointmentId,
-              clientName,
-              items: items.map((item) => ({
-                itemType: item.itemType,
-                itemId: item.itemId,
-                itemName: item.itemName,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                isLocked: item.isLocked,
-              })),
-            });
-            setSaleDraftId(result.id);
-          }
-        } catch {
-          // toast já tratado nos hooks
-        }
-      }, 1000);
-    },
-    [appointmentId, clientName, createDraft, updateDraft, deleteDraft],
-  );
+  // Persiste no IndexedDB quando o carrinho muda
+  useEffect(() => {
+    if (!isDirty) return;
+    const state = usePdvStore.getState();
+    const timer = setTimeout(() => {
+      persistPdvState({
+        status: state.status,
+        items: state.items,
+        payments: state.payments,
+        appointmentId: state.appointmentId,
+        clientName: state.clientName,
+        isDirty: false,
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [items, payments, isDirty]);
 
   const handleAddProduct = useCallback(
     (product: ProductItem) => {
-      setCartItems((prev) => {
-        const existing = prev.find(
-          (item) => item.itemType === 'product' && item.itemId === product.id,
-        );
-        let newItems: CartItem[];
-        if (existing) {
-          newItems = prev.map((item) =>
-            item.id === existing.id
-              ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                  totalPrice: (item.quantity + 1) * item.unitPrice,
-                }
-              : item,
-          );
-        } else {
-          newItems = [
-            ...prev,
-            {
-              id: `product-${product.id}`,
-              itemType: 'product',
-              itemId: product.id,
-              itemName: product.name,
-              quantity: 1,
-              unitPrice: product.price,
-              totalPrice: product.price,
-              isLocked: false,
-            },
-          ];
-        }
-        saveDraft(newItems, saleDraftId);
-        return newItems;
+      addItem({
+        id: `product-${product.id}`,
+        itemType: 'product',
+        itemId: product.id,
+        itemName: product.name,
+        quantity: 1,
+        unitPrice: product.price,
+        totalPrice: product.price,
+        isLocked: false,
       });
     },
-    [saleDraftId, saveDraft],
+    [addItem],
   );
+
 
   const handleAddService = useCallback(
     (service: ServiceForSaleItem) => {
-      setCartItems((prev) => {
-        const existing = prev.find(
-          (item) => item.itemType === 'service' && item.itemId === service.id,
-        );
-        let newItems: CartItem[];
-        if (existing) {
-          newItems = prev.map((item) =>
-            item.id === existing.id
-              ? {
-                  ...item,
-                  quantity: item.quantity + 1,
-                  totalPrice: (item.quantity + 1) * item.unitPrice,
-                }
-              : item,
-          );
-        } else {
-          newItems = [
-            ...prev,
-            {
-              id: `service-${service.id}`,
-              itemType: 'service',
-              itemId: service.id,
-              itemName: service.name,
-              quantity: 1,
-              unitPrice: service.price,
-              totalPrice: service.price,
-              isLocked: false,
-            },
-          ];
-        }
-        saveDraft(newItems, saleDraftId);
-        return newItems;
+      addItem({
+        id: `service-${service.id}`,
+        itemType: 'service',
+        itemId: service.id,
+        itemName: service.name,
+        quantity: 1,
+        unitPrice: service.price,
+        totalPrice: service.price,
+        isLocked: false,
       });
     },
-    [saleDraftId, saveDraft],
+    [addItem],
   );
+  const handleIncrement = useCallback((id: string) => updateQuantity(id, 1), [updateQuantity]);
+  const handleDecrement = useCallback((id: string) => updateQuantity(id, -1), [updateQuantity]);
+  const handleRemove = useCallback((id: string) => removeItem(id), [removeItem]);
+  const handleAddPaymentFn = useCallback((payment: SplitPayment) => addPayment(payment), [addPayment]);
+  const handleRemovePaymentFn = useCallback((methodId: string) => removePayment(methodId), [removePayment]);
 
-  const handleIncrement = useCallback(
-    (id: string) => {
-      setCartItems((prev) => {
-        const newItems = prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-                totalPrice: (item.quantity + 1) * item.unitPrice,
-              }
-            : item,
-        );
-        saveDraft(newItems, saleDraftId);
-        return newItems;
-      });
-    },
-    [saleDraftId, saveDraft],
-  );
-
-  const handleDecrement = useCallback(
-    (id: string) => {
-      setCartItems((prev) => {
-        const newItems = prev.map((item) =>
-          item.id === id && item.quantity > 1
-            ? {
-                ...item,
-                quantity: item.quantity - 1,
-                totalPrice: (item.quantity - 1) * item.unitPrice,
-              }
-            : item,
-        );
-        saveDraft(newItems, saleDraftId);
-        return newItems;
-      });
-    },
-    [saleDraftId, saveDraft],
-  );
-
-  const handleRemove = useCallback(
-    (id: string) => {
-      setCartItems((prev) => {
-        const newItems = prev.filter((item) => !item.isLocked && item.id !== id);
-        saveDraft(newItems, saleDraftId);
-        return newItems;
-      });
-    },
-    [saleDraftId, saveDraft],
-  );
-
-  const handleAddPayment = useCallback((payment: SplitPayment) => {
-    setPayments((prev) => [...prev, payment]);
-  }, []);
-
-  const handleRemovePayment = useCallback((paymentMethodId: string) => {
-    setPayments((prev) => prev.filter((p) => p.paymentMethodId !== paymentMethodId));
-  }, []);
-
-  const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
   const paid = payments.reduce((sum, p) => sum + p.amount, 0);
   const isComplete = Math.abs(total - paid) < 0.01;
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   async function handleFinalize() {
-    if (cartItems.length === 0) {
+    if (items.length === 0) {
       toast.error('Adicione pelo menos um item ao carrinho.');
       return;
     }
@@ -296,52 +148,41 @@ export function PdvPage() {
       toast.error('Complete o pagamento antes de finalizar.');
       return;
     }
-
+    setStatus('processing');
     try {
-      let saleId = saleDraftId;
-      if (!saleId) {
-        const result = await createDraft.mutateAsync({
-          appointmentId,
-          clientName,
-          items: cartItems.map((item) => ({
-            itemType: item.itemType,
-            itemId: item.itemId,
-            itemName: item.itemName,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            isLocked: item.isLocked,
-          })),
-        });
-        saleId = result.id;
-      }
-      if (!saleId) {
-        toast.error('Erro ao criar rascunho.');
-        return;
-      }
       await finalizeSale.mutateAsync({
-        saleId,
+        saleData: {
+          saleType: storeAppointmentId ? 'appointment' : 'product',
+          appointmentId: storeAppointmentId,
+          clientName,
+        },
+        items: items.map((item) => ({
+          itemType: item.itemType,
+          itemId: item.itemId,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          isLocked: item.isLocked,
+        })),
         payments: payments.map((p) => ({
           paymentMethodId: p.paymentMethodId,
           amount: p.amount,
         })),
       });
+      await clearPdvState();
+      reset();
+      setCartOpen(false);
     } catch {
-      // toast já tratado nos hooks
+      setStatus('payment');
     }
   }
 
-  if (draftLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
-      <PdvHeader clientName={clientName} appointmentId={appointmentId} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+    <div className="mx-auto max-w-6xl space-y-6 p-4 pb-24 sm:p-6 sm:pb-6">
+      <PdvHeader clientName={clientName} appointmentId={storeAppointmentId ?? undefined} />
+
+      {/* Desktop: grid + cart panel lateral */}
+      <div className="hidden lg:grid lg:grid-cols-5 lg:gap-6">
         <div className="lg:col-span-3">
           <ProductGrid
             products={products}
@@ -352,26 +193,26 @@ export function PdvPage() {
         </div>
         <div className="space-y-6 lg:col-span-2">
           <CartPanel
-            items={cartItems}
+            items={items}
             total={total}
             onIncrement={handleIncrement}
             onDecrement={handleDecrement}
             onRemove={handleRemove}
             canEdit={canEdit}
           />
-          {cartItems.length > 0 && (
+          {items.length > 0 && (
             <>
               <SplitPaymentSection
                 methods={paymentMethods}
                 payments={payments}
                 total={total}
-                onAddPayment={handleAddPayment}
-                onRemovePayment={handleRemovePayment}
+                onAddPayment={handleAddPaymentFn}
+                onRemovePayment={handleRemovePaymentFn}
               />
               <Button
                 onClick={handleFinalize}
-                isLoading={finalizeSale.isPending}
-                disabled={!isComplete || cartItems.length === 0}
+                isLoading={status === 'processing'}
+                disabled={!isComplete || items.length === 0 || status === 'processing'}
                 className="w-full"
                 size="lg"
               >
@@ -381,6 +222,44 @@ export function PdvPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile: grid full + footer + modal */}
+      <div className="lg:hidden">
+        <ProductGrid
+          products={products}
+          services={services}
+          onAddProduct={handleAddProduct}
+          onAddService={handleAddService}
+        />
+      </div>
+
+{/* Footer flutuante — apenas mobile */}
+<div className="lg:hidden">
+  <CartFloatingFooter
+    itemCount={totalItems}
+    total={total}
+    onClick={() => setCartOpen(true)}
+  />
+</div>
+
+      {/* Modal do carrinho (mobile) */}
+      <CartModal
+        open={cartOpen}
+        onOpenChange={setCartOpen}
+        items={items}
+        total={total}
+        payments={payments}
+        paymentMethods={paymentMethods}
+        isComplete={isComplete}
+        isFinalizing={status === 'processing'}
+        canEdit={canEdit}
+        onIncrement={handleIncrement}
+        onDecrement={handleDecrement}
+        onRemove={handleRemove}
+        onAddPayment={handleAddPaymentFn}
+        onRemovePayment={handleRemovePaymentFn}
+        onFinalize={handleFinalize}
+      />
     </div>
   );
 }

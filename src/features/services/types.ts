@@ -8,6 +8,7 @@ export interface ServiceItem {
   price: number;
   displayOrder: number;
   isActive: boolean;
+  imageUrl: string | null;
 }
 
 export interface ServiceFormValues {

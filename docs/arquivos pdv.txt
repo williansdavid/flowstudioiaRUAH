@@ -1,0 +1,916 @@
+// src\features\sales\components\PdvPage.tx
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
+import {
+  useProducts,
+  usePaymentMethods,
+  useAppointmentSaleData,
+  useCreateSaleDraft,
+  useFinalizeSale,
+  useSaleDraft,
+  useServicesForSale,
+  useUpdateSaleDraft,
+  useDeleteSaleDraft,
+} from '../hooks';
+import { ProductGrid } from './ProductGrid';
+import { CartPanel } from './CartPanel';
+import { SplitPaymentSection } from './SplitPayment';
+import { PdvHeader } from './PdvHeader';
+import type { ProductItem, CartItem, SplitPayment } from '../types';
+import type { ServiceForSaleItem } from '../server/listServicesForSale';
+import { useSession } from '@/features/auth/hooks';
+
+export function PdvPage() {
+  const search = useSearch({ from: '/_authed/admin/pdv' });
+  const appointmentId = (search as { appointmentId?: string }).appointmentId;
+  const navigate = useNavigate();
+  const { data: session } = useSession();
+  const canEdit = session?.profile.role === 'admin';
+
+  const { data: appointmentData } = useAppointmentSaleData(appointmentId);
+  const { data: products = [] } = useProducts();
+  const { data: services = [] } = useServicesForSale();
+  const { data: paymentMethods = [] } = usePaymentMethods();
+  const { data: existingDraft, isLoading: draftLoading } = useSaleDraft();
+  const createDraft = useCreateSaleDraft();
+  const updateDraft = useUpdateSaleDraft();
+  const deleteDraft = useDeleteSaleDraft();
+  const finalizeSale = useFinalizeSale();
+
+  const clientName = appointmentData?.clientName ?? 'Cliente Avulso';
+
+  // Estado do carrinho e pagamentos
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [payments, setPayments] = useState<SplitPayment[]>([]);
+  const [saleDraftId, setSaleDraftId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Inicializa: carrega rascunho existente OU cria estado inicial do agendamento
+  useEffect(() => {
+    if (isInitialized || draftLoading) return;
+
+    if (existingDraft) {
+      setCartItems(
+        existingDraft.items.map((i) => ({
+          id: `${i.itemType}-${i.itemId ?? i.itemName}`,
+          itemType: i.itemType,
+          itemId: i.itemId,
+          itemName: i.itemName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          totalPrice: i.totalPrice,
+          isLocked: i.isLocked,
+        })),
+      );
+      setPayments(
+        existingDraft.payments.map((p) => ({
+          paymentMethodId: p.paymentMethodId,
+          paymentMethodName: '',
+          amount: p.amount,
+        })),
+      );
+      setSaleDraftId(existingDraft.id);
+      setIsInitialized(true);
+      } else if (appointmentData) {
+        const initialItems: CartItem[] = [
+          {
+            id: `service-${appointmentData.serviceName}`,
+            itemType: 'service',
+            itemId: appointmentData.serviceId,
+            itemName: appointmentData.serviceName,
+            quantity: 1,
+            unitPrice: appointmentData.servicePrice,
+            totalPrice: appointmentData.servicePrice,
+            isLocked: true,
+          },
+        ];
+        setCartItems(initialItems);
+        saveDraft(initialItems, saleDraftId);  // ← ADICIONADO
+        setIsInitialized(true);
+      }
+  }, [existingDraft, draftLoading, appointmentData, appointmentId, isInitialized]);
+
+  // Salva rascunho no banco a cada alteração (com debounce)
+  const saveDraft = useCallback(
+    (items: CartItem[], saleId: string | null) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+
+      debounceRef.current = setTimeout(async () => {
+        if (items.length === 0) {
+          if (saleId) {
+            try {
+              await deleteDraft.mutateAsync({ saleId });
+              setSaleDraftId(null);
+            } catch {
+              // toast já tratado no hook
+            }
+          }
+          return;
+        }
+
+        try {
+          if (saleId) {
+            await updateDraft.mutateAsync({
+              saleId,
+              clientName,
+              items: items.map((item) => ({
+                itemType: item.itemType,
+                itemId: item.itemId,
+                itemName: item.itemName,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                isLocked: item.isLocked,
+              })),
+            });
+          } else {
+            const result = await createDraft.mutateAsync({
+              appointmentId,
+              clientName,
+              items: items.map((item) => ({
+                itemType: item.itemType,
+                itemId: item.itemId,
+                itemName: item.itemName,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                isLocked: item.isLocked,
+              })),
+            });
+            setSaleDraftId(result.id);
+          }
+        } catch {
+          // toast já tratado nos hooks
+        }
+      }, 1000);
+    },
+    [appointmentId, clientName, createDraft, updateDraft, deleteDraft],
+  );
+
+  const handleAddProduct = useCallback(
+    (product: ProductItem) => {
+      setCartItems((prev) => {
+        const existing = prev.find(
+          (item) => item.itemType === 'product' && item.itemId === product.id,
+        );
+        let newItems: CartItem[];
+        if (existing) {
+          newItems = prev.map((item) =>
+            item.id === existing.id
+              ? {
+                  ...item,
+                  quantity: item.quantity + 1,
+                  totalPrice: (item.quantity + 1) * item.unitPrice,
+                }
+              : item,
+          );
+        } else {
+          newItems = [
+            ...prev,
+            {
+              id: `product-${product.id}`,
+              itemType: 'product',
+              itemId: product.id,
+              itemName: product.name,
+              quantity: 1,
+              unitPrice: product.price,
+              totalPrice: product.price,
+              isLocked: false,
+            },
+          ];
+        }
+        saveDraft(newItems, saleDraftId);
+        return newItems;
+      });
+    },
+    [saleDraftId, saveDraft],
+  );
+
+  const handleAddService = useCallback(
+    (service: ServiceForSaleItem) => {
+      setCartItems((prev) => {
+        const existing = prev.find(
+          (item) => item.itemType === 'service' && item.itemId === service.id,
+        );
+        let newItems: CartItem[];
+        if (existing) {
+          newItems = prev.map((item) =>
+            item.id === existing.id
+              ? {
+                  ...item,
+                  quantity: item.quantity + 1,
+                  totalPrice: (item.quantity + 1) * item.unitPrice,
+                }
+              : item,
+          );
+        } else {
+          newItems = [
+            ...prev,
+            {
+              id: `service-${service.id}`,
+              itemType: 'service',
+              itemId: service.id,
+              itemName: service.name,
+              quantity: 1,
+              unitPrice: service.price,
+              totalPrice: service.price,
+              isLocked: false,
+            },
+          ];
+        }
+        saveDraft(newItems, saleDraftId);
+        return newItems;
+      });
+    },
+    [saleDraftId, saveDraft],
+  );
+
+  const handleIncrement = useCallback(
+    (id: string) => {
+      setCartItems((prev) => {
+        const newItems = prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+                totalPrice: (item.quantity + 1) * item.unitPrice,
+              }
+            : item,
+        );
+        saveDraft(newItems, saleDraftId);
+        return newItems;
+      });
+    },
+    [saleDraftId, saveDraft],
+  );
+
+  const handleDecrement = useCallback(
+    (id: string) => {
+      setCartItems((prev) => {
+        const newItems = prev.map((item) =>
+          item.id === id && item.quantity > 1
+            ? {
+                ...item,
+                quantity: item.quantity - 1,
+                totalPrice: (item.quantity - 1) * item.unitPrice,
+              }
+            : item,
+        );
+        saveDraft(newItems, saleDraftId);
+        return newItems;
+      });
+    },
+    [saleDraftId, saveDraft],
+  );
+
+  const handleRemove = useCallback(
+    (id: string) => {
+      setCartItems((prev) => {
+        const newItems = prev.filter((item) => !item.isLocked && item.id !== id);
+        saveDraft(newItems, saleDraftId);
+        return newItems;
+      });
+    },
+    [saleDraftId, saveDraft],
+  );
+
+  const handleAddPayment = useCallback((payment: SplitPayment) => {
+    setPayments((prev) => [...prev, payment]);
+  }, []);
+
+  const handleRemovePayment = useCallback((paymentMethodId: string) => {
+    setPayments((prev) => prev.filter((p) => p.paymentMethodId !== paymentMethodId));
+  }, []);
+
+  const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const paid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const isComplete = Math.abs(total - paid) < 0.01;
+
+  async function handleFinalize() {
+    if (cartItems.length === 0) {
+      toast.error('Adicione pelo menos um item ao carrinho.');
+      return;
+    }
+    if (!isComplete) {
+      toast.error('Complete o pagamento antes de finalizar.');
+      return;
+    }
+
+    try {
+      let saleId = saleDraftId;
+      if (!saleId) {
+        const result = await createDraft.mutateAsync({
+          appointmentId,
+          clientName,
+          items: cartItems.map((item) => ({
+            itemType: item.itemType,
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            isLocked: item.isLocked,
+          })),
+        });
+        saleId = result.id;
+      }
+      if (!saleId) {
+        toast.error('Erro ao criar rascunho.');
+        return;
+      }
+      await finalizeSale.mutateAsync({
+        saleId,
+        payments: payments.map((p) => ({
+          paymentMethodId: p.paymentMethodId,
+          amount: p.amount,
+        })),
+      });
+    } catch {
+      // toast já tratado nos hooks
+    }
+  }
+
+  if (draftLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+      <PdvHeader clientName={clientName} appointmentId={appointmentId} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <ProductGrid
+            products={products}
+            services={services}
+            onAddProduct={handleAddProduct}
+            onAddService={handleAddService}
+          />
+        </div>
+        <div className="space-y-6 lg:col-span-2">
+          <CartPanel
+            items={cartItems}
+            total={total}
+            onIncrement={handleIncrement}
+            onDecrement={handleDecrement}
+            onRemove={handleRemove}
+            canEdit={canEdit}
+          />
+          {cartItems.length > 0 && (
+            <>
+              <SplitPaymentSection
+                methods={paymentMethods}
+                payments={payments}
+                total={total}
+                onAddPayment={handleAddPayment}
+                onRemovePayment={handleRemovePayment}
+              />
+              <Button
+                onClick={handleFinalize}
+                isLoading={finalizeSale.isPending}
+                disabled={!isComplete || cartItems.length === 0}
+                className="w-full"
+                size="lg"
+              >
+                Finalizar venda — R$ {total.toFixed(2)}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+// src/features/sales/hooks.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
+import { toast } from 'sonner';
+import { listProducts } from './server/listProducts';
+import { listPaymentMethods } from './server/listPaymentMethods';
+import { getSaleDraft } from './server/getSaleDraft';
+import { createSaleDraft } from './server/createSaleDraft';
+import { createSale } from './server/createSale';
+import { getAppointmentSaleData } from './server/getAppointmentSaleData';
+import type { CreateSaleDraftInput } from './server/createSaleDraft';
+import { deleteSaleDraft } from './server/deleteSaleDraft';
+import { listServicesForSale } from './server/listServicesForSale';
+
+export const salesKeys = {
+  products: ['sales', 'products'] as const,
+  services: ['sales', 'services'] as const,  // <-- adicionar
+  paymentMethods: ['sales', 'payment-methods'] as const,
+  draft: ['sales', 'draft'] as const,
+  appointmentData: (appointmentId: string) => ['sales', 'appointment', appointmentId] as const,
+};
+
+export function useProducts() {
+  return useQuery({
+    queryKey: salesKeys.products,
+    queryFn: () => listProducts(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useServicesForSale() {
+  return useQuery({
+    queryKey: salesKeys.services,
+    queryFn: () => listServicesForSale(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: salesKeys.paymentMethods,
+    queryFn: () => listPaymentMethods(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSaleDraft() {
+  return useQuery({
+    queryKey: salesKeys.draft,
+    queryFn: () => getSaleDraft(),
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+export function useAppointmentSaleData(appointmentId: string | undefined) {
+  return useQuery({
+    queryKey: salesKeys.appointmentData(appointmentId ?? ''),
+    queryFn: () => getAppointmentSaleData({ data: { appointmentId: appointmentId! } }),  // <-- corrigido
+    enabled: !!appointmentId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateSaleDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateSaleDraftInput) => createSaleDraft({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.draft });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao criar rascunho da venda.');
+    },
+  });
+}
+
+export function useFinalizeSale() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: (input: { saleId: string; payments: Array<{ paymentMethodId: string; amount: number }> }) =>
+      createSale({ data: input }),
+    onSuccess: () => {
+      // Hard refresh completo — limpa TUDO
+      queryClient.invalidateQueries();
+      toast.success('Venda finalizada com sucesso!');
+      router.invalidate().then(() => {
+        router.navigate({ to: '/admin' });
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao finalizar venda.');
+    },
+  });
+}
+
+
+import { updateSaleDraft } from './server/updateSaleDraft';
+import type { UpdateSaleDraftInput } from './server/updateSaleDraft';
+
+export function useUpdateSaleDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateSaleDraftInput) => updateSaleDraft({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.draft });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao salvar rascunho.');
+    },
+  });
+}
+
+export function useDeleteSaleDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { saleId: string }) => deleteSaleDraft({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.draft });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao remover rascunho.');
+    },
+  });
+}
+// src/features/sales/types.ts
+import type { ProductItem } from './server/listProducts';
+import type { PaymentMethodItem } from './server/listPaymentMethods';
+import type { SaleDraftResult } from './server/getSaleDraft';
+
+export type { ProductItem, PaymentMethodItem, SaleDraftResult };
+export type { ServiceForSaleItem } from './server/listServicesForSale';
+
+export interface CartItem {
+  id: string;
+  itemType: 'product' | 'service';
+  itemId: string | null;
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  isLocked: boolean;
+}
+
+export interface SplitPayment {
+  paymentMethodId: string;
+  paymentMethodName: string;
+  amount: number;
+}
+// src/features/sales/server/createSale.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const paymentSchema = z.object({
+  paymentMethodId: z.string().uuid(),
+  amount: z.number().positive(),
+});
+
+const inputSchema = z.object({
+  saleId: z.string().uuid(),
+  payments: z.array(paymentSchema).min(1),
+});
+
+export const createSale = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }) => {
+    const supabase = createSupabaseServer();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Sessão inválida.');
+
+    // Chama a função SQL que executa tudo dentro de BEGIN/COMMIT/ROLLBACK
+    const { data: result, error } = await supabase.rpc('finalize_sale', {
+      p_sale_id: data.saleId,
+      p_payments: data.payments as any,
+      p_user_id: user.id,
+    });
+
+    if (error) {
+      // Se a função lançou EXCEPTION, o ROLLBACK já foi feito automaticamente
+      throw new Error(error.message);
+    }
+
+    return result as { id: string };
+  });
+// src/features/sales/server/createSaleDraft.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const inputSchema = z.object({
+  appointmentId: z.string().uuid().optional(),
+  clientName: z.string().min(1),
+  items: z.array(z.object({
+    itemType: z.enum(['product', 'service']),
+    itemId: z.string().uuid().nullable(),
+    itemName: z.string().min(1),
+    quantity: z.number().int().min(1),
+    unitPrice: z.number().positive(),
+    isLocked: z.boolean().default(false),
+  })).min(1),
+});
+
+export const createSaleDraft = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }) => {
+    const supabase = createSupabaseServer();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Sessão inválida.');
+
+    const totalAmount = data.items.reduce(
+      (sum, item) => sum + item.unitPrice * item.quantity, 0,
+    );
+
+    const { data: sale, error: saleError } = await supabase
+      .from('sales')
+      .insert({
+        sale_type: data.appointmentId ? 'appointment' : 'product',
+        appointment_id: data.appointmentId ?? null,
+        client_name: data.clientName,
+        total_amount: totalAmount,
+        status: 'draft',
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+
+    if (saleError || !sale) throw saleError;
+
+    const itemsToInsert = data.items.map((item) => ({
+      sale_id: sale.id,
+      item_type: item.itemType,
+      item_id: item.itemId,
+      item_name: item.itemName,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      total_price: item.unitPrice * item.quantity,
+      is_locked: item.isLocked,
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('sale_items')
+      .insert(itemsToInsert);
+
+    if (itemsError) throw itemsError;
+
+    return { id: sale.id };    
+  });
+  export type CreateSaleDraftInput = z.infer<typeof inputSchema>;
+// src/features/sales/server/deleteSaleDraft.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const inputSchema = z.object({
+  saleId: z.string().uuid(),
+});
+
+export const deleteSaleDraft = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }) => {
+    const supabase = createSupabaseServer();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Sessão inválida.');
+
+    // Verifica se o rascunho existe e pertence ao usuário
+    const { data: sale, error: saleError } = await supabase
+      .from('sales')
+      .select('id, status')
+      .eq('id', data.saleId)
+      .eq('created_by', user.id)
+      .single();
+    if (saleError || !sale) throw new Error('Rascunho não encontrado.');
+    if (sale.status !== 'draft') throw new Error('Venda já finalizada.');
+
+    // Deleta sale_items (ON DELETE CASCADE cuida)
+    const { error: deleteItemsError } = await supabase
+      .from('sale_items')
+      .delete()
+      .eq('sale_id', data.saleId);
+    if (deleteItemsError) throw deleteItemsError;
+
+    // Deleta sale_payments
+    const { error: deletePaymentsError } = await supabase
+      .from('sale_payments')
+      .delete()
+      .eq('sale_id', data.saleId);
+    if (deletePaymentsError) throw deletePaymentsError;
+
+    // Deleta a sale
+    const { error: deleteSaleError } = await supabase
+      .from('sales')
+      .delete()
+      .eq('id', data.saleId);
+    if (deleteSaleError) throw deleteSaleError;
+
+    return { deleted: true };
+  });
+// src/features/sales/server/getSaleDraft.ts
+import { createServerFn } from '@tanstack/react-start';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+export interface SaleDraftResult {
+  id: string;
+  saleType: 'product' | 'appointment';
+  appointmentId: string | null;
+  clientName: string;
+  totalAmount: number;
+  items: Array<{
+    id: string;
+    itemType: 'product' | 'service';
+    itemId: string | null;
+    itemName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    isLocked: boolean;
+  }>;
+  payments: Array<{
+    id: string;
+    paymentMethodId: string;
+    amount: number;
+  }>;
+}
+
+export const getSaleDraft = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<SaleDraftResult | null> => {
+    const supabase = createSupabaseServer();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return null;
+
+    // Busca rascunho pendente mais recente do operador
+    const { data: sale, error } = await supabase
+      .from('sales')
+      .select('*')
+      .eq('created_by', user.id)
+      .eq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !sale) return null;
+
+    // Busca itens
+    const { data: items } = await supabase
+      .from('sale_items')
+      .select('*')
+      .eq('sale_id', sale.id);
+
+    // Busca pagamentos
+    const { data: payments } = await supabase
+      .from('sale_payments')
+      .select('*')
+      .eq('sale_id', sale.id);
+
+    return {
+      id: sale.id,
+      saleType: sale.sale_type as 'product' | 'appointment',
+      appointmentId: sale.appointment_id,
+      clientName: sale.client_name,
+      totalAmount: Number(sale.total_amount),
+      items: (items ?? []).map((i) => ({
+        id: i.id,
+        itemType: i.item_type as 'product' | 'service',
+        itemId: i.item_id,
+        itemName: i.item_name,
+        quantity: i.quantity,
+        unitPrice: Number(i.unit_price),
+        totalPrice: Number(i.total_price),
+        isLocked: i.is_locked,
+      })),
+      payments: (payments ?? []).map((p) => ({
+        id: p.id,
+        paymentMethodId: p.payment_method_id,
+        amount: Number(p.amount),
+      })),
+    };
+  },
+);
+// src/features/sales/server/updateSaleDraft.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const inputSchema = z.object({
+  saleId: z.string().uuid(),
+  clientName: z.string().min(1),
+  items: z.array(z.object({
+    itemType: z.enum(['product', 'service']),
+    itemId: z.string().uuid().nullable(),
+    itemName: z.string().min(1),
+    quantity: z.number().int().min(1),
+    unitPrice: z.number().positive(),
+    isLocked: z.boolean().default(false),
+  })).min(1),
+});
+
+export const updateSaleDraft = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }) => {
+    const supabase = createSupabaseServer();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Sessão inválida.');
+
+    // Verifica se o rascunho existe e pertence ao usuário
+    const { data: sale, error: saleError } = await supabase
+      .from('sales')
+      .select('id, status')
+      .eq('id', data.saleId)
+      .eq('created_by', user.id)
+      .single();
+    if (saleError || !sale) throw new Error('Rascunho não encontrado.');
+    if (sale.status !== 'draft') throw new Error('Venda já finalizada.');
+
+    // Recalcula total
+    const totalAmount = data.items.reduce(
+      (sum, item) => sum + item.unitPrice * item.quantity, 0,
+    );
+
+    // Deleta itens antigos e insere novos (substituição atômica)
+    const { error: deleteError } = await supabase
+      .from('sale_items')
+      .delete()
+      .eq('sale_id', data.saleId);
+    if (deleteError) throw deleteError;
+
+    const itemsToInsert = data.items.map((item) => ({
+      sale_id: data.saleId,
+      item_type: item.itemType,
+      item_id: item.itemId,
+      item_name: item.itemName,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      total_price: item.unitPrice * item.quantity,
+      is_locked: item.isLocked,
+    }));
+
+    const { error: insertError } = await supabase
+      .from('sale_items')
+      .insert(itemsToInsert);
+    if (insertError) throw insertError;
+
+    // Atualiza total e nome do cliente
+    const { error: updateError } = await supabase
+      .from('sales')
+      .update({
+        total_amount: totalAmount,
+        client_name: data.clientName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', data.saleId);
+    if (updateError) throw updateError;
+
+    return { id: data.saleId };
+  });
+
+export type UpdateSaleDraftInput = z.infer<typeof inputSchema>;
+// src/features/sales/server/getAppointmentSaleData.ts
+import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
+const inputSchema = z.object({
+  appointmentId: z.string().uuid(),
+});
+
+export interface AppointmentSaleData {
+  clientName: string;
+  serviceName: string;
+  servicePrice: number;
+  serviceId: string;        // ← ADICIONADO
+  staffId: string;
+}
+
+export const getAppointmentSaleData = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown) => inputSchema.parse(data))
+  .handler(async ({ data }): Promise<AppointmentSaleData> => {
+    const supabase = createSupabaseServer();
+
+    const { data: appointment, error } = await supabase
+      .from('appointments')
+      .select(`
+        id,
+        client_id,
+        service_id,
+        price,
+        staff_id,
+        clients!left(full_name),
+        services!left(name)
+      `)
+      .eq('id', data.appointmentId)
+      .single();
+
+    if (error || !appointment) {
+      console.error('[getAppointmentSaleData] Erro ao buscar agendamento:', error?.message);
+      throw new Error('Agendamento não encontrado.');
+    }
+
+    const clientData = Array.isArray(appointment.clients)
+      ? appointment.clients[0]
+      : appointment.clients;
+
+    const serviceData = Array.isArray(appointment.services)
+      ? appointment.services[0]
+      : appointment.services;
+
+    if (!clientData?.full_name) {
+      console.error('[getAppointmentSaleData] Cliente não encontrado para appointment:', data.appointmentId);
+      throw new Error('Cliente do agendamento não encontrado.');
+    }
+
+    if (!serviceData?.name) {
+      console.error('[getAppointmentSaleData] Serviço não encontrado para appointment:', data.appointmentId);
+      throw new Error('Serviço do agendamento não encontrado.');
+    }
+
+    return {
+      clientName: clientData.full_name,
+      serviceName: serviceData.name,
+      servicePrice: Number(appointment.price),
+      serviceId: appointment.service_id,   // ← ADICIONADO
+      staffId: appointment.staff_id,
+    };
+  });
+  

@@ -3,7 +3,6 @@ import { LogOut } from 'lucide-react';
 import { SidebarItem } from './SidebarItem';
 import { getGroupedNavItemsForRole } from '../config/nav-items';
 import { branding } from '@/config/active-studio';
-import { useSaleDraft } from '@/features/sales/hooks';
 import type { SessionData } from '@/features/auth/types';
 
 // ─── Cores do sistema ───────────────────────────────────────
@@ -44,8 +43,8 @@ export function Sidebar({
   const showImage = Boolean(avatarUrl) && !imgFailed;
   const initial = (displayName ?? '?').charAt(0).toUpperCase();
 
-  const { data: draft } = useSaleDraft();
-  const hasPendingSale = !!draft;
+  
+  
 
   return (
     <div
@@ -114,8 +113,7 @@ style={{
               <SidebarItem
                 key={item.to}
                 item={item}
-                onNavigate={onNavigate}
-                hasBadge={item.label === 'PDV' && hasPendingSale}
+                onNavigate={onNavigate}                
               />
             ))}
           </div>

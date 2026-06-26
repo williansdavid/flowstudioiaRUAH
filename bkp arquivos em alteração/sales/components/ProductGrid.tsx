@@ -10,8 +10,8 @@ type CatalogTab = 'products' | 'services';
 interface ProductGridProps {
   products: ProductItem[];
   services: ServiceForSaleItem[];
-  onAddProduct: (product: ProductItem, element?: HTMLElement | null) => void;
-  onAddService: (service: ServiceForSaleItem, element?: HTMLElement | null) => void;
+  onAddProduct: (product: ProductItem) => void;
+  onAddService: (service: ServiceForSaleItem) => void;
 }
 
 export function ProductGrid({ products, services, onAddProduct, onAddService }: ProductGridProps) {
@@ -70,13 +70,13 @@ export function ProductGrid({ products, services, onAddProduct, onAddService }: 
             key={`${tab}-${item.id}`}
             item={item}
             type={tab === 'products' ? 'product' : 'service'}
-            onAdd={(item: any, element?: HTMLElement | null) => {
-              if (tab === 'products') {
-                onAddProduct(item as ProductItem, element);
-              } else {
-                onAddService(item as ServiceForSaleItem, element);
-              }
-            }}
+            onAdd={(item: any) => {
+            if (tab === 'products') {
+              onAddProduct(item as ProductItem);
+            } else {
+              onAddService(item as ServiceForSaleItem);
+            }
+          }}
           />
         ))}
       </div>

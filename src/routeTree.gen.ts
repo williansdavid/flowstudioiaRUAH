@@ -19,6 +19,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-pa
 import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
 import { Route as AuthedAdminServicosRouteImport } from './routes/_authed/admin/servicos'
+import { Route as AuthedAdminProdutosRouteImport } from './routes/_authed/admin/produtos'
 import { Route as AuthedAdminPdvRouteImport } from './routes/_authed/admin/pdv'
 import { Route as AuthedAdminFinanceiroRouteImport } from './routes/_authed/admin/financeiro'
 import { Route as AuthedAdminEquipeRouteImport } from './routes/_authed/admin/equipe'
@@ -75,6 +76,11 @@ const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
 const AuthedAdminServicosRoute = AuthedAdminServicosRouteImport.update({
   id: '/servicos',
   path: '/servicos',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminProdutosRoute = AuthedAdminProdutosRouteImport.update({
+  id: '/produtos',
+  path: '/produtos',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
 const AuthedAdminPdvRoute = AuthedAdminPdvRouteImport.update({
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/pdv': typeof AuthedAdminPdvRoute
+  '/admin/produtos': typeof AuthedAdminProdutosRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin/': typeof AuthedAdminIndexRoute
   '/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/admin/clientes': typeof AuthedAdminClientesRoute
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/pdv': typeof AuthedAdminPdvRoute
+  '/admin/produtos': typeof AuthedAdminProdutosRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/admin': typeof AuthedAdminIndexRoute
   '/admin/equipe': typeof AuthedAdminEquipeIndexRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/_authed/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/_authed/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/_authed/admin/pdv': typeof AuthedAdminPdvRoute
+  '/_authed/admin/produtos': typeof AuthedAdminProdutosRoute
   '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
   '/_authed/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/admin/equipe'
     | '/admin/financeiro'
     | '/admin/pdv'
+    | '/admin/produtos'
     | '/admin/servicos'
     | '/admin/'
     | '/admin/equipe/'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/financeiro'
     | '/admin/pdv'
+    | '/admin/produtos'
     | '/admin/servicos'
     | '/admin'
     | '/admin/equipe'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/_authed/admin/equipe'
     | '/_authed/admin/financeiro'
     | '/_authed/admin/pdv'
+    | '/_authed/admin/produtos'
     | '/_authed/admin/servicos'
     | '/_authed/admin/'
     | '/_authed/admin/equipe/'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/servicos'
       fullPath: '/admin/servicos'
       preLoaderRoute: typeof AuthedAdminServicosRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/produtos': {
+      id: '/_authed/admin/produtos'
+      path: '/produtos'
+      fullPath: '/admin/produtos'
+      preLoaderRoute: typeof AuthedAdminProdutosRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
     '/_authed/admin/pdv': {
@@ -423,6 +442,7 @@ interface AuthedAdminRouteRouteChildren {
   AuthedAdminEquipeRoute: typeof AuthedAdminEquipeRouteWithChildren
   AuthedAdminFinanceiroRoute: typeof AuthedAdminFinanceiroRoute
   AuthedAdminPdvRoute: typeof AuthedAdminPdvRoute
+  AuthedAdminProdutosRoute: typeof AuthedAdminProdutosRoute
   AuthedAdminServicosRoute: typeof AuthedAdminServicosRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
 }
@@ -435,6 +455,7 @@ const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
   AuthedAdminEquipeRoute: AuthedAdminEquipeRouteWithChildren,
   AuthedAdminFinanceiroRoute: AuthedAdminFinanceiroRoute,
   AuthedAdminPdvRoute: AuthedAdminPdvRoute,
+  AuthedAdminProdutosRoute: AuthedAdminProdutosRoute,
   AuthedAdminServicosRoute: AuthedAdminServicosRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
 }

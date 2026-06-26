@@ -6,11 +6,10 @@ import type { ServiceItem } from '../types';
 export const listServices = createServerFn({ method: 'GET' }).handler(
   async (): Promise<ServiceItem[]> => {
     const supabase = createSupabaseServer();
-
     const { data, error } = await supabase
       .from('services')
       .select(
-        'id, name, description, category, duration_minutes, price, display_order, is_active',
+        'id, name, description, category, duration_minutes, price, image_url, display_order, is_active',
       )
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
@@ -26,9 +25,9 @@ export const listServices = createServerFn({ method: 'GET' }).handler(
       category: row.category,
       durationMinutes: row.duration_minutes,
       price: Number(row.price),
+      imageUrl: row.image_url,
       displayOrder: row.display_order,
       isActive: row.is_active,
     }));
-
   },
 );
