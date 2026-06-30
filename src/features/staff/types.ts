@@ -40,3 +40,20 @@ export interface StaffListItem {
   role: 'admin' | 'staff' | null;
   isArchived: boolean;
 }
+
+export interface StaffListItem {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  specialty: string | null;
+  avatarUrl: string | null;
+  isBookable: boolean;
+  isActive: boolean;           // <--- NOVO
+  displayOrder: number;
+  color: string | null;
+  canEdit: boolean;
+  hasAccess: boolean;
+  role: 'admin' | 'staff' | null;
+  isArchived: boolean;
+}

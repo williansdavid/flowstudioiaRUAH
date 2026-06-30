@@ -18,12 +18,13 @@ interface RawRow {
   display_order: number;
   profile_id: string | null;
   archived_at: string | null;
-  color: string | null;               // <-- NOVO
+  color: string | null;
   profiles: {
     full_name: string | null;
     email: string | null;
     avatar_url: string | null;
     role: 'admin' | 'staff' | 'client' | null;
+    is_active: boolean | null;    // <--- NOVO
   } | null;
 }
 
@@ -56,7 +57,7 @@ export const listStaff = createServerFn({ method: 'GET' })
     let query = supabase
       .from('staff')
       .select(
-        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, color, profiles(full_name, email, avatar_url, role)',
+        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, color, profiles(full_name, email, avatar_url, role, is_active)',
       )
       .order('display_order', { ascending: true });
 
@@ -109,12 +110,14 @@ export const listStaff = createServerFn({ method: 'GET' })
         specialty: r.specialty,
         avatarUrl: r.profiles?.avatar_url ?? null,
         isBookable: r.is_bookable,
+        isActive: r.profiles?.is_active ?? true,   // <--- NOVO (default true para segurança)
         displayOrder: r.display_order,
-        color: r.color ?? null,        // <-- NOVO
+        color: r.color ?? null,
         canEdit: role === 'admin' || isOwner,
         hasAccess,
         role: staffRole,
         isArchived: r.archived_at != null,
       };
+
     });
   });

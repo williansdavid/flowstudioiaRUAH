@@ -13,9 +13,14 @@ const updateStaffSchema = z.object({
   phone: phoneBRSchema,
   specialty: z.string().trim().optional().or(z.literal('')),
   is_bookable: z.boolean().default(true),
+  is_active: z.boolean().optional(),      // <--- NOVO
   avatar_url: z.string().url('URL inválida').nullable().optional(),
-  color: z.string().nullable().optional(), // <--- NOVO CAMPO
+  color: z.string().nullable().optional(),
 });
+
+
+
+
 
 export type UpdateStaffInput = z.input<typeof updateStaffSchema>;
 
@@ -74,7 +79,39 @@ export const updateStaff = createServerFn({ method: 'POST' })
     if (role === 'staff' && target.profile_id !== user.id) {
       return { ok: false, reason: 'FORBIDDEN' };
     }
+      // ===== ATUALIZAR is_active NO PROFILES =====
+    // ===== ATUALIZAR is_active NO PROFILES =====
+    if (data.is_active !== undefined) {
+      if (!target.profile_id) {
+        return {
+          ok: false,
+          reason: 'UNKNOWN',
+          message: 'Profissional sem perfil vinculado.',
+        };
+      }
+      const admin = createSupabaseAdmin();
+      const { error: activeErr } = await admin
+        .from('profiles')
+        .update({ is_active: data.is_active })
+        .eq('id', target.profile_id);
 
+      if (activeErr) {
+        return { ok: false, reason: 'UNKNOWN', message: activeErr.message };
+      }
+
+      // ===== AUTO-ARQUIVAR =====
+      // Desativar → archived_at = agora (some da lista)
+      // Reativar   → archived_at = null (volta pra lista)
+      const archivedAt = data.is_active ? null : new Date().toISOString();
+      const { error: archErr } = await supabase
+        .from('staff')
+        .update({ archived_at: archivedAt })
+        .eq('id', data.id);
+
+      if (archErr) {
+        return { ok: false, reason: 'UNKNOWN', message: archErr.message };
+      }
+    }
     const phone = data.phone;
     const specialty = data.specialty?.trim() ? data.specialty.trim() : null;
 
@@ -135,6 +172,5 @@ export const updateStaff = createServerFn({ method: 'POST' })
         }
       }
     }
-
     return { ok: true };
   });

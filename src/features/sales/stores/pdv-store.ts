@@ -4,7 +4,6 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { CartItem, SplitPayment } from '../types';
 
 // ── Tipos ────────────────────────────────────────────────────────
-
 export type PdvStatus = 'empty' | 'editing' | 'payment' | 'processing' | 'completed';
 
 export interface PdvState {
@@ -45,7 +44,6 @@ const initialState: PdvState = {
 };
 
 // ── Store ─────────────────────────────────────────────────────────
-
 export const usePdvStore = create<PdvState & PdvActions>((set, get) => ({
   ...initialState,
 
@@ -82,12 +80,14 @@ export const usePdvStore = create<PdvState & PdvActions>((set, get) => ({
               ? { ...i, quantity: i.quantity + 1, totalPrice: (i.quantity + 1) * i.unitPrice }
               : i,
           ),
+          payments: [],      // ← limpa pagamentos
           isDirty: true,
           status: state.status === 'empty' ? 'editing' : state.status,
         };
       }
       return {
         items: [...state.items, item],
+        payments: [],        // ← limpa pagamentos
         isDirty: true,
         status: state.status === 'empty' ? 'editing' : state.status,
       };
@@ -100,12 +100,14 @@ export const usePdvStore = create<PdvState & PdvActions>((set, get) => ({
           ? { ...item, quantity: item.quantity + delta, totalPrice: (item.quantity + delta) * item.unitPrice }
           : item,
       ),
+      payments: [],          // ← limpa pagamentos
       isDirty: true,
     })),
 
   removeItem: (id) =>
     set((state) => ({
       items: state.items.filter((item) => !item.isLocked && item.id !== id),
+      payments: [],          // ← limpa pagamentos
       isDirty: true,
     })),
 
@@ -135,7 +137,6 @@ export const usePdvStore = create<PdvState & PdvActions>((set, get) => ({
 }));
 
 // ── IndexedDB persistence ────────────────────────────────────────
-
 const DB_NAME = 'flowstudio-pdv';
 const DB_VERSION = 1;
 const STORE_NAME = 'cart';

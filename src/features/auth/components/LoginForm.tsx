@@ -2,7 +2,7 @@
 import { Link } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, LogIn, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useSignIn } from '../hooks';
 import { LoginRedirectOverlay } from './login/LoginRedirectOverlay';
 
@@ -15,22 +15,49 @@ const fieldVariants = {
   }),
 } as const;
 
+function validateEmail(email: string): string | null {
+  if (!email.trim()) return 'Informe seu e-mail.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'E-mail inválido.';
+  return null;
+}
+
+function validatePassword(password: string): string | null {
+  if (!password) return 'Informe sua senha.';
+  if (password.length < 6) return 'Senha muito curta.';
+  return null;
+}
+
 export function LoginForm() {
   const signIn = useSignIn();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
-  // isPending cai assim que a mutation resolve, mas o window.location.assign
-  // do onSuccess ainda nao navegou -> frame morto (login reaparece sem busy).
-  // isSuccess vira true no onSuccess e PERMANECE true ate o hard nav matar a
-  // pagina. Somando os dois, o busy fica continuo do clique ao dashboard.
   const isBusy = signIn.isPending || signIn.isSuccess;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (isBusy) return;
+
+    // Validação local antes de chamar o server
+    const emailErr = validateEmail(email);
+    const passErr = validatePassword(password);
+    setFieldErrors({ email: emailErr ?? undefined, password: passErr ?? undefined });
+
+    if (emailErr || passErr) return;
+
     signIn.mutate({ email, password });
+  }
+
+  function handleEmailChange(v: string) {
+    setEmail(v);
+    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+  }
+
+  function handlePasswordChange(v: string) {
+    setPassword(v);
+    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
   }
 
   const inputBaseClass =
@@ -39,6 +66,8 @@ export function LoginForm() {
     'backdrop-blur-sm placeholder:text-[var(--color-text-muted)] outline-none ' +
     'transition-colors focus:border-[var(--color-accent)] focus:bg-white/[0.07] ' +
     'disabled:opacity-60';
+
+  const inputErrorClass = 'border-red-500/40 focus:border-red-400';
 
   return (
     <>
@@ -69,12 +98,18 @@ export function LoginForm() {
               autoComplete="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               disabled={isBusy}
-              className={inputBaseClass}
+              className={`${inputBaseClass} ${fieldErrors.email ? inputErrorClass : ''}`}
               placeholder="voce@exemplo.com"
             />
           </div>
+          {fieldErrors.email && (
+            <p className="flex items-center gap-1.5 text-xs font-medium text-red-400">
+              <AlertCircle className="size-3.5 shrink-0" />
+              {fieldErrors.email}
+            </p>
+          )}
         </motion.div>
 
         {/* Senha */}
@@ -103,9 +138,9 @@ export function LoginForm() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => handlePasswordChange(e.target.value)}
               disabled={isBusy}
-              className={`${inputBaseClass} pr-11`}
+              className={`${inputBaseClass} pr-11 ${fieldErrors.password ? inputErrorClass : ''}`}
               placeholder="••••••••"
             />
             <button
@@ -122,6 +157,12 @@ export function LoginForm() {
               )}
             </button>
           </div>
+          {fieldErrors.password && (
+            <p className="flex items-center gap-1.5 text-xs font-medium text-red-400">
+              <AlertCircle className="size-3.5 shrink-0" />
+              {fieldErrors.password}
+            </p>
+          )}
         </motion.div>
 
         {/* CTA */}
@@ -164,7 +205,6 @@ export function LoginForm() {
           </Link>
         </motion.div>
       </form>
-
       {signIn.isSuccess && <LoginRedirectOverlay />}
     </>
   );

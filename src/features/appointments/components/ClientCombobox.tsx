@@ -8,7 +8,7 @@ import { maskPhoneBRInput } from '@/lib/core/utils';
 interface Props {
   value: string;
   disabled?: boolean;
-  onChange: (clientId: string) => void;
+  onChange: (clientId: string, clientName: string, clientPhone: string | null) => void;
   onCreateNew: (initialName: string) => void;
   positionAbove?: boolean;
 }
@@ -40,7 +40,6 @@ function highlightText(text: string, query: string): (string | { bold: string })
     regex.test(part) ? { bold: part } : part,
   );
 }
-
 function renderHighlighted(parts: (string | { bold: string })[]) {
   return parts.map((part, i) =>
     typeof part === 'string' ? (
@@ -70,7 +69,6 @@ export function ClientCombobox({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-
   const { query, setQuery, data: clients = [], isLoading } = useClientSearch();
 
   const selected = useMemo(
@@ -112,13 +110,13 @@ export function ClientCombobox({
   }
 
   function pick(client: ClientOption) {
-    onChange(client.id);
+    onChange(client.id, client.name, client.phone ?? null);
     setOpen(false);
     setQuery('');
   }
 
   function clearSelection() {
-    onChange('');
+    onChange('', '', null);
     setQuery('');
     openDropdown();
   }
@@ -157,7 +155,7 @@ export function ClientCombobox({
           onClick={openDropdown}
           className={`${fieldInput} flex items-center justify-between text-left`}
         >
-          <span className={selected ? 'text-slate-200' : 'text-slate-500'}>
+          <span className={selected ? 'text-slate-200' : 'text-orange-400'}>
             {selectedLabel || 'Selecione…'}
           </span>
           <span className="flex items-center gap-1 shrink-0">
@@ -172,7 +170,7 @@ export function ClientCombobox({
                 <X className="h-3.5 w-3.5" />
               </span>
             )}
-            <ChevronDown className="h-4 w-4 text-slate-500" />
+            <ChevronDown className="h-4 w-4 text-orange-400" />
           </span>
         </button>
       ) : (
@@ -190,7 +188,6 @@ export function ClientCombobox({
           autoComplete="off"
         />
       )}
-
       {open && (
         <div
           className={`absolute z-10 w-full overflow-hidden rounded-lg border border-slate-700/40 bg-slate-900 shadow-lg shadow-slate-950/50 ${
@@ -218,20 +215,20 @@ export function ClientCombobox({
                       type="button"
                       onMouseEnter={() => setHighlight(idx)}
                       onClick={() => pick(c)}
-                      className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors ${
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2.0 text-left text-sm transition-colors ${
                         active ? 'bg-slate-800' : ''
                       }`}
                     >
-                      <span className="min-w-0 truncate text-slate-300">
+                      <span className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800">
                         {renderHighlighted(nameParts)}
                       </span>
                       {phoneParts && (
-                        <span className="shrink-0 text-xs text-slate-500 tabular-nums">
+                        <span className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800">
                           {renderHighlighted(phoneParts)}
                         </span>
                       )}
                       {isSel && (
-                        <Check className="h-4 w-4 shrink-0 text-orange-400" />
+                        <Check className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800" />
                       )}
                     </button>
                   </li>
@@ -239,16 +236,7 @@ export function ClientCombobox({
               })
             )}
           </ul>
-          <div className="border-t border-slate-700/30">
-            <button
-              type="button"
-              onClick={() => { onCreateNew(query.trim()); setOpen(false); setQuery(''); }}
-              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800"
-            >
-              <UserPlus className="h-4 w-4" />
-              {query.trim() ? `Cadastrar "${query.trim()}"` : 'Novo cliente'}
-            </button>
-          </div>
+
         </div>
       )}
     </div>

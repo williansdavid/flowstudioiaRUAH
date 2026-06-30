@@ -136,7 +136,14 @@ export function PdvPage() {
 
   const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
   const paid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const isComplete = Math.abs(total - paid) < 0.01;
+  const cashMethod = paymentMethods.find(
+  (m) => m.name.toLowerCase() === 'dinheiro',
+  );
+  const hasCashPayment = cashMethod
+    ? payments.some((p) => p.paymentMethodId === cashMethod.id)
+    : false;
+  const change = hasCashPayment && paid > total ? paid - total : 0;
+  const isComplete = change > 0 || Math.abs(total - paid) < 0.01;
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   async function handleFinalize() {

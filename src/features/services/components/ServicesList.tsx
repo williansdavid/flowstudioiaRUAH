@@ -105,7 +105,7 @@ export function ServicesList() {
                           {service.name}
                         </h3>
                         {!service.isActive && (
-                          <span className="shrink-0 rounded-md bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                          <span className="absolute left-2 top-2 rounded-md bg-red-500/20 px-3 py-1 text-sm font-bold text-red-400 ring-1 ring-red-500/30 backdrop-blur-sm">
                             Inativo
                           </span>
                         )}
@@ -138,22 +138,22 @@ export function ServicesList() {
                       </button>
 
                       {/* Toggle ativar/desativar */}
-                      <button
-                        onClick={() =>
-                          toggleActive.mutate({
-                            id: service.id,
-                            isActive: !service.isActive,
-                          })
-                        }
-                        disabled={toggleActive.isPending}
-                        className={[
-                          'relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200',
-                          service.isActive
-                            ? 'bg-emerald-500/80 hover:bg-emerald-500'
-                            : 'bg-zinc-700 hover:bg-zinc-600',
-                        ].join(' ')}
-                        title={service.isActive ? 'Desativar' : 'Reativar'}
-                      >
+                        <button
+                          onClick={() =>
+                            toggleActive.mutate(
+                              { id: service.id, isActive: !service.isActive },
+                              { onSuccess: () => refetch() }
+                            )
+                          }
+                          disabled={toggleActive.isPending}
+                          className={[
+                            'relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200',
+                            service.isActive
+                              ? 'bg-emerald-500/80 hover:bg-emerald-500'
+                              : 'bg-zinc-700 hover:bg-zinc-600',
+                          ].join(' ')}
+                          title={service.isActive ? 'Desativar' : 'Reativar'}
+                        >
                         <span
                           className={[
                             'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200',

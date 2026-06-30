@@ -37,6 +37,7 @@ interface FormState {
   phone: string;
   specialty: string;
   is_bookable: boolean;
+  is_active: boolean;        
   role: 'staff' | 'admin';
   color: string;
 }
@@ -47,6 +48,7 @@ const EMPTY: FormState = {
   phone: '',
   specialty: '',
   is_bookable: true,
+  is_active: true,          // <--- NOVO
   role: 'staff',
   color: STAFF_PALETTE[0]!,
 };
@@ -88,6 +90,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         phone: formatPhoneBR(staff.phone),
         specialty: staff.specialty ?? '',
         is_bookable: staff.isBookable,
+         is_active: staff.isActive,
         role: 'staff',
         color: staff.color ?? STAFF_PALETTE[0]!,
       });
@@ -192,6 +195,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
           phone: phoneCanonical,
           specialty: form.specialty.trim(),
           is_bookable: form.is_bookable,
+          is_active: form.is_active,
           color: form.color,
           ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
         };
@@ -453,6 +457,43 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
 
               {/* Spacer pro footer fixo não encobrir */}
               <div className="h-16 sm:h-0" />
+{/* ═══ ATIVO/INATIVO — só no modo edição ═══ */}
+{isEdit && (
+  <label className="flex items-center justify-between rounded-lg border border-slate-700/20 bg-slate-800/40 px-4 py-3">
+    <div className="flex flex-col gap-0.5">
+      <span className="text-sm font-medium text-slate-200">
+        Profissional ativo
+      </span>
+      <span className="text-[11px] text-slate-500">
+        {form.is_active
+          ? 'Pode acessar o sistema e a agenda'
+          : 'Acesso bloqueado — não aparece na agenda'}
+      </span>
+    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={form.is_active}
+      onClick={() => {
+        const newActive = !form.is_active;
+        set('is_active', newActive);
+        // Quando desativa, tira da agenda também
+        if (!newActive) set('is_bookable', false);
+      }}
+      className={cn(
+        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors',
+        form.is_active ? 'bg-emerald-500' : 'bg-slate-600',
+      )}
+    >
+      <span
+        className={cn(
+          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+          form.is_active ? 'translate-x-6' : 'translate-x-1',
+        )}
+      />
+    </button>
+  </label>
+)}              
             </form>
           </div>
 

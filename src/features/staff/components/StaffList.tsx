@@ -37,7 +37,7 @@ function getInitials(name: string): string {
 }
 
 function formatPhone(phone: string): string {
-  const d = phone.replace(/\D/g, '');
+  const d = phone.replace(/\D/g, '').replace(/^55/, '');
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return phone;
@@ -147,7 +147,7 @@ function StaffCard({
               {staff.isBookable ? 'Agendável' : 'Indisponível'}
             </span>
 
-            {!staff.isArchived && (
+            {!staff.isArchived && staff.isActive && (
               <Link
                 to="/admin/equipe/$staffId/horarios"
                 params={{ staffId: staff.id }}
@@ -158,6 +158,12 @@ function StaffCard({
                 Horários
               </Link>
             )}
+{!staff.isActive && (
+  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold leading-none text-red-400 ring-1 ring-red-500/30">
+    <AlertCircle className="size-3.5" />
+    Inativo
+  </span>
+)}          
           </div>
         </div>
 

@@ -102,12 +102,11 @@ export function ProductsList() {
                       </div>
                     )}
 
-                    {/* Badge de inativo */}
-                    {!product.isActive && (
-                      <div className="absolute left-2 top-2 rounded-md bg-zinc-900/90 px-2 py-0.5 text-xs font-medium text-zinc-400 backdrop-blur-sm">
-                        Inativo
-                      </div>
-                    )}
+{!product.isActive && (
+  <div className="absolute left-2 top-2 rounded-md bg-red-500/20 px-3 py-1 text-sm font-bold text-red-400 ring-1 ring-red-500/30 backdrop-blur-sm">
+    Inativo
+  </div>
+)}
 
                     {/* Departamento badge */}
                     {product.department && (
@@ -141,27 +140,29 @@ export function ProductsList() {
                         <Pencil className="h-3 w-3" />
                         Editar
                       </button>
+                      {/* Toggle ativar/desativar */}
                       <button
                         onClick={() =>
-                          toggleActive.mutate({
-                            id: product.id,
-                            isActive: !product.isActive,
-                          })
+                          toggleActive.mutate(
+                            { id: product.id, isActive: !product.isActive },
+                            { onSuccess: () => refetch() }
+                          )
                         }
                         disabled={toggleActive.isPending}
                         className={[
-                          'flex items-center justify-center rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-50',
+                          'relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200',
                           product.isActive
-                            ? 'border-red-900/60 text-red-400 hover:border-red-700 hover:text-red-300'
-                            : 'border-green-900/60 text-green-500 hover:border-green-700 hover:text-green-400',
+                            ? 'bg-emerald-500/80 hover:bg-emerald-500'
+                            : 'bg-zinc-700 hover:bg-zinc-600',
                         ].join(' ')}
                         title={product.isActive ? 'Desativar' : 'Reativar'}
                       >
-                        {product.isActive ? (
-                          <PowerOff  />
-                        ) : (
-                          <Power  />
-                        )}
+                        <span
+                          className={[
+                            'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200',
+                            product.isActive ? 'translate-x-5' : 'translate-x-0.5',
+                          ].join(' ')}
+                        />
                       </button>
                     </div>
                   </div>
