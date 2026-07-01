@@ -14,6 +14,7 @@ interface RawRow {
   full_name: string | null;
   phone: string | null;
   specialty: string | null;
+  commission_rate: number | null;
   is_bookable: boolean;
   display_order: number;
   profile_id: string | null;
@@ -57,7 +58,7 @@ export const listStaff = createServerFn({ method: 'GET' })
     let query = supabase
       .from('staff')
       .select(
-        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, color, profiles(full_name, email, avatar_url, role, is_active)',
+        'id, full_name, phone, specialty, is_bookable, display_order, profile_id, archived_at, color, commission_rate, profiles(full_name, email, avatar_url, role, is_active)',
       )
       .order('display_order', { ascending: true });
 
@@ -108,6 +109,7 @@ export const listStaff = createServerFn({ method: 'GET' })
         email: r.profiles?.email ?? null,
         phone: r.phone ?? null,
         specialty: r.specialty,
+        commissionRate: r.commission_rate ?? 0,
         avatarUrl: r.profiles?.avatar_url ?? null,
         isBookable: r.is_bookable,
         isActive: r.profiles?.is_active ?? true,   // <--- NOVO (default true para segurança)

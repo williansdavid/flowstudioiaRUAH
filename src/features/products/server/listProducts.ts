@@ -8,7 +8,7 @@ export const listProducts = createServerFn({ method: 'GET' }).handler(
     const supabase = createSupabaseServer();
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, price, avatar_url, department, is_active')
+      .select('id, name, price, avatar_url, department, is_active, commission_rate')
       .order('name');
 
     if (error) throw error;
@@ -20,6 +20,7 @@ export const listProducts = createServerFn({ method: 'GET' }).handler(
       avatarUrl: p.avatar_url,
       department: p.department,
       isActive: p.is_active,
+      commissionRate: Number(p.commission_rate ?? 0),
     }));
   },
 );

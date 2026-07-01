@@ -79,7 +79,6 @@ export const getDayAppointments = createServerFn({ method: 'GET' })
       .select(APPT_SELECT)
       .gte('starts_at', start)
       .lte('starts_at', end)
-      .neq('status', 'cancelled')
       .order('starts_at', { ascending: true });
 
     if (error) throw error;

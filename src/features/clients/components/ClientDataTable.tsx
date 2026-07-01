@@ -356,10 +356,11 @@ export function ClientDataTable({ onSelectClient, onCreate }: ClientDataTablePro
     }
   }
 
-  /* ─── Troca de filtro reseta página ─── */
+  /* ─── Troca de filtro reseta página e busca ─── */
   function handleFilterChange(key: FilterKey) {
+    setSearch('') 
     setActiveFilter(key)
-    setPage(1)
+    setPage(1)   
   }
 
   return (
@@ -380,7 +381,7 @@ export function ClientDataTable({ onSelectClient, onCreate }: ClientDataTablePro
       </div>
 
       {/* ─── Filtros rápidos ─── */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+       <div className="flex flex-wrap gap-2">
         {FILTERS.map((filter) => {
           const active = activeFilter === filter.key
           return (
@@ -389,7 +390,7 @@ export function ClientDataTable({ onSelectClient, onCreate }: ClientDataTablePro
               type="button"
               onClick={() => handleFilterChange(filter.key)}
               className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
                 active
                   ? 'bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30'
                   : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700/60 hover:text-slate-300',

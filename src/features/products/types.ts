@@ -6,6 +6,7 @@ export interface ProductItem {
   avatarUrl: string | null;
   department: string | null;
   isActive: boolean;
+  commissionRate: number;
 }
 
 export interface ProductFormValues {

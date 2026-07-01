@@ -21,25 +21,7 @@ export const WEEKDAY_LABEL: Record<string, string> = {
 export type { CreateStaffInput as CreateStaffFormValues } from './server/createStaff';
 export type { UpdateStaffInput } from './server/updateStaff';
 
-/** Item da listagem de equipe (admin). */
-export interface StaffListItem {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  specialty: string | null;
-  avatarUrl: string | null;
-  isBookable: boolean;
-  displayOrder: number;
-  /** Cor de identificação na agenda */
-  color: string | null;
-  /** true => usuário logado pode editar este profissional (admin OU dono). */
-  canEdit: boolean;
-  /** false => nunca fez o 1º acesso (last_sign_in_at == null). */
-  hasAccess: boolean;
-  role: 'admin' | 'staff' | null;
-  isArchived: boolean;
-}
+// src/features/staff/types.ts
 
 export interface StaffListItem {
   id: string;
@@ -47,9 +29,10 @@ export interface StaffListItem {
   email: string | null;
   phone: string | null;
   specialty: string | null;
+  commissionRate: number;    
   avatarUrl: string | null;
   isBookable: boolean;
-  isActive: boolean;           // <--- NOVO
+  isActive: boolean;           
   displayOrder: number;
   color: string | null;
   canEdit: boolean;
@@ -57,3 +40,4 @@ export interface StaffListItem {
   role: 'admin' | 'staff' | null;
   isArchived: boolean;
 }
+

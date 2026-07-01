@@ -16,6 +16,7 @@ interface FormState {
   department: string;
   price: string;
   isActive: boolean;
+  commissionRate: string; 
 }
 
 const EMPTY_FORM: FormState = {
@@ -23,6 +24,7 @@ const EMPTY_FORM: FormState = {
   department: '',
   price: '',
   isActive: true,
+  commissionRate: '0',
 };
 
 const inputCls =
@@ -50,6 +52,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
         department: product.department ?? '',
         price: product.price.toFixed(2),
         isActive: product.isActive,
+        commissionRate: product.commissionRate.toString(),
       });
       setAvatarPreview(product.avatarUrl);
     } else {
@@ -110,6 +113,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
     setError(null);
 
     const price = Number(form.price.replace(',', '.'));
+    const commissionRate = Number(form.commissionRate.replace(',', '.'));
 
     if (!form.name.trim()) return setError('Informe o nome do produto.');
     if (Number.isNaN(price) || price < 0) return setError('Preço inválido.');
@@ -135,6 +139,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
           price,
           department: form.department.trim() || null,
           isActive: form.isActive,
+          commissionRate, 
           ...(avatarUrl !== undefined ? { avatarUrl } : {}),
         });
       } else {
@@ -144,6 +149,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
           price,
           department: form.department.trim() || null,
           isActive: form.isActive,
+          commissionRate,
         });
 
         if (avatarFile) {
@@ -160,6 +166,7 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
             department: form.department.trim() || null,
             isActive: form.isActive,
             avatarUrl: up.url,
+            commissionRate,
           });
         }
       }
@@ -268,6 +275,20 @@ export function ProductFormModal({ open, product, onClose }: ProductFormModalPro
               className={inputCls}
             />
           </div>
+          
+              {/* Comissão */}
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Comissão (%)</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.commissionRate}
+                  onChange={(e) => update('commissionRate', e.target.value)}
+                  placeholder="Ex: 15"
+                  className={inputCls}
+                />
+              </label>
+                      
 
           {/* Ativo */}
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-400">

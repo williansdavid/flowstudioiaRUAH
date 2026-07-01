@@ -17,7 +17,8 @@ const createStaffSchema = z.object({
   specialty: z.string().trim().optional().or(z.literal('')),
   is_bookable: z.boolean().default(true),
   role: z.enum(['staff', 'admin']).default('staff'),
-  color: z.string().nullable().optional(), // <--- NOVO CAMPO
+  color: z.string().nullable().optional(), 
+  commission_rate: z.number().min(0).max(100).default(0), 
 });
 
 export type CreateStaffInput = z.input<typeof createStaffSchema>;
@@ -120,7 +121,8 @@ export const createStaff = createServerFn({ method: 'POST' })
         specialty,
         is_bookable: data.is_bookable,
         display_order: nextOrder,
-        color: data.color || null, // <--- SALVANDO A COR
+        color: data.color || null,
+         commission_rate: data.commission_rate,
       })
       .select('id')
       .single();

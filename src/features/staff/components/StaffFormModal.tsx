@@ -36,6 +36,7 @@ interface FormState {
   email: string;
   phone: string;
   specialty: string;
+  commission_rate: number;
   is_bookable: boolean;
   is_active: boolean;        
   role: 'staff' | 'admin';
@@ -47,8 +48,9 @@ const EMPTY: FormState = {
   email: '',
   phone: '',
   specialty: '',
+   commission_rate: 0, 
   is_bookable: true,
-  is_active: true,          // <--- NOVO
+  is_active: true,     
   role: 'staff',
   color: STAFF_PALETTE[0]!,
 };
@@ -89,6 +91,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         email: staff.email ?? '',
         phone: formatPhoneBR(staff.phone),
         specialty: staff.specialty ?? '',
+        commission_rate: staff.commissionRate ?? 0,
         is_bookable: staff.isBookable,
          is_active: staff.isActive,
         role: 'staff',
@@ -123,6 +126,9 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
       if (!parsed.success) {
         e.push(parsed.error.issues[0]?.message ?? 'Telefone inválido.');
       }
+    }
+    if (form.commission_rate < 0 || form.commission_rate > 100) {
+      e.push('Comissão deve estar entre 0 e 100%.');
     }
     return e;
   }, [form, isEdit]);
@@ -194,6 +200,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
           full_name: form.full_name.trim(),
           phone: phoneCanonical,
           specialty: form.specialty.trim(),
+          commission_rate: form.commission_rate,
           is_bookable: form.is_bookable,
           is_active: form.is_active,
           color: form.color,
@@ -225,6 +232,7 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
         email: form.email.trim(),
         phone: phoneCanonical,
         specialty: form.specialty.trim(),
+        commission_rate: form.commission_rate, 
         is_bookable: form.is_bookable,
         role: form.role,
         color: form.color,
@@ -442,6 +450,20 @@ export function StaffFormModal({ open, onClose, mode = 'create', staff }: Props)
                   placeholder="Opcional (ex: Cabelo, Barba)"
                 />
               </label>
+              <label className="flex flex-col gap-1.5">
+                <span className={fieldLabel}>Comissão (%)</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className={fieldInput}
+                  value={form.commission_rate}
+                  onChange={(e) => set('commission_rate', parseFloat(e.target.value) || 0)}
+                  placeholder="Ex: 15"
+                />
+              </label>              
 
               <label className="flex items-center gap-2">
                 <input

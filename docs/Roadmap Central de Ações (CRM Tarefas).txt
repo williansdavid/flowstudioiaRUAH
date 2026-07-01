@@ -1,0 +1,50 @@
+# Roadmap: Central de Ações (CRM / Tarefas)
+**Objetivo:** Transformar o FlowStudio em um sistema ativo, gerando tarefas diárias automáticas para retenção e recuperação de clientes.
+
+## Fase 1: Fundação e Backend (Data Fetching)
+- [ ] Criar o arquivo de tipos `src/features/crm/types.ts` (definir `TaskType` e `TaskItem`).
+- [ ] Criar a server function `src/features/crm/server/getDailyTasks.ts`.
+- [ ] Implementar sub-query: **Pendências** (Agendamentos passados com status `pending` ou `confirmed`).
+- [ ] Implementar sub-query: **Faltas** (Agendamentos com status `no_show` recentes para repescagem).
+- [ ] Implementar sub-query: **Aniversariantes** (Clientes fazendo aniversário na semana/mês).
+- [ ] Implementar sub-query: **Remarketing** (Clientes sem visitas há mais de X dias).
+- [ ] Unificar e ordenar todas as sub-queries em um único array de retorno.
+
+## Fase 2: Roteamento e Interface Base (Frontend)
+- [ ] Criar a rota protegida `src/routes/_authed/admin/tarefas.tsx` no TanStack Router.
+- [ ] Adicionar o item "Tarefas" ou "CRM" na navegação lateral (`src/features/admin-shell/config/nav-items.ts`).
+- [ ] Criar o componente principal `src/features/crm/components/TasksPage.tsx`.
+- [ ] Criar o componente de card `src/features/crm/components/TaskCard.tsx`.
+- [ ] Implementar o layout visual (estilo Inbox/Feed) agrupado por prioridade ou tipo.
+- [ ] Criar o `EmptyState` (tela de "Zero tarefas hoje, bom trabalho!").
+
+## Fase 3: Ações e Interatividade
+- [ ] Criar gerador de links do WhatsApp dinâmico (textos específicos para Aniversário, Remarketing, Cobrança de falta).
+- [ ] Implementar Ação: **Resolver Pendência** (Mudar status do agendamento para concluído/PDV ou cancelado).
+- [ ] Implementar Ação: **Dispensar/Concluir Tarefa** (Remover o card da tela após o contato).
+- [ ] (Opcional/Futuro) Criar tabela `task_logs` no banco para registrar que a mensagem de remarketing já foi enviada, evitando cobrar o mesmo cliente duas vezes na mesma semana.
+
+## Fase 4: Refinamento e Limites
+- [ ] Aplicar limites de paginação/quantidade na query (ex: max 5 aniversários, max 10 remarketing por dia) para não sobrecarregar o usuário.
+- [ ] Revisão de responsividade (Mobile-first).
+- [ ] Testes de ponta a ponta no fluxo.
+
+▸ MISSÃO: criar tela de tarefas (CRM/Remarketing)
+▸ ETAPA: confirmarWillians, analisei a imagem (image-019f1e8b-5eba-753f-87e8-b18c09e8360c.png) e li atentamente a sua proposta. A ideia é excelente e transforma a tela em um verdadeiro "Kanban de Retenção", muito mais organizado.Aqui está o meu entendimento técnico do que vamos construir:1. Layout em Seções (Divs Separadas)Em vez de um grid único misturado, teremos 4 blocos distintos. Se um bloco não tiver tarefas, ele desaparece (esconde a div inteira).
+Agendamentos sem conclusão (Passado)
+Confirmar agendamento (Futuro próximo)
+Aniversariantes da semana
+Remarketing (Clientes inativos)
+2. Limite e Fila (Max 4 por grid)
+Cada seção vai renderizar no máximo 4 cards por vez.
+O backend pode até buscar mais (ex: 10 pendências), mas o frontend só exibe os 4 primeiros.
+Quando você clica em uma ação (ex: "Confirmar"), o card some e o próximo da fila entra automaticamente no lugar dele, mantendo sempre 4 (até a fila acabar e a seção sumir).
+3. Ações Específicas por Card
+Sem conclusão: Botões Não compareceu (cancela) e Concluir (vai pro PDV).
+Confirmar: Botão Confirmar (muda status) e WhatsApp (manda mensagem).
+Aniversários e Remarketing: Botão WhatsApp e um botão Resolver/Marcar como feito.
+4. Persistência (Log de CRM)Para os Aniversários e Remarketing, não basta sumir da tela no React. Se você der F5, eles voltariam.
+Precisamos criar uma tabela simples no banco (ex: crm_logs ou task_logs) para registrar que você já falou com aquele cliente sobre aquele evento.
+O backend vai filtrar: "Mostre os aniversariantes, exceto os que já têm log de parabéns neste ano".
+Confirmação:
+O entendimento está 100% correto? Se sim, me dê o OK e eu já começo gerando o SQL para a tabela de logs e o código refatorado da tela!

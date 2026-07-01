@@ -16,10 +16,8 @@ const updateStaffSchema = z.object({
   is_active: z.boolean().optional(),      // <--- NOVO
   avatar_url: z.string().url('URL inválida').nullable().optional(),
   color: z.string().nullable().optional(),
+  commission_rate: z.number().min(0).max(100).optional(),  
 });
-
-
-
 
 
 export type UpdateStaffInput = z.input<typeof updateStaffSchema>;
@@ -122,7 +120,8 @@ export const updateStaff = createServerFn({ method: 'POST' })
         phone,
         specialty,
         is_bookable: data.is_bookable,
-        color: data.color || null, // <--- SALVANDO A COR
+        color: data.color || null, 
+          ...(data.commission_rate !== undefined ? { commission_rate: data.commission_rate } : {}),    
       })
       .eq('id', data.id);
 

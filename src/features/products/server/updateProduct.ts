@@ -14,6 +14,7 @@ const updateProductSchema = z.object({
   department: z.string().trim().nullable(),
   avatarUrl: z.string().nullable().optional(),
   isActive: z.boolean(),
+  commissionRate: z.number().min(0).max(100).optional(), 
 });
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
@@ -50,6 +51,7 @@ export const updateProduct = createServerFn({ method: 'POST' })
       price: data.price,
       department: data.department,
       is_active: data.isActive,
+      commission_rate: data.commissionRate,
     };
 
     if (data.avatarUrl !== undefined) {
@@ -60,7 +62,7 @@ export const updateProduct = createServerFn({ method: 'POST' })
       .from('products')
       .update(updateData)
       .eq('id', data.id)
-      .select('id, name, price, avatar_url, department, is_active')
+      .select('id, name, price, avatar_url, department, is_active, commission_rate')
       .single();
 
     if (error || !row) {
@@ -90,5 +92,6 @@ export const updateProduct = createServerFn({ method: 'POST' })
       avatarUrl: row.avatar_url,
       department: row.department,
       isActive: row.is_active,
+      commissionRate: Number(row.commission_rate ?? 0), 
     };
   });

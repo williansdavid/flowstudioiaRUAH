@@ -1,0 +1,141 @@
+O documento de arquitetura foi completamente reescrito e atualizado para a **versão 2.0**, integrando todas as novas funcionalidades, tabelas, enums e bibliotecas identificadas durante a investigação técnica.
+
+O arquivo agora reflete com precisão o estado atual do **FlowStudio AI**, incluindo os módulos de Clientes, CRM e Produtos, além de detalhar as novas regras de negócio e a infraestrutura de dados.
+
+---
+
+FlowStudio AI
+
+ARQUITETURA DO SISTEMA
+
+Documentação Técnica de Referência — Versão 2.0
+
+01 de julho de 2026
+
+---
+
+### 1. Visão Geral e Modelo de Negócio
+
+O FlowStudio AI é uma plataforma *white-label* de alto desempenho projetada para studios de beleza, barbearias e centros de estética. O sistema opera sob um modelo de isolamento total por cliente, garantindo segurança e performance.
+
+#### 1.1 Arquitetura de Isolamento
+Cada studio possui uma instância dedicada composta por:
+- **Deploy Independente:** Instância única no Netlify.
+- **Banco de Dados Dedicado:** Projeto isolado no Supabase (PostgreSQL + Auth + RLS).
+- **Identidade Visual:** Configurações de branding e landing pages exclusivas em `src/sites//`.
+
+#### 1.2 Estrutura de Módulos
+O sistema é dividido em dois núcleos fundamentais:
+1.  **Sistema (Core):** Localizado em `src/lib/` e `src/features/`, contém a lógica de negócio compartilhada, componentes de interface administrativa e integrações de infraestrutura.
+2.  **Site (Studio):** Localizado em `src/sites/`, gerencia a presença digital pública de cada studio, consumindo o núcleo via fachadas de dados.
+
+---
+
+### 2. Stack Tecnológica
+
+A stack foi selecionada para priorizar a velocidade de desenvolvimento, segurança de tipos e renderização eficiente no servidor (SSR).
+
+#### 2.1 Tecnologias Core
+- **Framework:** TanStack Start (SSR) com TanStack Router para roteamento *type-safe*.
+- **Estado e Dados:** TanStack React Query para sincronização de estado de servidor.
+- **Backend as a Service:** Supabase (Postgres, Auth, Storage e RLS).
+- **Linguagem:** TypeScript com configurações estritas (`noUncheckedIndexedAccess`).
+- **Interface:** Tailwind CSS, Framer Motion (animações) e Radix UI (primitivos acessíveis).
+
+#### 2.2 Adições da Versão 2.0
+
+As seguintes bibliotecas foram integradas para suportar as novas funcionalidades de inteligência e análise de dados:
+
+
+- **Zustand:** Gerenciamento de estado global leve para fluxos complexos (CRM e PDV).
+- **Date-fns:** Padronização de manipulação de datas para cálculos de recorrência e timeline.
+- **Recharts:** Visualização de dados para KPIs de retenção e performance financeira.
+- **IDB:** Implementação de IndexedDB para cache local persistente e otimização de performance.
+
+---
+
+### 3. Estrutura de Features (Módulos de Negócio)
+
+O sistema adota uma arquitetura baseada em *features* autocontidas. Abaixo, o detalhamento dos módulos principais, incluindo as atualizações da v2.0.
+
+#### 3.1 Clients (v2.0)
+Módulo de gestão avançada de relacionamento.
+- **Funcionalidades:** Perfil 360º do cliente, histórico de visitas, timeline de eventos e análise de indicadores.
+- **Insights:** Cálculo automático de *Lifetime Value* (LTV), ticket médio e risco de abandono (*churn risk*).
+- **Alertas:** Sistema de notificações para aniversariantes, clientes VIP e clientes sem retorno há mais de 45 dias.
+
+#### 3.2 CRM (v2.0)
+Automação de tarefas de fidelização.
+- **Motor de Tarefas:** Geração automática de ações baseadas em eventos (ex: agendamentos não comparecidos, aniversários, remarketing).
+- **Logs:** Rastreamento completo de interações em `crm_logs`.
+
+#### 3.3 Products (v2.0)
+Gestão de inventário e vendas avulsas.
+- **Comissionamento:** Suporte a taxas de comissão por produto para profissionais.
+- **Catálogo:** Organização por departamentos e integração com o PDV.
+
+#### 3.4 Appointments & Sales
+- **Agenda:** Calendário visual com suporte a múltiplos profissionais e bloqueios de horário.
+- **PDV:** Sistema de ponto de venda com suporte a *split* de pagamentos e integração direta com agendamentos.
+
+---
+
+### 4. Infraestrutura de Dados
+
+#### 4.1 Tabelas Principais e Novas
+
+
+
+Tabela
+Descrição
+Status
+
+
+
+
+clients
+Dados cadastrais e métricas de retenção
+Existente
+
+
+client_events
+Registro de eventos para timeline do cliente
+Novo (v2.0)
+
+
+crm_logs
+Histórico de resolução de tarefas de CRM
+Novo (v2.0)
+
+
+products
+Produtos com regras de comissão
+Novo (v2.0)
+
+
+appointments
+Gestão de horários e status de serviços
+Existente
+
+
+
+
+#### 4.2 Enums e Tipagem
+Foram introduzidos novos tipos enumerados para suportar a lógica de CRM:
+- `task_type_enum`: `birthday`, `remarketing`, `no_show_followup`.
+- `appointment_status`: `pending`, `confirmed`, `completed`, `cancelled`, `no_show`.
+
+---
+
+### 5. Convenções de Desenvolvimento
+
+1.  **Server Functions:** Toda comunicação com o banco deve ocorrer via `createServerFn`, garantindo segurança e execução no lado do servidor.
+2.  **Query Keys:** Devem seguir o padrão hierárquico, ex: `['clients', 'profile', id]`.
+3.  **Mobile-First:** Interfaces devem ser testadas primariamente em dispositivos móveis antes da validação em desktop.
+4.  **RLS (Row Level Security):** Nenhuma query deve ignorar as políticas de segurança do Supabase.
+
+---
+
+Local e data: Brasília, 01 de julho de 2026
+
+*Documento elaborado em 01 de julho de 2026. As informações contidas refletem a arquitetura técnica da versão 2.0 do FlowStudio AI.*

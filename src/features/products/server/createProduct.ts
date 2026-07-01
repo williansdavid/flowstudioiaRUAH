@@ -9,6 +9,7 @@ const createProductSchema = z.object({
   price: z.number().nonnegative('Preço inválido.'),
   department: z.string().trim().nullable(),
   isActive: z.boolean(),
+  commissionRate: z.number().min(0).max(100).default(0),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -24,8 +25,9 @@ export const createProduct = createServerFn({ method: 'POST' })
         price: data.price,
         department: data.department,
         is_active: data.isActive,
+        commission_rate: data.commissionRate,
       })
-      .select('id, name, price, avatar_url, department, is_active')
+      .select('id, name, price, avatar_url, department, is_active,  commission_rate')
       .single();
 
     if (error || !row) {
@@ -39,5 +41,6 @@ export const createProduct = createServerFn({ method: 'POST' })
       avatarUrl: row.avatar_url,
       department: row.department,
       isActive: row.is_active,
+      commissionRate: row.commission_rate ?? 0,
     };
   });

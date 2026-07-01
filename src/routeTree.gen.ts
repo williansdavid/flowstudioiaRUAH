@@ -23,6 +23,7 @@ import { Route as AuthedAdminProdutosRouteImport } from './routes/_authed/admin/
 import { Route as AuthedAdminPdvRouteImport } from './routes/_authed/admin/pdv'
 import { Route as AuthedAdminFinanceiroRouteImport } from './routes/_authed/admin/financeiro'
 import { Route as AuthedAdminEquipeRouteImport } from './routes/_authed/admin/equipe'
+import { Route as AuthedAdminCrmRouteImport } from './routes/_authed/admin/crm'
 import { Route as AuthedAdminClientesRouteImport } from './routes/_authed/admin/clientes'
 import { Route as AuthedAdminAgendarNovoRouteImport } from './routes/_authed/admin/agendar-novo'
 import { Route as AuthedAdminAgendamentosRouteImport } from './routes/_authed/admin/agendamentos'
@@ -98,6 +99,11 @@ const AuthedAdminEquipeRoute = AuthedAdminEquipeRouteImport.update({
   path: '/equipe',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
+const AuthedAdminCrmRoute = AuthedAdminCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
 const AuthedAdminClientesRoute = AuthedAdminClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
   '/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/admin/clientes': typeof AuthedAdminClientesRoute
+  '/admin/crm': typeof AuthedAdminCrmRoute
   '/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/pdv': typeof AuthedAdminPdvRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
   '/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/admin/clientes': typeof AuthedAdminClientesRoute
+  '/admin/crm': typeof AuthedAdminCrmRoute
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/produtos': typeof AuthedAdminProdutosRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/_authed/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
   '/_authed/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/_authed/admin/clientes': typeof AuthedAdminClientesRoute
+  '/_authed/admin/crm': typeof AuthedAdminCrmRoute
   '/_authed/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/_authed/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/_authed/admin/pdv': typeof AuthedAdminPdvRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/admin/agendamentos'
     | '/admin/agendar-novo'
     | '/admin/clientes'
+    | '/admin/crm'
     | '/admin/equipe'
     | '/admin/financeiro'
     | '/admin/pdv'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/admin/agendamentos'
     | '/admin/agendar-novo'
     | '/admin/clientes'
+    | '/admin/crm'
     | '/admin/financeiro'
     | '/admin/pdv'
     | '/admin/produtos'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/_authed/admin/agendamentos'
     | '/_authed/admin/agendar-novo'
     | '/_authed/admin/clientes'
+    | '/_authed/admin/crm'
     | '/_authed/admin/equipe'
     | '/_authed/admin/financeiro'
     | '/_authed/admin/pdv'
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminEquipeRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
+    '/_authed/admin/crm': {
+      id: '/_authed/admin/crm'
+      path: '/crm'
+      fullPath: '/admin/crm'
+      preLoaderRoute: typeof AuthedAdminCrmRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
     '/_authed/admin/clientes': {
       id: '/_authed/admin/clientes'
       path: '/clientes'
@@ -439,6 +458,7 @@ interface AuthedAdminRouteRouteChildren {
   AuthedAdminAgendamentosRoute: typeof AuthedAdminAgendamentosRoute
   AuthedAdminAgendarNovoRoute: typeof AuthedAdminAgendarNovoRoute
   AuthedAdminClientesRoute: typeof AuthedAdminClientesRoute
+  AuthedAdminCrmRoute: typeof AuthedAdminCrmRoute
   AuthedAdminEquipeRoute: typeof AuthedAdminEquipeRouteWithChildren
   AuthedAdminFinanceiroRoute: typeof AuthedAdminFinanceiroRoute
   AuthedAdminPdvRoute: typeof AuthedAdminPdvRoute
@@ -452,6 +472,7 @@ const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
   AuthedAdminAgendamentosRoute: AuthedAdminAgendamentosRoute,
   AuthedAdminAgendarNovoRoute: AuthedAdminAgendarNovoRoute,
   AuthedAdminClientesRoute: AuthedAdminClientesRoute,
+  AuthedAdminCrmRoute: AuthedAdminCrmRoute,
   AuthedAdminEquipeRoute: AuthedAdminEquipeRouteWithChildren,
   AuthedAdminFinanceiroRoute: AuthedAdminFinanceiroRoute,
   AuthedAdminPdvRoute: AuthedAdminPdvRoute,

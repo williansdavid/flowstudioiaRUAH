@@ -8,6 +8,8 @@ import {
   Wallet,
   ShoppingCart,
   PackagePlus,
+  NotebookIcon,
+  NotebookPenIcon,
     
 } from 'lucide-react';
 import type { NavItem, NavSection } from '../types';
@@ -15,6 +17,7 @@ import type { UserRole } from '@/features/auth/types';
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Dashboard', to: '/admin', icon: LayoutDashboard, roles: ['admin', 'staff'], section: 'Operação' },
+  { label: 'Tarefas', to: '/admin/crm', icon: NotebookPenIcon , roles: ['admin', 'staff'], section: 'Operação' },
   { label: 'Agendamentos', to: '/admin/agendamentos', icon: ClipboardList, roles: ['admin', 'staff'], section: 'Operação' },
   { label: 'Agenda', to: '/admin/agenda', icon: CalendarDays, roles: ['admin', 'staff'], section: 'Operação' },
   { label: 'PDV', to: '/admin/pdv', icon: ShoppingCart, roles: ['admin', 'staff'], section: 'Operação' },  
