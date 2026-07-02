@@ -16,6 +16,7 @@ export interface TaskItem {
   appointment?: AppointmentItem;
   // Campos extraídos do appointment para os cards (sem dependência direta)
   serviceName?: string;
+  staffName?: string;
   time?: string;
   scheduledTime?: string;
 }

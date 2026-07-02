@@ -89,8 +89,8 @@ svg {
 /* ---------- Scrollbar (WebKit) ---------- */
 .theme-system-dark ::-webkit-scrollbar,
 .theme-system-light ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 .theme-system-dark ::-webkit-scrollbar-track,
@@ -101,7 +101,7 @@ svg {
 .theme-system-dark ::-webkit-scrollbar-thumb,
 .theme-system-light ::-webkit-scrollbar-thumb {
   background: var(--color-surface);
-  border-radius: var(--radius-pill);
+  border-radius: 8px;
 }
 
 .theme-system-dark ::-webkit-scrollbar-thumb:hover,
@@ -112,7 +112,20 @@ svg {
 /* ---------- Focus ring acessivel ---------- */
 .theme-system-dark *:focus-visible,
 .theme-system-light *:focus-visible {
-  outline: 2px solid var(--color-border-accent);
+  outline: 2px solid #22C55E;
   outline-offset: 2px;
 }
 
+/* ---------- Transicoes suaves (180ms ease-out) ---------- */
+.theme-system-dark a,
+.theme-system-dark button,
+.theme-system-dark input,
+.theme-system-dark textarea,
+.theme-system-dark select,
+.theme-system-light a,
+.theme-system-light button,
+.theme-system-light input,
+.theme-system-light textarea,
+.theme-system-light select {
+  transition: all 180ms ease-out;
+}

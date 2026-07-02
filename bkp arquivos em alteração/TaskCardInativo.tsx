@@ -12,7 +12,6 @@ interface TaskCardInativoProps {
   description: string;
   date: string; // ISO ou DD/MM/YYYY
   onRemove: (id: string) => void;
-  onLembrarDepois?: () => void;
 }
 
 function getInitials(name: string): string {

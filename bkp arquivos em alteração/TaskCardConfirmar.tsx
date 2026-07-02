@@ -14,7 +14,6 @@ interface TaskCardConfirmarProps {
   scheduledTime: string;
   onConfirm: (id: string) => void;
   onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }
 
 function getInitials(name: string): string {

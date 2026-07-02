@@ -5,6 +5,7 @@ import { TasksPage, type TasksPageProps } from '@/features/crm';
 import { updateAppointmentStatus } from '@/features/crm/server/updateAppointmentStatus';
 
 export const Route = createFileRoute('/_authed/admin/crm')({
+  staticData: { title: 'Tarefas do dia' },
   component: CrmPage,
 });
 

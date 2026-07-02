@@ -12,7 +12,6 @@ interface TaskCardAniversarioProps {
   description: string;
   date: string;
   onRemove: (id: string) => void;
-  onLembrarDepois?: () => void;
 }
 
 export function TaskCardAniversario({

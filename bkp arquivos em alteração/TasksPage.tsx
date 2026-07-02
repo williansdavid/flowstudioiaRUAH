@@ -100,13 +100,11 @@ function TaskCardSemConclusao({
   onMarkNoShow,
   onComplete,
   onWhatsApp,
-  onLembrarDepois,
 }: {
   task: TaskItem;
   onMarkNoShow: (id: string) => void;
   onComplete: (id: string) => void;
   onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
   return (
     <motion.div
@@ -114,48 +112,47 @@ function TaskCardSemConclusao({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      className="rounded-2xl border border-slate-700/30 bg-slate-800/40 p-4 transition hover:border-slate-600/40 hover:bg-slate-800/60"
     >
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium text-slate-200 truncate">{task.clientName}</h4>
         <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-400 border border-red-500/20 whitespace-nowrap">
-          <Clock className="h-5 w-5" />
+          <Clock className="h-3 w-3" />
+          Sem conclusão
         </span>
       </div>
       {task.clientPhone && (
         <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
       )}
-      <span className="text-xs text-[#06F587] mt-1">
-        {task.title || 'No result'}       
-      </span>
+      <p className="text-xs text-slate-500 mt-1">
+        {task.description || 'Agendamento não foi concluído.'}       
+      </p>
       <div className="flex items-center gap-2 mt-3">
         <button
-          onClick={() => onMarkNoShow(task.id)}         
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/40"
+          onClick={() => onMarkNoShow(task.id)}
+          className="inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-400 transition hover:bg-red-500/20"
         >
-          <XCircle className="h-3.5 w-3.5" /> Faltou
+          <XCircle className="h-3.5 w-3.5" /> Não compareceu
         </button>
-
         <button
           onClick={() => onComplete(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
+          className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 transition hover:bg-emerald-500/20"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
+          <Check className="h-3.5 w-3.5" /> Concluir
         </button>
-        {onLembrarDepois && (
+        {task.clientPhone && onWhatsApp && (
           <button
-            onClick={onLembrarDepois}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
+            onClick={() => onWhatsApp(task.clientPhone!)}
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 transition hover:bg-emerald-500/20"
           >
-            <Clock className="h-3.5 w-3.5" /> Lembrar depois
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
           </button>
-        )}        
+        )}
       </div>
       {task.date && (
         <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
           <Calendar className="h-3 w-3" />
-          {task.description}
-        
+          {formatDate(task.date)}
         </span>
       )}
     </motion.div>
@@ -166,12 +163,10 @@ function TaskCardConfirmar({
   task,
   onConfirm,
   onWhatsApp,
-  onLembrarDepois
 }: {
   task: TaskItem;
   onConfirm: (id: string) => void;
   onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
   return (
     <motion.div
@@ -179,52 +174,42 @@ function TaskCardConfirmar({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      className="rounded-2xl border border-slate-700/30 bg-slate-800/40 p-4 transition hover:border-slate-600/40 hover:bg-slate-800/60"
     >
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium text-slate-200 truncate">{task.clientName}</h4>
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400 border border-amber-500/20 whitespace-nowrap">
-          <Check className="h-5 w-5" />          
+          <Clock className="h-3 w-3" />
+          Aguardando
         </span>
       </div>
       {task.clientPhone && (
         <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
       )}
-      <span className="text-xs text-[#06F587] mt-1">
-        {task.title }
-      </span>
+      <p className="text-xs text-slate-500 mt-1">
+        Agendado para {task.date ? formatDate(task.date) : '...'}
+        {task.time ? `, ${task.time}` : task.scheduledTime ? `, ${task.scheduledTime}` : ''}. Aguardando confirmação.
+      </p>
       <div className="flex items-center gap-2 mt-3">
-      <button
-        onClick={() => onConfirm(task.id)}
-        className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
-      >
-        <Check className="h-3.5 w-3.5" /> Confirmar
-      </button>
-      {task.clientPhone && onWhatsApp && (
         <button
-          onClick={() => onWhatsApp(task.clientPhone!)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
+          onClick={() => onConfirm(task.id)}
+          className="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 px-3 py-1.5 text-xs text-amber-400 transition hover:bg-amber-500/25"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>            
-             WhatsApp
+          <Check className="h-3.5 w-3.5" /> Confirmar
         </button>
-        
-      )}
-      {onLembrarDepois && (
-        <button
-          onClick={onLembrarDepois}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-        >
-          <Clock className="h-3.5 w-3.5" /> Lembrar depois
-        </button>
-      )}
+        {task.clientPhone && onWhatsApp && (
+          <button
+            onClick={() => onWhatsApp(task.clientPhone!)}
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 transition hover:bg-emerald-500/20"
+          >
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+          </button>
+        )}
       </div>
       {task.date && (
         <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
           <Calendar className="h-3 w-3" />
-          {task.description}
+          {formatDate(task.date)}
         </span>
       )}
     </motion.div>
@@ -235,12 +220,10 @@ function TaskCardAniversario({
   task,
   onRemove,
   onWhatsApp,
-  onLembrarDepois,
 }: {
   task: TaskItem;
   onRemove: (id: string) => void;
   onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
   return (
     <motion.div
@@ -248,50 +231,39 @@ function TaskCardAniversario({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      className="rounded-2xl border border-slate-700/30 bg-slate-800/40 p-4 transition hover:border-slate-600/40 hover:bg-slate-800/60"
     >
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium text-slate-200 truncate">{task.clientName}</h4>
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400 border border-amber-500/20 whitespace-nowrap">
-          <Cake className="h-5 w-5" />
-
+          <Cake className="h-3 w-3" />
+          Aniversário
         </span>
       </div>
       {task.clientPhone && (
         <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
       )}
-     
+      <p className="text-xs text-slate-500 mt-1">{task.description || task.title}</p>
       <div className="flex items-center gap-2 mt-3">
         {task.clientPhone && onWhatsApp && (
           <button
             onClick={() => onWhatsApp(task.clientPhone!)}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 transition hover:bg-emerald-500/20"
           >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>            
-             WhatsApp
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
           </button>
         )}
         <button
           onClick={() => onRemove(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-orange-500/20 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/40"
+          className="inline-flex items-center gap-1 rounded-lg bg-slate-700/40 px-3 py-1.5 text-xs text-slate-400 transition hover:bg-slate-700/60"
         >
-          <Check className="h-3.5 w-3.5" /> Descartar
+          <Check className="h-3.5 w-3.5" /> Ok
         </button>
-        {onLembrarDepois && (
-          <button
-            onClick={onLembrarDepois}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-          >
-            <Clock className="h-3.5 w-3.5" /> Lembrar depois
-          </button>
-        )}
       </div>
       {task.date && (
         <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
           <Cake className="h-3 w-3" />
-          <p className="text-xs text-slate-500 mt-1">{task.description || "Aniversariante da Semana"}</p>
+          {formatDate(task.date)}
         </span>
       )}
     </motion.div>
@@ -302,12 +274,10 @@ function TaskCardInativo({
   task,
   onRemove,
   onWhatsApp,
-  onLembrarDepois
 }: {
   task: TaskItem;
   onRemove: (id: string) => void;
   onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
   return (
     <motion.div
@@ -315,49 +285,39 @@ function TaskCardInativo({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      className="rounded-2xl border border-slate-700/30 bg-slate-800/40 p-4 transition hover:border-slate-600/40 hover:bg-slate-800/60"
     >
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-medium text-slate-300 truncate">{task.clientName}</h4>
         <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-400 border border-red-500/20 whitespace-nowrap">
-          <UserX className="h-5 w-5" />
-          
+          <UserX className="h-3 w-3" />
+          Inativo
         </span>
       </div>
       {task.clientPhone && (
         <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
-      )}     
+      )}
+      <p className="text-xs text-slate-500 mt-1">{task.description || task.title}</p>
       <div className="flex items-center gap-2 mt-3">
         {task.clientPhone && onWhatsApp && (
           <button
             onClick={() => onWhatsApp(task.clientPhone!)}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 transition hover:bg-emerald-500/20"
           >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>            
-             WhatsApp
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
           </button>
         )}
         <button
           onClick={() => onRemove(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-orange-500/20 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/40"
+          className="inline-flex items-center gap-1 rounded-lg bg-slate-700/40 px-3 py-1.5 text-xs text-slate-400 transition hover:bg-slate-700/60"
         >
-          <Check className="h-3.5 w-3.5" /> Descartar
+          <Check className="h-3.5 w-3.5" /> Ok
         </button>
-        {onLembrarDepois && (
-          <button
-            onClick={onLembrarDepois}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-          >
-            <Clock className="h-3.5 w-3.5" /> Lembrar depois
-          </button>
-        )}        
       </div>
       {task.date && (
         <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
           <Archive className="h-3 w-3" />
-          <p className="text-xs text-slate-500 mt-1">{task.description || task.title}</p>
+          {formatDate(task.date)}
         </span>
       )}
     </motion.div>
@@ -383,10 +343,10 @@ function Section({
 }) {
   if (tasks.length === 0) return null;
 
-  const displayTasks = tasks.slice(0, 3);
+  const displayTasks = tasks.slice(0, 4);
 
   return (
-    <div className={`rounded-2xl border border-slate-700/30 border-l-4 ${borderClass} bg-slate-800/30 p-4`}>
+    <div className={`rounded-2xl border border-slate-700/30 border-l-4 ${borderClass} bg-slate-800/40 p-4`}>
       {/* Header com ícone + título coloridos + contador + linha separadora */}
       <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-700/30">
         <Icon className={`h-4 w-4 ${accentClass}`} />
@@ -470,7 +430,7 @@ export function TasksPage({
   return (
     <div className="space-y-6">
       <Section
-        title="Sem conclusão"
+        title="Sem Conclusão"
         icon={XCircle}
         accentClass="text-orange-400"
         borderClass="border-l-orange-500/50"
@@ -481,8 +441,7 @@ export function TasksPage({
             task={task}
             onMarkNoShow={handleMarkNoShow}
             onComplete={handleComplete}
-            onWhatsApp={onWhatsApp}   
-            onLembrarDepois={() => hideTask(task.id)}         
+            onWhatsApp={onWhatsApp}
           />
         )}
       />
@@ -497,8 +456,7 @@ export function TasksPage({
             key={task.id}
             task={task}
             onConfirm={handleConfirm}
-            onWhatsApp={onWhatsApp}  
-            onLembrarDepois={() => hideTask(task.id)}         
+            onWhatsApp={onWhatsApp}
           />
         )}
       />
@@ -514,7 +472,6 @@ export function TasksPage({
             task={task}
             onRemove={handleRemove}
             onWhatsApp={onWhatsApp}
-            onLembrarDepois={() => hideTask(task.id)}
           />
         )}
       />
@@ -530,7 +487,6 @@ export function TasksPage({
             task={task}
             onRemove={handleRemove}
             onWhatsApp={onWhatsApp}
-            onLembrarDepois={() => hideTask(task.id)}
           />
         )}
       />

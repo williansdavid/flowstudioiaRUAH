@@ -15,7 +15,6 @@ interface TaskCardSemConclusaoProps {
   time: string;
   onMarkNoShow: (id: string) => void;
   onComplete: (id: string) => void;
-  onLembrarDepois?: () => void;
 }
 
 

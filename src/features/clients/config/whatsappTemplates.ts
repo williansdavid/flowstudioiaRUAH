@@ -18,7 +18,7 @@ export interface WaTemplateVars {
 
 const TEMPLATES: Record<WaSegment, (vars: WaTemplateVars) => string> = {
   birthday: ({ name }) =>
-    `Oi ${name}, feliz anivers\u00e1rio! \ud83c\udf82 A FlowStudio preparou um presente: 20% OFF no seu pr\u00f3ximo servi\u00e7o. Vem celebrar! \ud83d\ude80`,
+    `Oi ${name}, feliz aniversário! \u{1F382} A FlowStudio preparou um presente: 20% OFF no seu próximo serviço. Vem celebrar! \u{1F680}`,
 
   noReturn: ({ name }) =>
     `Oi ${name}, sentimos sua falta! Que tal agendar um dia pra gente? Temos um desconto especial pra voc\u00ea voltar \ud83d\ude0a`,

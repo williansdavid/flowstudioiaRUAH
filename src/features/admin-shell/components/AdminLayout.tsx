@@ -6,6 +6,8 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { useSignOut } from '@/features/auth/hooks';
 import type { SessionData } from '@/features/auth/types';
+import { BottomTab } from './BottomTab';
+
 
 interface AdminLayoutProps {
   session: SessionData;
@@ -105,8 +107,7 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar title={title} onOpenMenu={() => setMobileOpen(true)} />
-        <main className="relative flex-1 overflow-y-auto p-4 lg:p-6">
-          {/* Camada de escurecimento — só sobre a área de conteúdo. Calibrar /30. */}
+        <main className="relative flex-1 overflow-y-auto p-4 pb-14 lg:p-6 lg:pb-6">
           <div
             className="pointer-events-none absolute inset-0 bg-black/30"
             aria-hidden
@@ -115,6 +116,7 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
             <Outlet />
           </div>
         </main>
+        <BottomTab />
       </div>
     </div>
   );

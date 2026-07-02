@@ -1,0 +1,625 @@
+# FlowStudio AI — Manual Técnico
+
+**Documentação Técnica de Referência — Versão 2.0**
+
+**Data:** 01 de julho de 2026
+
+---
+
+## 1. Visão Geral e Modelo de Negócio
+
+O FlowStudio AI é uma plataforma *white-label* de alto desempenho, projetada especificamente para atender às necessidades de studios de beleza, barbearias e centros de estética. O sistema opera sob um modelo de **isolamento total por cliente**, garantindo máxima segurança, performance e personalização para cada studio [1].
+
+### 1.1 Modelo de Negócio e Arquitetura de Isolamento
+
+Cada studio cliente do FlowStudio AI possui uma **instância completamente dedicada e isolada**, composta pelos seguintes elementos:
+
+*   **Deploy Independente:** Cada studio tem seu próprio deploy no Netlify, assegurando autonomia e performance otimizada.
+*   **Banco de Dados Dedicado:** Um projeto isolado no Supabase, incluindo PostgreSQL, autenticação (Auth) e Row Level Security (RLS), garantindo a segregação e segurança dos dados.
+*   **Identidade Visual Personalizada:** Configurações de branding e landing pages exclusivas, gerenciadas em `src/sites/<slug>/`, permitindo que cada studio mantenha sua própria identidade visual e conteúdo [1] [2].
+
+### 1.2 Estrutura de Módulos
+
+O sistema é arquitetado em dois núcleos fundamentais para promover a modularidade e a reutilização de código:
+
+1.  **Sistema (Core):** Localizado em `src/lib/` e `src/features/`, este módulo contém a lógica de negócio compartilhada, componentes de interface administrativa e integrações de infraestrutura. Representa o núcleo comum que serve a todos os studios [1] [2].
+2.  **Site (Studio):** Localizado em `src/sites/<slug>/`, este módulo gerencia a presença digital pública de cada studio. Ele consome o núcleo do sistema (Core) através de fachadas de dados, garantindo que a lógica central seja reutilizada de forma controlada e segura [1] [2].
+
+**Regra de Ouro da Modularidade:**
+
+É estritamente proibido que o `src/lib/` importe diretamente de `src/sites/`. Em vez disso, `src/sites/` deve consumir funcionalidades de `src/lib/core/` exclusivamente via fachadas, como `buildBrandingCss.ts` e `buildSeo.ts`, para manter a independência e a clareza das responsabilidades entre os módulos [2].
+
+
+
+## 2. Arquitetura Geral
+
+A arquitetura geral do FlowStudio AI é projetada para ser robusta, escalável e otimizada para Server-Side Rendering (SSR), garantindo uma experiência de usuário rápida e eficiente. O diagrama abaixo ilustra os principais componentes e o fluxo de dados no sistema:
+
+![Arquitetura Geral](https://private-us-east-1.manuscdn.com/sessionFile/jczO0zoNypkZKGpajjavUw/sandbox/BZeGTDUXPpFGSLjnEqnLZZ-images_1782992314408_na1fn_L2hvbWUvdWJ1bnR1L2FycXVpdGV0dXJhX2dlcmFs.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvamN6TzB6b055cGtaS0dwYWpqYXZVdy9zYW5kYm94L0JaZUdURFVYUHBGR1NMam5FcW5MWlotaW1hZ2VzXzE3ODI5OTIzMTQ0MDhfbmExZm5fTDJodmJXVXZkV0oxYm5SMUwyRnljWFZwZEdWMGRYSmhYMmRsY21Gcy5wbmciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE4MzAyOTc2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=Bo~71rOSMBLT4K89zGvia~FpkWYLF6LDRX8yG4Fleyos2UEz1ABgWg~tXSeA0ONt6XgtKngSo5J-TkbGVVlfbUEdYE9dF~bSzZTRjbG68DC4MLLxaKieeWM7nuiqUOqM5fUfLNL7O-BgKfWdIRkBS6lQlLZRSEE3S8TsPvaJqpkACPBipBIQtqGlma0m9daIwStYtKwCCI~wB8~JyaZMGdqNQi2by5S6V~PvDsolmmrOSsm8~p-TdFGjen7vVqKhjv9grz6AxUq1yjcxenQgFet8ZcxT3xgLDIjeqHcHqSZI6vdL4Q~aQBPCvjuURyQKj46qjVHGv7EwKanSepqRBw__)
+
+**Componentes da Arquitetura:**
+
+*   **Internet:** Ponto de entrada para os usuários, onde as requisições são iniciadas.
+*   **Netlify (SSR):** Plataforma de deploy que hospeda a aplicação e realiza o Server-Side Rendering (SSR), otimizando o tempo de carregamento e o SEO. Cada studio possui um deploy independente no Netlify [1] [2].
+*   **TanStack Start + Router:** O framework principal da aplicação, responsável pela renderização inicial no servidor e pelo roteamento seguro e tipado no cliente [1] [2].
+*   **React Query + Server Functions:** Gerencia o estado do servidor e a comunicação com o backend. As `Server Functions` são utilizadas para todas as interações com o banco de dados, garantindo segurança e execução no lado do servidor [1] [2].
+*   **Supabase:** Atua como o Backend as a Service (BaaS), fornecendo a infraestrutura de banco de dados e autenticação. Inclui:
+    *   **PostgreSQL:** O banco de dados relacional principal para armazenamento de dados.
+    *   **Auth:** Sistema de autenticação de usuários.
+    *   **Storage:** Armazenamento de arquivos.
+    *   **RLS (Row Level Security):** Políticas de segurança que garantem que os usuários só possam acessar os dados aos quais têm permissão [1] [2].
+
+Esta estrutura garante um fluxo de dados claro e uma separação de responsabilidades entre as camadas da aplicação, resultando em um sistema performático e seguro.
+
+## 3. Stack Tecnológica
+
+A stack tecnológica do FlowStudio AI foi cuidadosamente selecionada para otimizar a velocidade de desenvolvimento, garantir a segurança de tipos e proporcionar uma renderização eficiente no servidor (SSR). A seguir, detalhamos as tecnologias core e as adições introduzidas na versão 2.0 [1] [2].
+
+### 3.1 Tecnologias Core
+
+As principais tecnologias que compõem o núcleo do FlowStudio AI são:
+
+*   **Framework:** TanStack Start (SSR) com TanStack Router para um roteamento seguro e tipado.
+*   **Estado e Dados:** TanStack React Query, utilizado para a sincronização eficiente do estado do servidor.
+*   **Backend as a Service (BaaS):** Supabase, que oferece PostgreSQL, autenticação (Auth), armazenamento (Storage) e Row Level Security (RLS).
+*   **Linguagem:** TypeScript, configurado com opções estritas (`noUncheckedIndexedAccess: true`) para garantir a segurança de tipos.
+*   **Interface:** Tailwind CSS para estilização, Framer Motion para animações e Radix UI para componentes de interface acessíveis e primitivos.
+*   **Build/Bundler:** Vite, para um processo de build rápido e otimizado.
+*   **Deploy:** Netlify, com um deploy independente para cada studio.
+*   **Ícones:** lucide-react.
+*   **Notificações:** sonner.
+*   **Validação:** zod.
+
+### 3.2 Adições da Versão 2.0
+
+A versão 2.0 do FlowStudio AI integrou as seguintes bibliotecas para expandir as funcionalidades de inteligência e análise de dados, bem como otimizar a gestão de estado:
+
+*   **Zustand:** Um gerenciador de estado global leve, ideal para fluxos complexos como os módulos de CRM e PDV.
+*   **Date-fns:** Utilizado para padronizar a manipulação de datas, essencial para cálculos de recorrência e timelines.
+*   **Recharts:** Uma biblioteca para visualização de dados, empregada na exibição de KPIs de retenção e performance financeira.
+*   **IDB:** Implementação de IndexedDB para cache local persistente, visando otimizar a performance da aplicação.
+
+### 3.3 Tecnologias Proibidas
+
+Para manter a simplicidade, a performance e a arquitetura de isolamento, as seguintes tecnologias e abordagens são explicitamente proibidas no desenvolvimento do FlowStudio AI [2]:
+
+*   Microsserviços
+*   Multi-tenant
+*   Dados compartilhados
+*   Kubernetes
+*   Filas
+*   CQRS (Command Query Responsibility Segregation)
+*   Event Sourcing
+
+
+## 4. Estrutura de Diretórios
+
+A organização do código-fonte do FlowStudio AI segue uma estrutura de diretórios clara e modular, facilitando a manutenção e o desenvolvimento. A raiz do projeto (`src/`) é dividida em componentes compartilhados, módulos de funcionalidades (features), bibliotecas de núcleo, rotas e configurações específicas de cada studio [2].
+
+```
+src/
+  components/             # Componentes compartilhados (feedback, icons, ui)
+    ui/                   # Ex: Button, ConfirmDialog, WhatsAppButton
+    feedback/             # Ex: ErrorState
+  config/                 # Configurações globais
+  features/               # Módulos de funcionalidades (feature-based)
+    admin-shell/          # Layout administrativo (sidebar, topbar)
+      config/
+        nav-items.ts      # Definição dos itens de navegação com seções e roles
+      components/
+        AdminLayout.tsx   # Layout principal com sidebar + topbar
+        PlaceholderScreen.tsx  # Tela genérica "Em construção"
+        Sidebar.tsx       # Navegação lateral
+        SidebarItem.tsx   # Item de navegação
+        Topbar.tsx        # Barra superior
+      types.ts            # Tipos do layout (NavItem, NavSection)
+    appointments/         # Agenda, agendamentos, calendário, wizard
+    auth/                 # Autenticação (login, reset, primeiro acesso)
+    dashboard/            # Dashboard com KPIs e gráficos
+    sales/                # PDV (Ponto de Venda)
+    services/             # Serviços/produtos do studio
+    staff/                # Profissionais, horários, folgas
+  lib/                    # Núcleo compartilhado
+    core/                 # Sistema central (branding, seo, phone)
+    errors/               # Tratamento de erros
+    public/               # Funções públicas (sem auth)
+    query/                # Config do TanStack Query
+    scheduling/           # Schemas de horário de trabalho
+    supabase/             # Clients (admin, server, client)
+    utils/                # Utilitários gerais (whatsapp)
+  routes/                 # Rotas do TanStack Router
+    _auth/                # Rotas públicas de auth
+    _authed/              # Rotas protegidas (admin)
+      index.tsx           # Home
+      __root.tsx          # Root layout
+  server/                 # Server functions de sistema
+    auth/                 # getSession, signIn, signOut, requestPasswordReset
+  sites/                  # Sites por studio
+    ruah/                 # Exemplo: Studio Ruah
+  styles/                 # Estilos globais
+```
+
+Esta estrutura promove a organização por funcionalidade (feature-based), onde cada módulo (`features/`) é autocontido, contendo seus próprios componentes, hooks, server functions e tipos, conforme detalhado na seção de Convenções e Padrões [2].
+
+## 5. Estrutura de Features (Módulos de Negócio)
+
+O sistema FlowStudio AI adota uma arquitetura baseada em *features* autocontidas, onde cada módulo de negócio é independente e encapsula sua própria lógica, componentes e funções de servidor. Esta abordagem facilita o desenvolvimento, a manutenção e a escalabilidade. Abaixo, detalhamos os módulos principais, incluindo as atualizações e novas funcionalidades introduzidas na versão 2.0 [1] [2].
+
+### 5.1 admin-shell
+
+Este módulo é responsável pelo layout administrativo compartilhado, fornecendo a estrutura de navegação e controle de acesso baseado em roles. Inclui componentes como `AdminLayout.tsx`, `Sidebar.tsx`, `Topbar.tsx` e `PlaceholderScreen.tsx` para rotas em construção. A configuração de navegação é definida em `config/nav-items.ts`, permitindo a filtragem de itens por role (`admin`, `staff`) [2].
+
+### 5.2 appointments
+
+O módulo de agendamentos é central para o sistema, gerenciando a criação, edição e visualização de agendamentos. Ele oferece dois fluxos principais de criação:
+
+*   **AppointmentFormModal:** Um modal único para criação/edição de agendamentos, com ações rápidas de status, integração com WhatsApp, detecção de conflitos de horário e validação.
+*   **BookingWizard:** Um wizard multi-step (4 passos) para um fluxo de agendamento mais guiado, com seleção de cliente, serviço, profissional e horário. É responsivo, adaptando-se a desktop e mobile [2].
+
+O módulo também inclui o `DayCalendar` para visualização de agenda, `Server Functions` para operações CRUD de agendamentos e cálculo de slots disponíveis, e `Hooks` para gerenciamento de estado com TanStack Query [2].
+
+### 5.3 auth
+
+Responsável pela autenticação de usuários e recuperação de senha, este módulo contém formulários para login, esqueci a senha e reset de senha, além de layouts específicos para esses fluxos [2].
+
+### 5.4 dashboard
+
+O painel inicial do sistema, que exibe indicadores chave de performance (KPIs) e gráficos. Utiliza `Server Functions` para buscar dados como `getDashboardData.ts` e `getRevenueByStaff.ts` [2].
+
+### 5.5 Clients (v2.0)
+
+Introduzido na versão 2.0, este módulo oferece uma gestão avançada de relacionamento com o cliente. Suas funcionalidades incluem:
+
+*   **Perfil 360º:** Visão completa do cliente, incluindo histórico de visitas e timeline de eventos.
+*   **Insights:** Cálculo automático de *Lifetime Value* (LTV), ticket médio e risco de abandono (*churn risk*).
+*   **Alertas:** Sistema de notificações para aniversariantes, clientes VIP e clientes sem retorno [1].
+
+### 5.6 CRM (v2.0)
+
+Também uma adição da versão 2.0, o módulo de CRM automatiza tarefas de fidelização e relacionamento:
+
+*   **Motor de Tarefas:** Geração automática de ações baseadas em eventos (ex: agendamentos não comparecidos, aniversários, remarketing).
+*   **Logs:** Rastreamento completo de interações em `crm_logs` [1].
+
+### 5.7 Products (v2.0)
+
+Este módulo, novo na versão 2.0, gerencia o inventário e as vendas avulsas de produtos:
+
+*   **Comissionamento:** Suporte a taxas de comissão por produto para profissionais.
+*   **Catálogo:** Organização de produtos por departamentos e integração direta com o PDV [1].
+
+### 5.8 sales (PDV)
+
+O módulo de Ponto de Venda (PDV) suporta dois fluxos de entrada: via agendamento (onde o serviço é bloqueado no carrinho) ou autônomo (adição de produtos avulsos). Possui um layout de duas colunas (catálogo e carrinho), com funcionalidades como `ProductGrid.tsx`, `CartPanel.tsx` e `SplitPayment.tsx` para gerenciamento de pagamentos. As `Server Functions` cuidam da finalização da venda (`createSale.ts`), criação de rascunhos (`createSaleDraft.ts`) e listagem de produtos/formas de pagamento [2].
+
+### 5.9 services
+
+Gerencia os serviços/produtos oferecidos pelo studio, incluindo formulários para criação e edição (`ServiceFormModal.tsx`) e listagem (`ServicesList.tsx`). Possui `Server Functions` para operações CRUD completas [2].
+
+### 5.10 staff
+
+Este módulo é responsável pelo gerenciamento de profissionais, seus horários de trabalho e folgas. Inclui formulários para cadastro (`StaffFormModal.tsx`), edição de horários (`WorkingHoursEditor.tsx`) e gerenciamento de folgas (`StaffTimeOffManager.tsx`). As `Server Functions` abrangem todas as operações CRUD para profissionais e folgas [2].
+
+## 6. Rotas
+
+O roteamento no FlowStudio AI é gerenciado pelo TanStack Router, garantindo segurança de tipos e integração perfeita com o SSR. As rotas são divididas em públicas, de autenticação e protegidas (administrativas) [2].
+
+**Estrutura de Rotas:**
+
+*   `/` — Home (pública)
+*   `_auth/login` — Login
+*   `_auth/forgot-password` — Esqueci senha
+*   `_auth/reset-password` — Resetar senha
+*   `_auth/primeiro-acesso` — Primeiro acesso
+*   `_authed/admin` — Dashboard
+*   `_authed/admin/agenda` — Agenda (calendário visual DayCalendar)
+*   `_authed/admin/agendamentos` — Lista de agendamentos (AppointmentsList)
+*   `_authed/admin/agendar-novo` — Wizard de novo agendamento (BookingWizard)
+*   `_authed/admin/clientes` — Clientes
+*   `_authed/admin/equipe` — Equipe (profissionais)
+*   `_authed/admin/equipe/horarios` — Horários (rota fixa)
+*   `_authed/admin/equipe/$staffId/horarios` — Horários do profissional
+*   `_authed/admin/financeiro` — Financeiro
+*   `_authed/admin/pdv` — PDV (Ponto de Venda) — aceita `?appointmentId=xxx` opcional
+*   `_authed/admin/servicos` — Serviços
+
+**Detalhes de Rotas Específicas:**
+
+*   **`agenda.tsx`:** Utiliza Loader SSR com funções como `getDayAppointments`, `getDayTimeOff`, `listBookableStaff`, entre outras. Mantém state local para data e modal, abrindo o `AppointmentFormModal` para criação e edição [2].
+*   **`agendamentos.tsx`:** Possui Loader SSR próprio e state local para data e modal. O botão "Novo" navega para `/admin/agendar-novo`. O modal `AppointmentFormModal` é usado apenas para edição. Inclui um `errorComponent` (`AgendamentosError`) para tratamento de falhas [2].
+*   **`agendar-novo.tsx`:** Loader SSR com `listActiveServices` e `listBookableStaff`. Renderiza o `BookingWizard` passando os dados necessários [2].
+*   **`pdv.tsx`:** Loader SSR com `listProducts`, `listPaymentMethods` e `getSaleDraft`. Se o parâmetro `?appointmentId=xxx` estiver presente, carrega também `getAppointmentSaleData`. Renderiza a página `PdvPage` [2].
+
+## 7. Banco de Dados (Supabase)
+
+O FlowStudio AI utiliza o Supabase como seu Backend as a Service (BaaS), aproveitando o PostgreSQL como banco de dados relacional principal. A infraestrutura de dados é projetada para garantir segurança, integridade e escalabilidade, com um projeto isolado para cada studio [1] [2].
+
+### 7.1 Tabelas Principais
+
+A seguir, uma lista das tabelas essenciais no banco de dados, incluindo as novas adições da versão 2.0:
+
+| Tabela                 | Descrição                                                              | Status      |
+| :--------------------- | :--------------------------------------------------------------------- | :---------- |
+| `profiles`             | Usuários do sistema (id, email, role)                                  | Existente   |
+| `clients`              | Dados cadastrais e métricas de retenção de clientes (profile_id opcional) | Existente   |
+| `staff`                | Profissionais (profile_id, working_hours JSON, is_bookable, color)     | Existente   |
+| `services`             | Serviços oferecidos (name, duration_minutes, price, color, is_active)  | Existente   |
+| `appointments`         | Agendamentos (client_id, staff_id, service_id, starts_at, ends_at, status, price, notes, created_by, payment_method_id) | Existente   |
+| `staff_time_off`       | Bloqueios/folgas de profissionais (staff_id, starts_at, ends_at, reason) | Existente   |
+| `finance_transactions` | Transações financeiras (type, category, amount, date, appointment_id, staff_id, payment_method_id, occurred_at, created_by, reference_id) | Existente   |
+| `leads`                | Leads (name, phone, status, source)                                    | Existente   |
+| `payment_methods`      | Formas de pagamento (name, icon, is_active, sort_order)                | Existente   |
+| `products`             | Produtos avulsos com regras de comissão (name, price, avatar_url, is_active) | Novo (v2.0) |
+| `sales`                | Vendas (sale_type, appointment_id, client_name, total_amount, status, created_by) | Existente   |
+| `sale_items`           | Itens da venda (sale_id, item_type, item_id, item_name, quantity, unit_price, total_price, is_locked) | Existente   |
+| `sale_payments`        | Split de pagamento (sale_id, payment_method_id, amount)                | Existente   |
+| `client_events`        | Registro de eventos para timeline do cliente                           | Novo (v2.0) |
+| `crm_logs`             | Histórico de resolução de tarefas de CRM                               | Novo (v2.0) |
+
+### 7.2 Views
+
+*   `clients_view`: Uma view que une dados de clientes e perfis de usuário para uma visão consolidada [2].
+
+### 7.3 Enums e Tipagem
+
+O sistema utiliza tipos enumerados para padronizar e garantir a integridade dos dados, incluindo novas adições na v2.0:
+
+*   `appointment_status`: `pending`, `confirmed`, `completed`, `cancelled`, `no_show` [1] [2].
+*   `user_role`: `admin`, `staff`, `client` [2].
+*   `lead_source`, `lead_status` [2].
+*   `transaction_category`: `service`, `product`, `commission`, `rent`, `utilities`, `supplies`, `marketing`, `salary`, `other` [2].
+*   `transaction_type`: `income`, `expense` [2].
+*   `task_type_enum`: `birthday`, `remarketing`, `no_show_followup` (Novo na v2.0) [1].
+
+### 7.4 Funções SQL
+
+*   `current_user_role()`: Função utilizada nas políticas de Row Level Security (RLS) para determinar a role do usuário atual [2].
+*   `handle_appointment_lifecycle()`: Um trigger que gerencia transações financeiras automaticamente ao alterar o status de um agendamento. Exige `payment_method_id` ao marcar um agendamento como `completed` [2].
+
+### 7.5 Tabelas Planejadas (Não Implementadas)
+
+As seguintes tabelas estão planejadas para futuras implementações, mas ainda não existem no banco de dados atual [2]:
+
+*   `whatsapp_messages`
+*   `whatsapp_settings`
+*   `ai_messages`
+
+
+## 8. Server Functions
+
+Todas as funções de servidor no FlowStudio AI utilizam `createServerFn` do TanStack Start, garantindo que a lógica de negócio e a comunicação com o banco de dados ocorram de forma segura no lado do servidor [1] [2].
+
+### 8.1 appointments/
+
+| Função | Descrição |
+| :--- | :--- |
+| `createAppointment.ts` | Cria um agendamento, validando a sessão e buscando o preço do serviço. |
+| `updateAppointment.ts` | Atualiza um agendamento existente. |
+| `deleteAppointment.ts` | Exclui um agendamento. |
+| `updateAppointmentStatus.ts` | Altera o status de um agendamento. |
+| `getDayAppointments.ts` | Busca os agendamentos do dia, filtrando os cancelados e retornando em camelCase. |
+| `getDayTimeOff.ts` | Busca os bloqueios e folgas do dia. |
+| `getAvailableSlots.ts` | Calcula os slots disponíveis considerando horários de funcionamento, folgas e agendamentos existentes (granularidade de 30 min). |
+| `createQuickClient.ts` | Cria um cliente de forma rápida. |
+| `listActiveServices.ts` | Lista os serviços ativos. |
+| `listBookableStaff.ts` | Lista os profissionais disponíveis para agendamento. |
+| `listClientsForSelect.ts` | Lista os clientes para seleção em formulários. |
+
+### 8.2 dashboard/
+
+| Função | Descrição |
+| :--- | :--- |
+| `getDashboardData.ts` | Obtém os dados gerais para o dashboard. |
+| `getRevenueByStaff.ts` | Calcula a receita gerada por cada profissional. |
+
+### 8.3 sales/ (PDV)
+
+| Função | Descrição |
+| :--- | :--- |
+| `createSale.ts` | Finaliza uma venda, validando o split de pagamento, inserindo pagamentos, gerando transações financeiras e atualizando o agendamento. |
+| `createSaleDraft.ts` | Cria ou retoma um rascunho de venda. |
+| `listProducts.ts` | Lista os produtos ativos. |
+| `listPaymentMethods.ts` | Lista as formas de pagamento ativas. |
+| `getSaleDraft.ts` | Busca um rascunho de venda pendente do usuário. |
+| `getAppointmentSaleData.ts` | Obtém os dados de um agendamento para uso no PDV. |
+
+### 8.4 services/
+
+| Função | Descrição |
+| :--- | :--- |
+| `createService.ts` | Cria um novo serviço. |
+| `updateService.ts` | Atualiza um serviço existente. |
+| `deactivateService.ts` | Desativa um serviço. |
+| `listServices.ts` | Lista todos os serviços. |
+
+### 8.5 staff/
+
+| Função | Descrição |
+| :--- | :--- |
+| `createStaff.ts` | Cria um novo profissional. |
+| `updateStaff.ts` | Atualiza os dados de um profissional. |
+| `archiveStaff.ts` | Arquiva um profissional. |
+| `resendStaffInvite.ts` | Reenvia o convite de acesso para um profissional. |
+| `getStaffWorkingHours.ts` | Busca os horários de trabalho de um profissional. |
+| `updateStaffWorkingHours.ts` | Atualiza os horários de trabalho de um profissional. |
+| `createTimeOff.ts` | Cria um registro de folga/bloqueio. |
+| `updateTimeOff.ts` | Atualiza um registro de folga/bloqueio. |
+| `deleteTimeOff.ts` | Exclui um registro de folga/bloqueio. |
+| `listTimeOff.ts` | Lista as folgas/bloqueios. |
+| `listStaff.ts` | Lista todos os profissionais. |
+| `_buildTimeOffConflicts.ts` | Função interna para detectar conflitos de horário. |
+
+### 8.6 auth/ (em `src/server/auth/`)
+
+| Função | Descrição |
+| :--- | :--- |
+| `getSession.ts` | Obtém a sessão atual do usuário. |
+| `signIn.ts` | Realiza o login do usuário. |
+| `signOut.ts` | Realiza o logout do usuário. |
+| `requestPasswordReset.ts` | Solicita a redefinição de senha. |
+
+## 9. Lib (Núcleo Compartilhado)
+
+A pasta `lib/` contém o núcleo compartilhado do sistema FlowStudio AI, abrangendo utilitários, configurações e clientes para serviços externos. Este módulo é essencial para a reutilização de código e para manter a consistência em toda a aplicação [2].
+
+```
+lib/
+  cn.ts                       # Utilitário para concatenação de classnames (clsx)
+  env.ts                      # Validação de variáveis de ambiente (utiliza zod)
+  studioTime.ts               # Utilitários para manipulação de fuso horário (joinISO, splitISO)
+  core/                       # Sistema central
+    system/branding.ts        # Configurações de branding do sistema
+    types/                    # Tipos base (branding, identity, seo)
+    utils/                    # Utilitários gerais (buildBrandingCss, buildSeo, phone)
+  errors/                     # Tratamento de erros
+    parseBusinessError.ts     # Parser para erros de negócio
+  public/                     # Funções públicas (sem autenticação)
+    services.ts               # Funções relacionadas a serviços públicos
+    types.ts                  # Tipos públicos
+  query/                      # Configuração do TanStack Query
+    client.ts                 # Cliente de configuração do TanStack Query
+  scheduling/                 # Schemas de horário de trabalho
+    workingHours.schema.ts    # Schema Zod para horários de trabalho (DaySchedule, WeekdayKey, parseWorkingHours)
+  supabase/                   # Clientes Supabase
+    admin.ts                  # Cliente admin (service role)
+    client.ts                 # Cliente browser
+    server.ts                 # Cliente servidor (SSR)
+    types.ts                  # Tipos do banco de dados
+  utils/                      # Utilitários gerais
+    whatsapp.ts               # Utilitário para WhatsApp (toWhatsAppHref)
+```
+
+Este núcleo é projetado para ser consumido por outros módulos, especialmente os `sites/`, através de fachadas, garantindo que a lógica central seja consistente e bem definida [2].
+
+## 10. Sites (por Studio)
+
+Cada studio no FlowStudio AI possui um diretório dedicado em `src/sites/<slug>/`, que encapsula sua identidade visual, conteúdo e configurações específicas. Essa estrutura permite a personalização completa para cada cliente, mantendo a base do sistema centralizada [1] [2].
+
+### 10.1 Estrutura Padrão de um Studio
+
+```
+src/sites/<slug>/
+  config/                 # Configurações específicas do studio
+    branding.ts           # Cores, fontes, logo
+    identity.ts           # Nome, descrição, redes sociais
+    content.ts            # Conteúdo textual da landing page
+    businessHours.ts      # Horário de funcionamento do studio (tipo BusinessHours)
+    seo/jsonLd.ts         # Schema JSON-LD para SEO
+    index.ts              # Barrel export para as configurações
+  components/             # Componentes específicos da landing page
+    floating/             # Componentes flutuantes (ex: botão WhatsApp)
+    icons/                # Ícones personalizados
+    layout/               # Header, Footer específicos do studio
+    motion/               # Providers de animação
+    sections/             # Seções da landing page (Hero, About, Services, Gallery)
+  lib/                    # Biblioteca específica do studio (hours, whatsapp)
+  types/                  # Tipos específicos do studio (BusinessHours)
+  utils/                  # Utilitários específicos do studio
+  studio.ts               # Entry point do studio
+```
+
+### 10.2 Exemplo: Studio Ruah
+
+O Studio Ruah serve como um exemplo de implementação completa de um site de studio. Sua landing page inclui:
+
+*   HeroSection, AboutSection, ServicesSection, GallerySection
+*   HoursSection, TestimonialsSection
+*   Botão flutuante do WhatsApp
+*   SEO otimizado com JSON-LD
+
+**Horário de Funcionamento (Ruah):**
+
+*   Terça a Sexta: 09:00–19:00
+*   Sábado: 08:00–16:00
+*   Domingo e Segunda: Fechado
+
+As variáveis de ambiente para a identidade do studio (`VITE_STUDIO_NAME`, `VITE_STUDIO_SLUG`) são configuradas em `src/lib/env.ts`, mas as configurações detalhadas de branding e conteúdo residem no diretório `config/` de cada studio [2].
+
+## 11. Configuração e Infraestrutura
+
+A configuração e a infraestrutura do FlowStudio AI são projetadas para suportar o modelo de isolamento por cliente, garantindo ambientes dedicados e otimizados para cada studio. Esta seção detalha as variáveis de ambiente, o processo de deploy e os arquivos de configuração essenciais [2].
+
+### 11.1 Variáveis de Ambiente
+
+As variáveis de ambiente são cruciais para a configuração da aplicação e são validadas rigorosamente por `zod` em `src/lib/env.ts`. Elas incluem:
+
+*   `SUPABASE_SERVICE_ROLE_KEY`: Chave de role de serviço do Supabase (utilizada no servidor).
+*   `VITE_APP_URL`: URL da aplicação.
+*   `VITE_STUDIO_NAME`: Nome do studio.
+*   `VITE_STUDIO_SLUG`: Slug identificador do studio.
+*   `VITE_SUPABASE_ANON_KEY`: Chave anônima do Supabase.
+*   `VITE_SUPABASE_URL`: URL do Supabase.
+
+É importante notar que a identidade visual e o conteúdo específico do studio não são armazenados em variáveis de ambiente, mas sim em `src/sites/<slug>/config/`, permitindo maior flexibilidade e versionamento [2].
+
+### 11.2 Deploy
+
+O processo de deploy do FlowStudio AI é configurado para ser eficiente e escalável, utilizando as seguintes tecnologias e abordagens:
+
+*   **Plataforma:** Netlify, escolhida por sua capacidade de hospedar aplicações web modernas.
+*   **Modelo:** Cada studio possui um deploy independente no Netlify, reforçando o modelo de isolamento.
+*   **Build:** O processo de build é realizado pelo Vite, garantindo rapidez e otimização.
+*   **SSR (Server-Side Rendering):** O TanStack Start é utilizado para SSR, o que melhora a performance inicial e o SEO da aplicação [2].
+
+### 11.3 Arquivos de Configuração Raiz
+
+Os principais arquivos de configuração na raiz do projeto que governam o comportamento da aplicação e do ambiente de desenvolvimento são:
+
+*   `package.json`: Gerenciamento de dependências e scripts do projeto.
+*   `tsconfig.json`: Configurações do TypeScript.
+*   `vite.config.ts`: Configurações do Vite para o processo de build.
+*   `tailwind.config.ts`: Configurações do Tailwind CSS para estilização.
+*   `postcss.config.js`: Configurações do PostCSS.
+*   `netlify.toml`: Configurações específicas do deploy no Netlify [2].
+
+
+## 12. Convenções e Padrões
+
+O desenvolvimento do FlowStudio AI segue um conjunto rigoroso de convenções e padrões para garantir a qualidade do código, a manutenibilidade e a consistência em toda a aplicação. Estes padrões abrangem desde a arquitetura do código até as regras de engenharia e design de interface [1] [2].
+
+### 12.1 Arquitetura Baseada em Features
+
+O sistema adota uma arquitetura baseada em features, onde cada funcionalidade é autocontida e organizada em seu próprio diretório (`src/features/<feature>/`). Esta estrutura promove a modularidade e facilita o entendimento e a manutenção do código. Cada diretório de feature pode conter:
+
+*   `components/`: Componentes React específicos da feature.
+*   `hooks.ts`: Hooks personalizados, mutations e queries.
+*   `server/`: Server functions relacionadas à feature (`createServerFn`).
+*   `types.ts`: Tipos TypeScript específicos da feature.
+*   `utils/`: Utilitários auxiliares.
+*   `index.ts`: Um barrel público para exportar os elementos da feature (opcional) [2].
+
+### 12.2 Regras de Engenharia
+
+As seguintes regras são mandatórias para o desenvolvimento no FlowStudio AI:
+
+*   **Acesso ao Supabase:** Nunca acessar o Supabase diretamente pelo React. Todas as comunicações com o banco de dados devem ser realizadas através de `createServerFn`, garantindo segurança e execução no lado do servidor [1] [2].
+*   **SQL Inline:** É proibido criar SQL inline. Todas as operações de banco de dados devem ser encapsuladas em funções de servidor ou procedimentos armazenados [1].
+*   **Features Autocontidas:** Toda feature deve ser autocontida, minimizando dependências externas e promovendo a reutilização [1].
+*   **Invalidação de Query Keys:** Toda mutation deve invalidar suas Query Keys correspondentes para garantir a atualização dos dados em cache [1].
+*   **Mobile First:** O desenvolvimento de interfaces deve priorizar a experiência em dispositivos móveis, sendo testado primariamente em mobile antes da validação em desktop [1] [2].
+*   **SSR Safe:** Todas as implementações devem ser seguras para Server-Side Rendering (SSR) [1].
+*   **Tipagem 100%:** O projeto exige tipagem completa com TypeScript, utilizando `noUncheckedIndexedAccess: true` no `tsconfig` para garantir a segurança de tipos e evitar acessos a valores `undefined` em arrays [1] [2].
+
+### 12.3 Convenção de Query Keys
+
+As Query Keys seguem um padrão hierárquico para organização e invalidação eficiente do cache do TanStack Query. Exemplos incluem:
+
+*   `['appointments', 'day', date]` — Agendamentos do dia
+*   `['appointments', 'today']` — (legado, usado em hooks)
+*   `['appointments', 'services']` — Serviços ativos
+*   `['appointments', 'staff']` — Profissionais bookable
+*   `['appointments', 'clients']` — Clientes para select
+*   `['appointments', 'slots', staffId, serviceId, startDate, days]` — Slots disponíveis
+*   `['dayTimeOff', date]` — Bloqueios do dia
+*   `['staff', 'bookable']`
+*   `['sales', 'products']` — Produtos ativos
+*   `['sales', 'paymentMethods']` — Formas de pagamento ativas
+*   `['sales', 'draft']` — Rascunho pendente do usuário
+*   `['sales', 'appointmentData', appointmentId]` — Dados do agendamento para o PDV [2].
+
+### 12.4 Regras de UI
+
+*   **Mobile-first:** Todas as interfaces priorizam a experiência em dispositivos móveis [2].
+*   **Estados de Componentes:** Componentes devem incluir estados de loading, erro e vazio [2].
+*   **Proteção contra Perda de Dados:** Modais com formulários devem ter proteção contra perda de dados não salvos (utilizando `beforeunload` e confirmação) [2].
+*   **Animações:** Utilização de `framer-motion` para animações fluidas (spring, staggerChildren) [2].
+*   **Feedback Tátil:** Botões com `active:scale-95` para proporcionar feedback visual e tátil ao usuário [2].
+
+## 13. Fluxos de Trabalho
+
+Os fluxos de trabalho no FlowStudio AI representam as sequências de interações e processos que ocorrem dentro do sistema para realizar tarefas específicas. Compreender esses fluxos é fundamental para o desenvolvimento, manutenção e para a compreensão das regras de negócio.
+
+### 13.1 Fluxo de um Agendamento
+
+O fluxo de um agendamento no FlowStudio AI envolve diversas etapas, desde a interação inicial do cliente até a conclusão do serviço. O diagrama abaixo ilustra a sequência principal:
+
+![Fluxo de um Agendamento](https://private-us-east-1.manuscdn.com/sessionFile/jczO0zoNypkZKGpajjavUw/sandbox/BZeGTDUXPpFGSLjnEqnLZZ-images_1782992314408_na1fn_L2hvbWUvdWJ1bnR1L2ZsdXhvX2FnZW5kYW1lbnRv.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvamN6TzB6b055cGtaS0dwYWpqYXZVdy9zYW5kYm94L0JaZUdURFVYUHBGR1NMam5FcW5MWlotaW1hZ2VzXzE3ODI5OTIzMTQ0MDhfbmExZm5fTDJodmJXVXZkV0oxYm5SMUwyWnNkWGh2WDJGblpXNWtZVzFsYm5Sdi5wbmciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE4MzAyOTc2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=AaYbfdCJap21NtO5juFYMyfg8NHiLQKLLkqwFfFl~MKR7j81dqeB1PxYdmHwnfTt1y4ZWyFV~dGufR0ehrA9~Alv0Cz2OUsvWpaUchye8m3aJ53Q8BTDzo8oyCUZm1RHWJO6NI7pqPXGHJnXKZciSR7bwR~5mT8MLFa-er4LjjRcyxlaZ6Rjr0~EsmDdPTScK~vjm0JhXwIdeZbd25aULuXwxuNpAS622WVXbdrXwzqX85-HbBHx38VQZrIwTliTlZcSDb5WoQlgraCBM-rleS05wP85dyKXsc1~v6sB3yFVYeoZccxFadPU~M-Z8LH5rDE1Lrnzqjz3oDljg31nPg__)
+
+**Descrição do Fluxo:**
+
+1.  **Cliente:** O processo inicia com o cliente que deseja agendar um serviço.
+2.  **BookingWizard:** O cliente utiliza o `BookingWizard` (assistente de agendamento multi-step) para selecionar o serviço, profissional e horário desejados.
+3.  **`createAppointment()`:** Após a seleção, a função `createAppointment()` é invocada para registrar o agendamento no sistema.
+4.  **`appointments`:** O agendamento é armazenado na tabela `appointments` do banco de dados, inicialmente com status `pending`.
+5.  **Agenda:** O agendamento aparece na `Agenda` do profissional, que pode visualizar e gerenciar seus compromissos.
+6.  **Concluir:** Após a realização do serviço, o profissional marca o agendamento como `Concluído`.
+7.  **PDV (Ponto de Venda):** A conclusão do agendamento pode levar ao fluxo do PDV para registro da venda e pagamento.
+8.  **`Sale`:** A venda é registrada na tabela `sales`.
+9.  **Financeiro:** As transações financeiras são processadas e registradas, impactando o módulo financeiro do sistema [1].
+
+
+### 13.2 Fluxo do PDV
+
+O fluxo do Ponto de Venda (PDV) é acionado para registrar vendas, seja a partir de um agendamento concluído ou de uma venda avulsa. Este fluxo detalha as etapas de processamento de uma transação de venda:
+
+![Fluxo do PDV](https://private-us-east-1.manuscdn.com/sessionFile/jczO0zoNypkZKGpajjavUw/sandbox/BZeGTDUXPpFGSLjnEqnLZZ-images_1782992314408_na1fn_L2hvbWUvdWJ1bnR1L2ZsdXhvX3Bkdg.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvamN6TzB6b055cGtaS0dwYWpqYXZVdy9zYW5kYm94L0JaZUdURFVYUHBGR1NMam5FcW5MWlotaW1hZ2VzXzE3ODI5OTIzMTQ0MDhfbmExZm5fTDJodmJXVXZkV0oxYm5SMUwyWnNkWGh2WDNCa2RnLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTgzMDI5NzYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=QJeLw8UryI5xqRKpqgGsxko3DuhdJfG2IRzLxJXOPZsiN5oHFG~EqCVmj-5pcRsNDsqSUpQ~wx~YwFj3Vx9o8DlQiPAwcuz2JTFqRzYgKd8~ntMq27lgC-2-y0Fi3cP3TwBOwiGV4X6QP98TIe7jCc~P1X4XmHc-scBLHl4wbGgPr9XOHp7oSFRQG2styF-x3Q5Yc-xxGYTSgoRHqjhgujCC4nGyicJFWwQV9fMLBbtJ-EDWTDbOFzbXeE5aEVFWPoqQ5FLRRtOxvOPyIK3aeBJvjevzIvTq4z80sPNUsetWDCAww0cYeaFnmjoBdMi6t63zjoUiyHyGRgrtVuIyrA__)
+
+**Descrição do Fluxo:**
+
+1.  **Agendamento:** O fluxo pode ser iniciado a partir de um agendamento concluído, onde os serviços são automaticamente adicionados ao carrinho do PDV.
+2.  **Carrinho:** Os itens da venda (serviços e/ou produtos) são adicionados ao carrinho, onde suas quantidades e valores são gerenciados.
+3.  **Split:** O pagamento pode ser dividido em múltiplas formas de pagamento (`SplitPayment`), com validação para garantir que a soma dos splits seja igual ao total da venda.
+4.  **Sale:** A venda é registrada na tabela `sales` com o status `completed`.
+5.  **Finance Transaction:** Uma transação financeira (`finance_transactions`) é gerada, registrando a entrada de receita (`type='income'`) e associando-a à venda.
+6.  **Appointment Completed:** Se a venda for originada de um agendamento, o status do agendamento é atualizado para `completed`, e o `payment_method_id` do primeiro split é registrado [1] [2].
+
+
+### 13.3 Fluxo do CRM
+
+O fluxo do CRM (Customer Relationship Management) no FlowStudio AI é projetado para automatizar tarefas de fidelização e relacionamento com o cliente, baseando-se em eventos e interações. O diagrama a seguir ilustra o processo:
+
+![Fluxo do CRM](https://private-us-east-1.manuscdn.com/sessionFile/jczO0zoNypkZKGpajjavUw/sandbox/BZeGTDUXPpFGSLjnEqnLZZ-images_1782992314408_na1fn_L2hvbWUvdWJ1bnR1L2ZsdXhvX2NybQ.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvamN6TzB6b055cGtaS0dwYWpqYXZVdy9zYW5kYm94L0JaZUdURFVYUHBGR1NMam5FcW5MWlotaW1hZ2VzXzE3ODI5OTIzMTQ0MDhfbmExZm5fTDJodmJXVXZkV0oxYm5SMUwyWnNkWGh2WDJOeWJRLnBuZyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTgzMDI5NzYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=F-RjRhlQmoZv8thAho6dd6UE-Z63pEwU4~Ynw81-u3pw7s1uhpi4rfhmO22DfVYVS7Px-GnVSN4XOguFJIh6mHfaueKphshZGEirgo7jLHXAY1Gee8SzH4PevbBx9jKC3ACryAkrkDotIH9mkI4PHY5~4~A3F6ZhXPQ3UQgC2qyeUWpebccPSk-kp4fSXxWZzMTWfzhIFLNZw5Oek~-JBDGkNuRR6E-fYidE9fv4z0MkXsfLugmz8Q5D3vPPXUZmj9vvarkUQrdoJAPySBNmcuh~20UmCOfEH6d9b2rV5EOLUNjx4Tg0RjU5VoXK3gHZKsJMH5Lc-sfC3WKTLQVc-A__)
+
+**Descrição do Fluxo:**
+
+1.  **Appointment:** O fluxo é desencadeado por eventos relacionados a agendamentos, como a conclusão, não comparecimento ou aniversário do cliente.
+2.  **Eventos:** Estes eventos são capturados e processados pelo sistema.
+3.  **`client_events`:** Os eventos relevantes são registrados na tabela `client_events`, criando um histórico detalhado das interações do cliente.
+4.  **CRM Engine:** Um motor de CRM processa os `client_events` e gera tarefas automáticas, como lembretes de aniversário, ações de remarketing ou follow-ups para não comparecimentos.
+5.  **`crm_logs`:** O histórico de resolução e execução dessas tarefas é registrado na tabela `crm_logs`.
+6.  **Dashboard:** As informações do CRM, incluindo o status das tarefas e insights sobre o relacionamento com o cliente, são visualizadas no Dashboard, permitindo o acompanhamento e a tomada de decisões estratégicas [1].
+
+
+## 14. Roadmap
+
+O roadmap do FlowStudio AI delineia as funcionalidades já implementadas e as áreas de foco para o desenvolvimento futuro, garantindo a evolução contínua da plataforma [1].
+
+### 14.1 Implementado
+
+As seguintes funcionalidades já estão implementadas e operacionais na versão 2.0:
+
+*   **Agenda:** Sistema completo de agendamentos com visualização em calendário e assistente multi-step.
+*   **PDV:** Ponto de venda integrado para serviços e produtos avulsos, com suporte a split de pagamentos.
+*   **Produtos:** Gestão de inventário e comissionamento.
+*   **CRM:** Gestão de relacionamento com o cliente, incluindo perfis 360º e automação de tarefas.
+*   **Clientes:** Cadastro detalhado e métricas de retenção.
+*   **Financeiro:** Registro e acompanhamento de transações financeiras.
+
+### 14.2 Em Desenvolvimento
+
+As próximas etapas de desenvolvimento focarão em expandir as capacidades de comunicação, inteligência e marketing da plataforma:
+
+*   **WhatsApp:** Integração profunda com o WhatsApp para envio de mensagens automáticas, lembretes e comunicação direta com os clientes.
+*   **IA (Inteligência Artificial):** Implementação de recursos de IA para análise preditiva, otimização de horários e assistência virtual.
+*   **Marketing:** Ferramentas para criação e gestão de campanhas de marketing direcionadas.
+*   **Fidelidade:** Programas de fidelidade avançados para incentivar a retenção de clientes.
+
+---
+
+**Referências:**
+
+[1] FlowStudio AI - ARQUITETURA DO SISTEMA (Versão 2.0)
+[2] FlowStudio AI — Arquitetura do Sistema (Versão 1.0)
+
+---
+
+**Propósito do Documento:**
+
+Este manual técnico serve como um guia abrangente para o FlowStudio AI, cobrindo desde a arquitetura de alto nível até detalhes de implementação e regras de negócio. Ele é destinado a:
+
+*   Onboarding de novos desenvolvedores;
+*   Referência para manutenção;
+*   Documentação de arquitetura;
+*   Documentação de banco de dados;
+*   Documentação das regras de negócio;
+*   Documentação dos fluxos do sistema.
