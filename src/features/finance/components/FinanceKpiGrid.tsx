@@ -1,6 +1,9 @@
-import { DollarSign, Receipt, CalendarCheck2, TrendingDown, Scale, Percent } from 'lucide-react';
+import { CalendarCheck2, TrendingDown, Scale, Percent } from 'lucide-react';
 import { KpiCard, type KpiCardDelta } from '@/features/dashboard/components/KpiCard';
 import type { FinanceKpi, FinanceSummary } from '../types';
+
+// NOTA: Faturamento e Ticket médio já aparecem no Dashboard (KpiGrid),
+// por isso não são repetidos aqui — o Financeiro foca no que é exclusivo dele.
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -18,37 +21,23 @@ interface Props {
 
 export function FinanceKpiGrid({ summary }: Props) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         index={0}
-        label="Faturamento"
-        value={brl.format(summary.revenue.value)}
-        icon={DollarSign}
-        delta={toDelta(summary.revenue)}
-      />
-      <KpiCard
-        index={1}
-        label="Ticket médio"
-        value={brl.format(summary.avgTicket.value)}
-        icon={Receipt}
-        delta={toDelta(summary.avgTicket)}
-      />
-      <KpiCard
-        index={2}
         label="Atendimentos"
         value={String(summary.appointmentsCount.value)}
         icon={CalendarCheck2}
         delta={toDelta(summary.appointmentsCount)}
       />
       <KpiCard
-        index={3}
+        index={1}
         label="Despesas"
         value={brl.format(summary.expenses.value)}
         icon={TrendingDown}
         delta={toDelta(summary.expenses)}
       />
       <KpiCard
-        index={4}
+        index={2}
         label="Comissões"
         value={brl.format(summary.totalCommission.value)}
         icon={Percent}
@@ -56,7 +45,7 @@ export function FinanceKpiGrid({ summary }: Props) {
         delta={toDelta(summary.totalCommission)}
       />
       <KpiCard
-        index={5}
+        index={3}
         label="Saldo líquido"
         value={brl.format(summary.netBalance.value)}
         icon={Scale}

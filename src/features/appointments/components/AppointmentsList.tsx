@@ -1,11 +1,8 @@
-// src/features/appointments/components/AppointmentsList.tsx
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   CalendarClock,
-  Eye,
-  EyeOff,
   Check,
   CheckCheck,
   X,
@@ -13,6 +10,7 @@ import {
   RotateCcw,
   Calendar,
   Pencil,
+  ChevronDown,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
@@ -23,7 +21,7 @@ import { staffColor } from './DayCalendar/staffColor';
 import { cn } from '@/lib/cn';
 import { useSession } from '@/features/auth/hooks';
 import { useNavigate } from '@tanstack/react-router';
-
+import { endOfDay } from 'date-fns';
 
 type Status = AppointmentItem['status'];
 
@@ -208,7 +206,7 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
-function EmptyState({ hasAnyItems, showCompleted }: { hasAnyItems: boolean; showCompleted: boolean }) {
+function EmptyState({ hasAnyItems }: { hasAnyItems: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -221,9 +219,7 @@ function EmptyState({ hasAnyItems, showCompleted }: { hasAnyItems: boolean; show
       <p className="text-sm font-medium text-slate-500">
         {!hasAnyItems
           ? 'Nenhum agendamento para hoje.'
-          : showCompleted
-            ? 'Nenhum agendamento encontrado.'
-            : 'Nenhum agendamento pendente. Todos foram concluídos.'}
+          : 'Nenhum agendamento encontrado com os filtros atuais.'}
       </p>
     </motion.div>
   );
@@ -244,64 +240,155 @@ function StaffGrid({ groups, onEdit }: { groups: StaffGroup[]; onEdit?: (appoint
   );
 }
 
+// ─── Utilitário: filtra agendamentos de agora até 23:59 ─────────────
+function filterByTimeRange(items: AppointmentItem[]): AppointmentItem[] {
+  const now = new Date();
+  const dayEnd = endOfDay(now);
+  return items.filter((a) => {
+    const start = new Date(a.startsAt);
+    return start >= now && start <= dayEnd;
+  });
+}
+
+// ─── Dropdown de staff ──────────────────────────────────────────────
+const ALL_STAFF_VALUE = 'all';
+
+function StaffFilterSelect({
+  staffList,
+  value,
+  onChange,
+}: {
+  staffList: { id: string; name: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          'appearance-none rounded-lg border border-slate-700/40 bg-slate-800/60 px-3 py-2 pr-8 text-sm font-medium text-slate-200',
+          'transition-colors hover:border-slate-600 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30',
+        )}
+      >
+        <option value={ALL_STAFF_VALUE}>Todos os profissionais</option>
+        {staffList.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+    </div>
+  );
+}
+
+// ─── Dropdown de status ─────────────────────────────────────────────
+type StatusFilterValue = Status | 'all';
+
+const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
+  { value: 'all', label: 'Todos os status' },
+  { value: 'pending', label: 'Pendente' },
+  { value: 'confirmed', label: 'Confirmado' },
+  { value: 'completed', label: 'Concluído' },
+  { value: 'cancelled', label: 'Cancelado' },
+  { value: 'no_show', label: 'Não compareceu' },
+];
+
+function StatusFilterSelect({
+  value,
+  onChange,
+}: {
+  value: StatusFilterValue;
+  onChange: (v: StatusFilterValue) => void;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as StatusFilterValue)}
+        className={cn(
+          'appearance-none rounded-lg border border-slate-700/40 bg-slate-800/60 px-3 py-2 pr-8 text-sm font-medium text-slate-200',
+          'transition-colors hover:border-slate-600 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30',
+        )}
+      >
+        {STATUS_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+    </div>
+  );
+}
+
+// ─── Componente principal ────────────────────────────────────────────
 export function AppointmentsList({ items, onEdit }: Props) {
   const { data: session } = useSession();
   const userId = session?.userId;
 
-  const myItems = userId ? items.filter((a) => a.staffId === userId) : items;
-  const [showCompleted, setShowCompleted] = useState(false);
+  // Lista única de staffs para o dropdown
+  const staffList = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    for (const a of items) {
+      if (!map.has(a.staffId)) {
+        map.set(a.staffId, { id: a.staffId, name: a.staffName });
+      }
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [items]);
 
-  const allFiltered = showCompleted ? items : items.filter((a) => a.status !== 'completed');
-  const groupsAll = groupByStaff(allFiltered);
+  // Estado dos filtros
+  // Mobile: padrão = staff logado. Desktop: padrão = "todos"
+  const [staffFilter, setStaffFilter] = useState<string>(
+    userId ?? ALL_STAFF_VALUE,
+  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
 
-  const myFiltered = showCompleted ? myItems : myItems.filter((a) => a.status !== 'completed');
-  const groupsMy = groupByStaff(myFiltered);
+  // Aplicar filtros
+  const filtered = useMemo(() => {
+    // 1. Filtragem padrão: agora até 23:59
+    let result = filterByTimeRange(items);
+
+    // 2. Filtro por staff
+    if (staffFilter !== ALL_STAFF_VALUE) {
+      result = result.filter((a) => a.staffId === staffFilter);
+    }
+
+    // 3. Filtro por status
+    if (statusFilter !== 'all') {
+      result = result.filter((a) => a.status === statusFilter);
+    }
+
+    return result;
+  }, [items, staffFilter, statusFilter]);
+
+  const groupsAll = groupByStaff(filtered);
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Toggle "Mostrar concluídos" */}
-      <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => setShowCompleted((v) => !v)}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200',
-            'border border-slate-700/40 text-slate-500',
-            'hover:border-slate-600 hover:text-slate-300 hover:bg-slate-800/60',
-            'active:scale-95',
-          )}
-        >
-          {showCompleted ? (
-            <>
-              <EyeOff className="h-3.5 w-3.5" aria-hidden />
-              Ocultar concluídos
-            </>
-          ) : (
-            <>
-              <Eye className="h-3.5 w-3.5" aria-hidden />
-              Mostrar concluídos ({items.filter((a) => a.status === 'completed').length})
-            </>
-          )}
-        </button>
+      {/* Barra de filtros */}
+      <div className="flex flex-wrap items-center gap-3">
+        <StaffFilterSelect
+          staffList={staffList}
+          value={staffFilter}
+          onChange={setStaffFilter}
+        />
+
+        <StatusFilterSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
       </div>
 
-      {/* DESKTOP: todos os staffs */}
-      <div className="hidden sm:block">
-        {allFiltered.length === 0 ? (
-          <EmptyState hasAnyItems={items.length > 0} showCompleted={showCompleted} />
-        ) : (
-          <StaffGrid groups={groupsAll} onEdit={onEdit} />
-        )}
-      </div>
-
-      {/* MOBILE: só o staff logado */}
-      <div className="block sm:hidden">
-        {myFiltered.length === 0 ? (
-          <EmptyState hasAnyItems={myItems.length > 0} showCompleted={showCompleted} />
-        ) : (
-          <StaffGrid groups={groupsMy} onEdit={onEdit} />
-        )}
-      </div>
+      {/* Grid de agendamentos */}
+      {filtered.length === 0 ? (
+        <EmptyState hasAnyItems={items.length > 0} />
+      ) : (
+        <StaffGrid groups={groupsAll} onEdit={onEdit} />
+      )}
     </div>
   );
 }
@@ -342,7 +429,6 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
   const actions = ACTIONS_BY_STATUS[a.status];
   const isUpdatingThisRow = isPending && variables?.id === a.id;
   const navigate = useNavigate();
-
   return (
     <>
       <motion.li
@@ -361,7 +447,6 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
           </span>
           <StatusBadge status={a.status} />
         </div>
-
         <div className="mb-3 flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-bold text-slate-100">{a.clientName}</p>
@@ -369,7 +454,6 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
               {a.serviceName}
             </span>
           </div>
-
           <div className="flex items-center gap-1.5 shrink-0">
             {onEdit && (
               <button
@@ -384,7 +468,6 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
             <WhatsAppButton href={waHref} />
           </div>
         </div>
-
         {actions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {actions.map((action) => {
@@ -394,18 +477,18 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
                   key={action.status}
                   type="button"
                   disabled={isUpdatingThisRow}
-                    onClick={() => {
-                      if (action.status === 'completed') {
-                        navigate({ to: '/admin/pdv', search: { appointmentId: a.id } });
-                      } else if (action.status === 'cancelled') {
-                        setCancelTarget(a);
-                      } else {
-                        mutate(
-                          { id: a.id, status: action.status },
-                          { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
-                        );
-                      }
-                    }}
+                  onClick={() => {
+                    if (action.status === 'completed') {
+                      navigate({ to: '/admin/pdv', search: { appointmentId: a.id } });
+                    } else if (action.status === 'cancelled') {
+                      setCancelTarget(a);
+                    } else {
+                      mutate(
+                        { id: a.id, status: action.status },
+                        { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
+                      );
+                    }
+                  }}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5',
                     'text-[11px] font-bold uppercase tracking-wider',
@@ -421,7 +504,6 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
           </div>
         )}
       </motion.li>
-
       <ConfirmDialog
         open={cancelTarget !== null}
         onClose={() => setCancelTarget(null)}

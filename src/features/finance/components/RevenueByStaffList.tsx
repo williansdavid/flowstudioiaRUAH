@@ -16,30 +16,58 @@ export function RevenueByStaffList({ items }: Props) {
     );
   }
 
-  const maxRevenue = Math.max(...items.map((i) => i.revenue));
+  const totalRevenue = items.reduce((sum, i) => sum + i.revenue, 0);
+  const totalCommission = items.reduce((sum, i) => sum + i.commission, 0);
 
   return (
     <div className="rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
-      <p className="mb-4 text-sm font-semibold text-slate-200">Receita por profissional</p>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div key={item.staffId} className="space-y-1.5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="truncate font-medium text-slate-200">{item.staffName}</span>
-              <span className="shrink-0 font-semibold text-slate-100">{brl.format(item.revenue)}</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-700/30">
-              <div
-                className="h-full rounded-full bg-orange-500 transition-all duration-500"
-                style={{ width: `${maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0}%` }}
-              />
-            </div>
-            <p className="text-xs text-slate-500">
-              {item.appointmentsCount} atendimento(s) · comissão ({item.commissionRate}%):{' '}
-              <span className="font-medium text-orange-400/90">{brl.format(item.commission)}</span>
-            </p>
-          </div>
-        ))}
+      <p className="mb-4 text-sm font-semibold text-slate-200">Faturamento e comissão por profissional</p>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="border-b border-slate-700/20 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <th className="pb-2 pr-3">Profissional</th>
+              <th className="pb-2 pr-3 text-right">Atendimentos</th>
+              <th className="pb-2 pr-3 text-right">Valor recebido</th>
+              <th className="pb-2 text-right">Comissão</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/10">
+            {items.map((item) => (
+              <tr key={item.staffId}>
+                <td className="py-3 pr-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: item.staffColor ?? '#94a3b8' }}
+                      aria-hidden
+                    />
+                    <span className="truncate font-medium text-slate-200">{item.staffName}</span>
+                  </div>
+                </td>
+                <td className="py-3 pr-3 text-right text-slate-400">{item.appointmentsCount}</td>
+                <td className="py-3 pr-3 text-right font-semibold text-slate-100">
+                  {brl.format(item.revenue)}
+                </td>
+                <td className="py-3 text-right">
+                  <span className="font-semibold text-orange-400">{brl.format(item.commission)}</span>
+                  <span className="ml-1 text-xs text-slate-500">({item.commissionRate}%)</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t border-slate-700/20 font-semibold">
+              <td className="pt-3 pr-3 text-slate-300">Total</td>
+              <td className="pt-3 pr-3 text-right text-slate-400">
+                {items.reduce((sum, i) => sum + i.appointmentsCount, 0)}
+              </td>
+              <td className="pt-3 pr-3 text-right text-slate-100">{brl.format(totalRevenue)}</td>
+              <td className="pt-3 text-right text-orange-400">{brl.format(totalCommission)}</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );

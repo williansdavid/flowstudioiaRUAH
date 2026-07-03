@@ -1,3 +1,5 @@
+import { WHATS_MSG } from '../utils/whatsmsg';
+import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 import { cn } from '@/lib/cn';
 import { formatPhoneBR } from '@/lib/core/utils/phone';
 import { toWhatsAppHref } from '@/lib/utils/whatsapp';
@@ -30,7 +32,15 @@ export function TaskCardAniversario({
     .map(n => n[0]?.toUpperCase())
     .join('');
 
-  const whatsappHref = clientPhone ? toWhatsAppHref(clientPhone) : null;
+  const waHref = clientPhone
+  ? toWhatsAppHref(
+      clientPhone,
+      WHATS_MSG.birthday({
+        clientName,
+        studioName: 'FlowStudio',
+      }),
+    )
+  : null;
 
   const handleResolve = () => onRemove(id);
 
@@ -55,9 +65,9 @@ export function TaskCardAniversario({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">{clientName}</p>
-          {clientPhone && whatsappHref && (
+          {clientPhone && waHref && (
             <a
-              href={whatsappHref ?? undefined}
+              href={waHref ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-700 transition-colors"
@@ -86,20 +96,7 @@ export function TaskCardAniversario({
 
       {/* Botões de ação */}
       <div className="flex gap-2 pt-1">
-        {whatsappHref && (
-          <a
-            href={whatsappHref ?? undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              'inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium',
-              'bg-green-600 text-white shadow-sm hover:bg-green-700 active:scale-95 transition-all'
-            )}
-          >
-            <MessageCircle className="h-4 w-4" />
-            WhatsApp
-          </a>
-        )}
+        {waHref && <WhatsAppButton href={waHref} />}
         <button
           onClick={handleResolve}
           className={cn(

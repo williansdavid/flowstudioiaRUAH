@@ -47,13 +47,12 @@ function CrmPage() {
   return (
     <TasksPage
       tasks={tasks}
-      isLoading={isLoading}
-      error={error}
+      isLoading={false}
+      error={null}
       onMarkNoShow={handleMarkNoShow}
       onComplete={handleComplete}
       onConfirm={handleConfirm}
       onRemove={handleRemove}
-      onWhatsApp={handleWhatsApp}
     />
   );
 }

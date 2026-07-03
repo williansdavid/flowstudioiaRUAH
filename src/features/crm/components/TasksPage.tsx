@@ -1,33 +1,47 @@
 import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   CheckCircle2,
-  XCircle,
-  UserX,
   Phone,
-  Calendar,
-  Clock,
   Cake,
   Archive,
   AlertTriangle,
   MessageCircle,
-  Check,
 } from 'lucide-react';
-
+import { cn } from '@/lib/cn';
 import type { TaskItem } from '../types';
+import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
+import { WHATS_MSG } from '../utils/whatsmsg';
 
 /* ───────── Helpers ───────── */
 
+const STUDIO_NAME = 'FlowStudio';
+
 function formatPhone(phone: string): string {
   const d = phone.replace(/\D/g, '').replace(/^55/, '');
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  if (d.length === 11)
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10)
+    return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return phone;
 }
 
-function formatDate(dateStr: string): string {
+function normalizeDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('pt-BR');
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('pt-BR');
+  }
+  return dateStr;
+}
+
+function normalizeTime(dateOrTime: string): string {
+  if (/^\d{2}:\d{2}$/.test(dateOrTime)) return dateOrTime;
+  const d = new Date(dateOrTime);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+  return dateOrTime;
 }
 
 /* ───────── Interfaces ───────── */
@@ -45,18 +59,18 @@ export interface TasksPageProps {
   onComplete: (id: string) => void;
   onConfirm: (id: string) => void;
   onRemove: (id: string) => void;
-  onWhatsApp?: (phone: string) => void;
 }
 
 /* ───────── Skeleton ───────── */
 
 function TaskSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-slate-700/30 bg-slate-800/40 p-4 animate-pulse">
-          <div className="h-4 w-1/3 bg-slate-700/50 rounded" />
-          <div className="h-3 w-1/2 bg-slate-700/30 rounded mt-2" />
+        <div key={i} className="animate-pulse rounded-2xl bg-slate-800/60 p-5">
+          <div className="mb-3 h-4 w-3/4 rounded bg-slate-700/60" />
+          <div className="mb-2 h-3 w-1/2 rounded bg-slate-700/40" />
+          <div className="h-3 w-2/3 rounded bg-slate-700/40" />
         </div>
       ))}
     </div>
@@ -67,10 +81,10 @@ function TaskSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-      <CheckCircle2 className="h-12 w-12 mb-4 text-slate-600" />
-      <p className="text-lg font-medium text-slate-400">Nenhuma tarefa pendente</p>
-      <p className="text-sm text-slate-500 mt-1">Tudo em dia!</p>
+    <div className="flex flex-col items-center gap-3 py-14 text-center">
+      <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+      <p className="text-sm font-medium text-slate-400">Nenhuma tarefa pendente</p>
+      <p className="text-xs text-slate-500">Tudo em dia!</p>
     </div>
   );
 }
@@ -79,13 +93,15 @@ function EmptyState() {
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <AlertTriangle className="h-12 w-12 text-red-400 mb-4" />
-      <h3 className="text-lg font-medium text-slate-200 mb-1">Erro ao carregar tarefas</h3>
-      <p className="text-sm text-slate-500 mb-4">Não foi possível buscar os dados. Tente novamente.</p>
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-12 text-center">
+      <AlertTriangle className="h-8 w-8 text-red-400" />
+      <div>
+        <p className="text-sm font-semibold text-red-300">Erro ao carregar tarefas</p>
+        <p className="mt-1 text-xs text-slate-400">Não foi possível buscar os dados. Tente novamente.</p>
+      </div>
       <button
         onClick={onRetry}
-        className="rounded-lg bg-slate-700/40 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-700/60"
+        className="rounded-lg border border-red-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-red-400 transition-all hover:bg-red-500/10"
       >
         Tentar novamente
       </button>
@@ -93,311 +109,240 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-/* ───────── Task Card components (sem avatar) ───────── */
+/* ───────── Task Card — Sem conclusão ───────── */
 
 function TaskCardSemConclusao({
   task,
   onMarkNoShow,
   onComplete,
-  onWhatsApp,
-  onLembrarDepois,
 }: {
   task: TaskItem;
   onMarkNoShow: (id: string) => void;
   onComplete: (id: string) => void;
-  onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-slate-700/30 bg-slate-900/60 p-4"
     >
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-medium text-slate-200 truncate">{task.clientName}</h4>
-        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-400 border border-red-500/20 whitespace-nowrap">
-          <Clock className="h-5 w-5" />
-        </span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm font-bold text-slate-100">{task.clientName}</span>
+        {task.clientPhone && (
+          <span className="text-xs text-slate-400">{formatPhone(task.clientPhone)}</span>
+        )}
       </div>
-      {task.clientPhone && (
-        <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
-      )}
-      <span className="text-xs text-[#06F587] mt-1">
-        {task.title || 'No result'}       
-      </span>
-      <div className="flex items-center gap-2 mt-3">
+      <p className="mb-3 text-xs text-slate-400">{task.title || 'No result'}</p>
+      <div className="flex flex-wrap gap-1.5">
         <button
-          onClick={() => onMarkNoShow(task.id)}         
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/40"
+          type="button"
+          onClick={() => onMarkNoShow(task.id)}
+          className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400 transition-all hover:bg-red-500/10 hover:border-red-500/40 active:scale-95"
         >
-          <XCircle className="h-3.5 w-3.5" /> Faltou
+          Faltou
         </button>
-
         <button
+          type="button"
           onClick={() => onComplete(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
+          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 active:scale-95"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
+          Concluir
         </button>
-        {onLembrarDepois && (
-          <button
-            onClick={onLembrarDepois}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-          >
-            <Clock className="h-3.5 w-3.5" /> Lembrar depois
-          </button>
-        )}        
       </div>
-      {task.date && (
-        <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
-          <Calendar className="h-3 w-3" />
-          {task.description}
-        
-        </span>
-      )}
+      {task.date && <p className="mt-2 text-xs text-slate-500">{task.description}</p>}
     </motion.div>
   );
 }
+
+/* ───────── Task Card — Confirmar ───────── */
 
 function TaskCardConfirmar({
   task,
   onConfirm,
-  onWhatsApp,
-  onLembrarDepois
 }: {
   task: TaskItem;
   onConfirm: (id: string) => void;
-  onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
+  const waHref = task.clientPhone
+    ? toWhatsAppHref(
+        task.clientPhone,
+        WHATS_MSG.confirmAppointment({
+          clientName: task.clientName,
+          date: normalizeDate(task.date ?? ''),
+          time: normalizeTime(task.scheduledTime ?? task.date ?? ''),
+          serviceName: task.serviceName ?? task.appointment?.serviceName ?? 'o serviço',
+          staffName: task.staffName ?? 'nosso profissional',
+          studioName: STUDIO_NAME,
+        }),
+      )
+    : null;
+
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-slate-700/30 bg-slate-900/60 p-4"
     >
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-medium text-slate-200 truncate">{task.clientName}</h4>
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400 border border-amber-500/20 whitespace-nowrap">
-          <Check className="h-5 w-5" />          
-        </span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm font-bold text-slate-100">{task.clientName}</span>
+        {task.clientPhone && (
+          <span className="text-xs text-slate-400">{formatPhone(task.clientPhone)}</span>
+        )}
       </div>
-      {task.clientPhone && (
-        <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
-      )}
-      <span className="text-xs text-[#06F587] mt-1">
-        {task.title }
-      </span>
-      <div className="flex items-center gap-2 mt-3">
-      <button
-        onClick={() => onConfirm(task.id)}
-        className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
-      >
-        <Check className="h-3.5 w-3.5" /> Confirmar
-      </button>
-      {task.clientPhone && onWhatsApp && (
+      <p className="mb-3 text-xs text-slate-400">{task.title}</p>
+      <div className="flex flex-wrap gap-1.5">
         <button
-          onClick={() => onWhatsApp(task.clientPhone!)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
+          type="button"
+          onClick={() => onConfirm(task.id)}
+          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 active:scale-95"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>            
-             WhatsApp
+          Confirmar
         </button>
-        
-      )}
-      {onLembrarDepois && (
-        <button
-          onClick={onLembrarDepois}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-        >
-          <Clock className="h-3.5 w-3.5" /> Lembrar depois
-        </button>
-      )}
+        {waHref && <WhatsAppButton href={waHref} />}
       </div>
-      {task.date && (
-        <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
-          <Calendar className="h-3 w-3" />
-          {task.description}
-        </span>
-      )}
+      {task.date && <p className="mt-2 text-xs text-slate-500">{task.description}</p>}
     </motion.div>
   );
 }
+
+/* ───────── Task Card — Aniversário ───────── */
 
 function TaskCardAniversario({
   task,
   onRemove,
-  onWhatsApp,
-  onLembrarDepois,
 }: {
   task: TaskItem;
   onRemove: (id: string) => void;
-  onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
+  const waHref = task.clientPhone
+    ? toWhatsAppHref(
+        task.clientPhone,
+        WHATS_MSG.birthday({
+          clientName: task.clientName,
+          studioName: STUDIO_NAME,
+        }),
+      )
+    : null;
+
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-slate-700/30 bg-slate-900/60 p-4"
     >
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-medium text-slate-200 truncate">{task.clientName}</h4>
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-400 border border-amber-500/20 whitespace-nowrap">
-          <Cake className="h-5 w-5" />
-
-        </span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm font-bold text-slate-100">{task.clientName}</span>
+        {task.clientPhone && (
+          <span className="text-xs text-slate-400">{formatPhone(task.clientPhone)}</span>
+        )}
       </div>
-      {task.clientPhone && (
-        <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
-      )}
-     
-      <div className="flex items-center gap-2 mt-3">
-        {task.clientPhone && onWhatsApp && (
-          <button
-            onClick={() => onWhatsApp(task.clientPhone!)}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
-          >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>            
-             WhatsApp
-          </button>
-        )}
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {waHref && <WhatsAppButton href={waHref} />}
         <button
+          type="button"
           onClick={() => onRemove(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-orange-500/20 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/40"
+          className="inline-flex items-center gap-1 rounded-lg border border-orange-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-orange-400 transition-all hover:bg-orange-500/10 hover:border-orange-500/40 active:scale-95"
         >
-          <Check className="h-3.5 w-3.5" /> Descartar
+          Descartar
         </button>
-        {onLembrarDepois && (
-          <button
-            onClick={onLembrarDepois}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-          >
-            <Clock className="h-3.5 w-3.5" /> Lembrar depois
-          </button>
-        )}
       </div>
       {task.date && (
-        <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
-          <Cake className="h-3 w-3" />
-          <p className="text-xs text-slate-500 mt-1">{task.description || "Aniversariante da Semana"}</p>
-        </span>
+        <p className="text-xs text-slate-500">
+          {task.description || 'Aniversariante da Semana'}
+        </p>
       )}
     </motion.div>
   );
 }
+
+/* ───────── Task Card — Inativo / Remarketing ───────── */
 
 function TaskCardInativo({
   task,
   onRemove,
-  onWhatsApp,
-  onLembrarDepois
 }: {
   task: TaskItem;
   onRemove: (id: string) => void;
-  onWhatsApp?: (phone: string) => void;
-  onLembrarDepois?: () => void;
 }) {
+  const daysSinceLastVisit = (() => {
+    if (!task.date) return 30;
+    const d = new Date(task.date);
+    if (isNaN(d.getTime())) return 30;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+  })();
+
+  const waHref = task.clientPhone
+    ? toWhatsAppHref(
+        task.clientPhone,
+        WHATS_MSG.remarketing({
+          clientName: task.clientName,
+          daysSinceLastVisit,
+          studioName: STUDIO_NAME,
+        }),
+      )
+    : null;
+
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="rounded-2xl border border-slate-700/30 border-t-2 border-t-orange-500/40 bg-gradient-to-b from-slate-800/85 to-slate-800/55 p-4 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.5)] transition-all hover:border-slate-600/40 hover:brightness-110"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-slate-700/30 bg-slate-900/60 p-4"
     >
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-medium text-slate-300 truncate">{task.clientName}</h4>
-        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs text-red-400 border border-red-500/20 whitespace-nowrap">
-          <UserX className="h-5 w-5" />
-          
-        </span>
-      </div>
-      {task.clientPhone && (
-        <p className="text-xs text-slate-400 mt-0.5">{formatPhone(task.clientPhone)}</p>
-      )}     
-      <div className="flex items-center gap-2 mt-3">
-        {task.clientPhone && onWhatsApp && (
-          <button
-            onClick={() => onWhatsApp(task.clientPhone!)}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40"
-          >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>            
-             WhatsApp
-          </button>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-sm font-bold text-slate-100">{task.clientName}</span>
+        {task.clientPhone && (
+          <span className="text-xs text-slate-400">{formatPhone(task.clientPhone)}</span>
         )}
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {waHref && <WhatsAppButton href={waHref} />}
         <button
+          type="button"
           onClick={() => onRemove(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-orange-500/20 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/40"
+          className="inline-flex items-center gap-1 rounded-lg border border-orange-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-orange-400 transition-all hover:bg-orange-500/10 hover:border-orange-500/40 active:scale-95"
         >
-          <Check className="h-3.5 w-3.5" /> Descartar
+          Descartar
         </button>
-        {onLembrarDepois && (
-          <button
-            onClick={onLembrarDepois}
-            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 border-slate-700/40 text-slate-500 hover:bg-slate-700/40 hover:border-slate-600"
-          >
-            <Clock className="h-3.5 w-3.5" /> Lembrar depois
-          </button>
-        )}        
       </div>
       {task.date && (
-        <span className="flex items-center gap-1 text-xs text-slate-500 mt-2">
-          <Archive className="h-3 w-3" />
-          <p className="text-xs text-slate-500 mt-1">{task.description || task.title}</p>
-        </span>
+        <p className="text-xs text-slate-500">{task.description || task.title}</p>
       )}
     </motion.div>
   );
 }
 
-/* ───────── Section (card independente com faixa lateral) ───────── */
+/* ───────── Section ───────── */
 
 function Section({
   title,
   icon: Icon,
   tasks,
   accentClass,
-  borderClass,
   renderCard,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   tasks: TaskItem[];
   accentClass: string;
-  borderClass: string;
   renderCard: (task: TaskItem) => React.ReactNode;
 }) {
   if (tasks.length === 0) return null;
-
   const displayTasks = tasks.slice(0, 3);
 
   return (
-    <div className={`rounded-2xl border border-slate-700/30 border-l-4 ${borderClass} bg-slate-800/30 p-4`}>
-      {/* Header com ícone + título coloridos + contador + linha separadora */}
-      <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-700/30">
-        <Icon className={`h-4 w-4 ${accentClass}`} />
-        <span className={"text-base font-semibold " + accentClass}>{title}</span>
+    <div className="rounded-2xl border border-slate-700/20 bg-slate-900/40 p-5">
+      <div className="mb-4 flex items-center gap-2 border-b border-slate-700/20 pb-3">
+        <Icon className={cn('h-5 w-5', accentClass)} />
+        <h3 className={cn('text-sm font-bold uppercase tracking-wider', accentClass)}>
+          {title}
+        </h3>
         <span className="ml-auto text-xs text-slate-500">{tasks.length}</span>
       </div>
-      {/* Grid 3 colunas desktop, 1 coluna mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <AnimatePresence>
-          {displayTasks.map((task) => renderCard(task))}
-        </AnimatePresence>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {displayTasks.map((task) => renderCard(task))}
       </div>
     </div>
   );
@@ -413,7 +358,6 @@ export function TasksPage({
   onComplete,
   onConfirm,
   onRemove,
-  onWhatsApp,
 }: TasksPageProps) {
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
@@ -422,39 +366,26 @@ export function TasksPage({
   }, []);
 
   const handleMarkNoShow = useCallback(
-    (id: string) => {
-      onMarkNoShow(id);
-      hideTask(id);
-    },
+    (id: string) => { onMarkNoShow(id); hideTask(id); },
     [onMarkNoShow, hideTask],
   );
 
   const handleComplete = useCallback(
-    (id: string) => {
-      onComplete(id);
-      hideTask(id);
-    },
+    (id: string) => { onComplete(id); hideTask(id); },
     [onComplete, hideTask],
   );
 
   const handleConfirm = useCallback(
-    (id: string) => {
-      onConfirm(id);
-      hideTask(id);
-    },
+    (id: string) => { onConfirm(id); hideTask(id); },
     [onConfirm, hideTask],
   );
 
   const handleRemove = useCallback(
-    (id: string) => {
-      onRemove(id);
-      hideTask(id);
-    },
+    (id: string) => { onRemove(id); hideTask(id); },
     [onRemove, hideTask],
   );
 
   if (isLoading) return <TaskSkeleton />;
-
   if (error) return <ErrorState onRetry={() => window.location.reload()} />;
 
   const filteredTasks = {
@@ -468,70 +399,41 @@ export function TasksPage({
   if (allEmpty) return <EmptyState />;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-5">
       <Section
-        title="Sem conclusão"
-        icon={XCircle}
-        accentClass="text-orange-400"
-        borderClass="border-l-orange-500/50"
+        title="Pendente"
+        icon={AlertTriangle}
         tasks={filteredTasks.overdue}
+        accentClass="text-red-400"
         renderCard={(task) => (
-          <TaskCardSemConclusao
-            key={task.id}
-            task={task}
-            onMarkNoShow={handleMarkNoShow}
-            onComplete={handleComplete}
-            onWhatsApp={onWhatsApp}   
-            onLembrarDepois={() => hideTask(task.id)}         
-          />
+          <TaskCardSemConclusao task={task} onMarkNoShow={handleMarkNoShow} onComplete={handleComplete} />
         )}
       />
       <Section
-        title="Confirmar"
-        icon={Clock}
-        accentClass="text-blue-400"
-        borderClass="border-l-blue-500/50"
+        title="Confirmação Pendente"
+        icon={MessageCircle}
         tasks={filteredTasks.pendingConfirmation}
+        accentClass="text-emerald-400"
         renderCard={(task) => (
-          <TaskCardConfirmar
-            key={task.id}
-            task={task}
-            onConfirm={handleConfirm}
-            onWhatsApp={onWhatsApp}  
-            onLembrarDepois={() => hideTask(task.id)}         
-          />
+          <TaskCardConfirmar task={task} onConfirm={handleConfirm} />
         )}
       />
       <Section
-        title="Aniversários"
+        title="Aniversariantes"
         icon={Cake}
-        accentClass="text-amber-400"
-        borderClass="border-l-amber-500/50"
         tasks={filteredTasks.birthdays}
+        accentClass="text-pink-400"
         renderCard={(task) => (
-          <TaskCardAniversario
-            key={task.id}
-            task={task}
-            onRemove={handleRemove}
-            onWhatsApp={onWhatsApp}
-            onLembrarDepois={() => hideTask(task.id)}
-          />
+          <TaskCardAniversario task={task} onRemove={handleRemove} />
         )}
       />
       <Section
         title="Inativos"
-        icon={UserX}
-        accentClass="text-slate-400"
-        borderClass="border-l-slate-500/40"
+        icon={Archive}
         tasks={filteredTasks.inactive}
+        accentClass="text-orange-400"
         renderCard={(task) => (
-          <TaskCardInativo
-            key={task.id}
-            task={task}
-            onRemove={handleRemove}
-            onWhatsApp={onWhatsApp}
-            onLembrarDepois={() => hideTask(task.id)}
-          />
+          <TaskCardInativo task={task} onRemove={handleRemove} />
         )}
       />
     </div>
