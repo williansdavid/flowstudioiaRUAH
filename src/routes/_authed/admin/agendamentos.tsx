@@ -4,7 +4,7 @@ import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import {
   getDayAppointments,
   getDayTimeOff,
@@ -15,7 +15,7 @@ import {
   AppointmentsList,
   AppointmentFormModal,
 } from '@/features/appointments';
-import { ErrorState } from '@/components/feedback';
+import { ErrorState } from '@/features/utils/feedback';
 import { businessHours } from '@/sites/ruah/config/businessHours';
 import type { AppointmentItem } from '@/features/appointments';
 

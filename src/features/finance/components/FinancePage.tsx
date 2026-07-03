@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { PeriodFilter } from './PeriodFilter';
+import { CustomRangePicker } from './CustomRangePicker';
 import { FinanceKpiGrid } from './FinanceKpiGrid';
 import { PaymentMethodDonutChart } from './PaymentMethodDonutChart';
 import { RevenueTrendChart } from './RevenueTrendChart';
@@ -14,12 +15,24 @@ import {
   useRevenueByStaffFinance,
   useRecentTransactions,
 } from '../hooks';
-import type { FinancePeriod } from '../types';
+import type { FinancePeriod, PeriodRange } from '../types';
+
+function defaultCustomRange(): PeriodRange {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 29);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
 
 export function FinancePage() {
   const [period, setPeriod] = useState<FinancePeriod>('month');
+  // Sempre inicializado com um intervalo válido — nunca undefined quando period === 'custom'.
+  const [customRange, setCustomRange] = useState<PeriodRange>(defaultCustomRange);
 
-  const input = { period };
+  const input = period === 'custom' ? { period, customRange } : { period };
 
   const summaryQuery = useFinanceSummary(input);
   const paymentMethodQuery = useRevenueByPaymentMethod(input);
@@ -42,14 +55,18 @@ export function FinancePage() {
     transactionsQuery.isError;
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="w-full min-w-0 space-y-6 pb-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-100">Financeiro</h1>
           <p className="text-sm text-slate-500">Faturamento, despesas e formas de pagamento</p>
         </div>
         <PeriodFilter value={period} onChange={setPeriod} />
       </div>
+
+      {period === 'custom' ? (
+        <CustomRangePicker value={customRange} onChange={setCustomRange} />
+      ) : null}
 
       {hasError ? (
         <div className="flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
@@ -78,20 +95,28 @@ export function FinancePage() {
         <>
           {summaryQuery.data ? <FinanceKpiGrid summary={summaryQuery.data} /> : null}
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div className="xl:col-span-2">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+            <div className="min-w-0 xl:col-span-2">
               {trendQuery.data ? <RevenueTrendChart data={trendQuery.data} /> : null}
             </div>
-            {paymentMethodQuery.data ? <PaymentMethodDonutChart data={paymentMethodQuery.data} /> : null}
+            <div className="min-w-0">
+              {paymentMethodQuery.data ? <PaymentMethodDonutChart data={paymentMethodQuery.data} /> : null}
+            </div>
           </div>
 
-          {staffQuery.data ? <CommissionChart items={staffQuery.data} /> : null}
+          <div className="min-w-0">
+            {staffQuery.data ? <CommissionChart items={staffQuery.data} /> : null}
+          </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            {staffQuery.data ? <RevenueByStaffList items={staffQuery.data} /> : null}
-            {transactionsQuery.data ? (
-              <RecentTransactionsList transactions={transactionsQuery.data} />
-            ) : null}
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="min-w-0">
+              {staffQuery.data ? <RevenueByStaffList items={staffQuery.data} /> : null}
+            </div>
+            <div className="min-w-0">
+              {transactionsQuery.data ? (
+                <RecentTransactionsList transactions={transactionsQuery.data} />
+              ) : null}
+            </div>
           </div>
         </>
       )}

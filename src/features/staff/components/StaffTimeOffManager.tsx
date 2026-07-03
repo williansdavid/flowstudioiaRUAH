@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Loader2, CalendarOff } from 'lucide-react';
 import { formatRange } from '@/lib/studioTime';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import { cn } from '@/lib/cn';
 import {
   useStaffTimeOff,

@@ -28,9 +28,11 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { Button } from '@/components/ui/Button'
-import { WhatsAppButton } from '@/components/ui/WhatsAppButton'
-import { toWhatsAppHref } from '@/lib/utils/whatsapp'
+import { Button } from '@/features/utils/ui/Button'
+import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton'
+import { toWhatsAppHref } from '@/features/utils/whats/whatsapp'
+import { WHATS_MSG } from '@/features/utils/whats/whatsmsg'
+import { identity } from '@/config/active-studio'
 import {
   useClientProfile,
   useClientHistory,
@@ -38,6 +40,7 @@ import {
   useClientTimeline,
 } from '../hooks'
 import type { ClientProfile, AbandonmentRisk } from '../types'
+
 
 /* ───────── Helpers ───────── */
 
@@ -255,7 +258,18 @@ export function ClientDrawer({ clientId, open, onClose, onEdit }: ClientDrawerPr
   const indicators = profile?.indicators
 
   const phone = client?.phone ?? null
-  const waHref = phone ? toWhatsAppHref(phone) : null
+  const firstName = (client?.name || 'Cliente').split(' ')[0];
+  const waHref = phone
+    ? toWhatsAppHref(
+        phone,
+        WHATS_MSG.saldacoes({
+          clientName: client?.name || '',
+          studioName: identity.name || 'FlowStudio',
+        }),
+      )
+    : null;
+      
+
   const riskCfg = fin?.abandonment_risk ? RISK_CONFIG[fin.abandonment_risk] : null
 
   const recentEvents = useMemo(() => {

@@ -16,7 +16,7 @@ export function RevenueTrendChart({ data }: Props) {
   const chartData = data.map((point) => ({ ...point, label: formatDayLabel(point.date) }));
 
   return (
-    <div className="rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
+    <div className="min-w-0 rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
       <p className="mb-4 text-sm font-semibold text-slate-200">Receita x Despesa no período</p>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={chartData}>

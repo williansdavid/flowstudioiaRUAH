@@ -9,9 +9,9 @@ import {
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { QuickClientModal } from './QuickClientModal';
 import { ClientCombobox } from './ClientCombobox';
-import { Button } from '@/components/ui/Button';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
+import { Button } from '@/features/utils/ui/Button';
+import { ConfirmDialog } from '@/features/utils/ui/ConfirmDialog';
+import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
 import type {
   AppointmentItem,
   BookableStaffItem,
@@ -28,9 +28,10 @@ import {
 } from '../hooks';
 import type { BusinessHours } from '@/sites/ruah/types';
 import { cn } from '@/lib/cn';
-import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { toWhatsAppHref } from '@/features/utils/whats/whatsapp';
 import { useNavigate } from '@tanstack/react-router';
-
+import { WHATS_MSG } from '@/features/utils/whats/whatsmsg';
+import { identity } from '@/config/active-studio'
 
 // ── Status config ────────────────────────────────────────────────
 type Status = AppointmentItem['status'];
@@ -58,6 +59,16 @@ interface Props {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
+function normalizeDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('pt-BR');
+  }
+  return dateStr;
+}
+
+
+
 function hasTimeOffConflict(t: TimeOffBlockItem[], sId: string, sA: string, eA: string) {
   if (!sId || !sA || !eA) return null;
   const s = new Date(sA).getTime(), e = new Date(eA).getTime();
@@ -203,8 +214,20 @@ export function AppointmentFormModal({ open, mode, clients, services, staff, tim
       })()
     : null;
 
+
+
   const waHref = appointment?.clientPhone
-    ? toWhatsAppHref(appointment.clientPhone, `Olá ${appointment.clientName}! Seu horário das ${timeFmt.format(new Date(appointment.startsAt))} para ${appointment.serviceName} está confirmado.`)
+    ? toWhatsAppHref(
+        appointment.clientPhone,
+        WHATS_MSG.confirmAppointment({
+          clientName: appointment.clientName,
+          date: normalizeDate(appointment.startsAt ?? ''),
+          time: (timeFmt.format(new Date(appointment.startsAt))?? appointment.startsAt ?? ''),
+          serviceName: appointment.serviceName ??  'o serviço',
+          staffName: appointment.staffName ?? 'nosso profissional',
+          studioName: identity.name || 'FlowStudio',
+        }),
+      )
     : null;
 
   const errorsVisible = missingFields.length > 0 || retroError;

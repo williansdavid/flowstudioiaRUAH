@@ -4,7 +4,7 @@ import { X, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartPanel } from './CartPanel';
 import { SplitPaymentSection } from './SplitPayment';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import type { CartItem, SplitPayment, PaymentMethodItem } from '../types';
 
 interface CartModalProps {

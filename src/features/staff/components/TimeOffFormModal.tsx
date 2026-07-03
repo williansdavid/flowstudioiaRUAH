@@ -5,7 +5,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { joinISO, splitISO, nextRoundHour, formatRange } from '@/lib/studioTime';
 import { useCreateTimeOff, useUpdateTimeOff, type TimeOffItem } from '../hooks';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import { cn } from '@/lib/cn';
 
 type Mode =

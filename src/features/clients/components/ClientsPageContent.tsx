@@ -11,7 +11,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/features/utils/ui/Button'
 import { useSession } from '@/features/auth'
 import { useClientKpis } from '../hooks'
 import { ClientDataTable } from './ClientDataTable'

@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 
 interface Props {
   onBack: () => void;

@@ -11,7 +11,7 @@ import { StepService } from './Steps/StepService';
 import { StepProfessional } from './Steps/StepProfessional';
 import { StepDateSlots } from './Steps/StepDateSlots';
 import { StepConfirm } from './Steps/StepConfirm';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import type { WizardStep, WizardSelection } from './BookingWizard.types';
 import { STEP_LABELS, STEP_ORDER } from './BookingWizard.types';
 import type { BookableStaffItem, ServiceOption } from '@/features/appointments/types';

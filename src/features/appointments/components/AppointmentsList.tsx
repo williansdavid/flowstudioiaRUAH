@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ConfirmDialog } from '@/features/utils/ui/ConfirmDialog';
 import {
   CalendarClock,
   Check,
@@ -13,17 +13,20 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
+import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
 import type { AppointmentItem } from '../types';
-import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { toWhatsAppHref } from '@/features/utils/whats/whatsapp';
 import { useUpdateAppointmentStatus } from '../hooks';
 import { staffColor } from './DayCalendar/staffColor';
 import { cn } from '@/lib/cn';
 import { useSession } from '@/features/auth/hooks';
 import { useNavigate } from '@tanstack/react-router';
 import { endOfDay } from 'date-fns';
+import { WHATS_MSG } from '@/features/utils/whats/whatsmsg';
+import { identity } from '@/config/active-studio'
 
 type Status = AppointmentItem['status'];
+
 
 const STATUS_CONFIG: Record<Status, { label: string; dot: string; border: string; bg: string }> = {
   pending: {
@@ -57,6 +60,14 @@ const STATUS_CONFIG: Record<Status, { label: string; dot: string; border: string
     bg: 'bg-red-500/5',
   },
 };
+
+function normalizeDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('pt-BR');
+  }
+  return dateStr;
+}
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -423,7 +434,21 @@ function StaffCard({ group, onEdit }: { group: StaffGroup; onEdit?: (appointment
 
 function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentItem; onEdit?: (appointment: AppointmentItem) => void }) {
   const [cancelTarget, setCancelTarget] = useState<AppointmentItem | null>(null);
-  const waHref = toWhatsAppHref(a.clientPhone, buildWhatsAppMessage(a));
+  //const waHref = toWhatsAppHref(a.clientPhone, buildWhatsAppMessage(a));
+  const waHref = a.clientPhone
+    ? toWhatsAppHref(
+        a.clientPhone,
+        WHATS_MSG.confirmAppointment({
+          clientName: a.clientName,
+          date: normalizeDate(a.startsAt ?? ''),
+          time: (timeFmt.format(new Date(a.startsAt))?? a.startsAt ?? ''),
+          serviceName: a.serviceName ??  'o serviço',
+          staffName: a.staffName ?? 'nosso profissional',
+          studioName: identity.name || 'FlowStudio',
+        }),
+      )
+    : null;
+
   const { mutate, isPending, variables } = useUpdateAppointmentStatus();
   const queryClient = useQueryClient();
   const actions = ACTIONS_BY_STATUS[a.status];
@@ -465,7 +490,7 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
                 <Pencil className="h-4 w-4" />
               </button>
             )}
-            <WhatsAppButton href={waHref} />
+            {waHref && <WhatsAppButton href={waHref} />}
           </div>
         </div>
         {actions.length > 0 && (

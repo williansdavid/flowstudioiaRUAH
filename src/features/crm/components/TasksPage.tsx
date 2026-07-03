@@ -1,3 +1,4 @@
+import { identity } from '@/config/active-studio'
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -10,13 +11,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { TaskItem } from '../types';
-import { toWhatsAppHref } from '@/lib/utils/whatsapp';
-import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
-import { WHATS_MSG } from '../utils/whatsmsg';
+import { toWhatsAppHref } from '@/features/utils/whats/whatsapp';
+import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
+import { WHATS_MSG } from '@/features/utils/whats/whatsmsg';
+import { WhatsAppIcon } from '@/features/utils/icons/WhatsAppIcon';
 
 /* ───────── Helpers ───────── */
 
-const STUDIO_NAME = 'FlowStudio';
+
 
 function formatPhone(phone: string): string {
   const d = phone.replace(/\D/g, '').replace(/^55/, '');
@@ -115,10 +117,12 @@ function TaskCardSemConclusao({
   task,
   onMarkNoShow,
   onComplete,
+  onLembrarDepois,
 }: {
   task: TaskItem;
   onMarkNoShow: (id: string) => void;
   onComplete: (id: string) => void;
+  onLembrarDepois: (id: string) => void;
 }) {
   return (
     <motion.div
@@ -136,18 +140,25 @@ function TaskCardSemConclusao({
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
+          onClick={() => onComplete(task.id)}
+          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 active:scale-95"
+        >
+          Concluir
+        </button>
+        <button
+          type="button"
           onClick={() => onMarkNoShow(task.id)}
           className="inline-flex items-center gap-1 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400 transition-all hover:bg-red-500/10 hover:border-red-500/40 active:scale-95"
         >
           Faltou
         </button>
         <button
-          type="button"
-          onClick={() => onComplete(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 active:scale-95"
+        onClick={() => onLembrarDepois(task.id)}
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 transition-all hover:bg-slate-500/10 hover:border-slate-500/40 active:scale-95"
         >
-          Concluir
-        </button>
+        Lembrar Depois
+        </button>        
+
       </div>
       {task.date && <p className="mt-2 text-xs text-slate-500">{task.description}</p>}
     </motion.div>
@@ -159,9 +170,11 @@ function TaskCardSemConclusao({
 function TaskCardConfirmar({
   task,
   onConfirm,
+  onLembrarDepois,
 }: {
   task: TaskItem;
   onConfirm: (id: string) => void;
+  onLembrarDepois: (id: string) => void;
 }) {
   const waHref = task.clientPhone
     ? toWhatsAppHref(
@@ -172,7 +185,7 @@ function TaskCardConfirmar({
           time: normalizeTime(task.scheduledTime ?? task.date ?? ''),
           serviceName: task.serviceName ?? task.appointment?.serviceName ?? 'o serviço',
           staffName: task.staffName ?? 'nosso profissional',
-          studioName: STUDIO_NAME,
+          studioName: identity.name || 'FlowStudio',
         }),
       )
     : null;
@@ -191,14 +204,20 @@ function TaskCardConfirmar({
       </div>
       <p className="mb-3 text-xs text-slate-400">{task.title}</p>
       <div className="flex flex-wrap gap-1.5">
+        {waHref && <WhatsAppButton href={waHref} />}
         <button
           type="button"
           onClick={() => onConfirm(task.id)}
-          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 active:scale-95"
+          className="inline-flex items-center gap-1 rounded-lg border border-orange-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-orange-400 transition-all hover:bg-orange-500/10 hover:border-orange-500/40 active:scale-95"
         >
           Confirmar
         </button>
-        {waHref && <WhatsAppButton href={waHref} />}
+        <button
+        onClick={() => onLembrarDepois(task.id)}
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 transition-all hover:bg-slate-500/10 hover:border-slate-500/40 active:scale-95"
+        >
+        Lembrar Depois
+        </button>           
       </div>
       {task.date && <p className="mt-2 text-xs text-slate-500">{task.description}</p>}
     </motion.div>
@@ -210,16 +229,18 @@ function TaskCardConfirmar({
 function TaskCardAniversario({
   task,
   onRemove,
+  onLembrarDepois,
 }: {
   task: TaskItem;
   onRemove: (id: string) => void;
+  onLembrarDepois: (id: string) => void;
 }) {
   const waHref = task.clientPhone
     ? toWhatsAppHref(
         task.clientPhone,
         WHATS_MSG.birthday({
           clientName: task.clientName,
-          studioName: STUDIO_NAME,
+          studioName: identity.name || 'FlowStudio',
         }),
       )
     : null;
@@ -243,8 +264,14 @@ function TaskCardAniversario({
           onClick={() => onRemove(task.id)}
           className="inline-flex items-center gap-1 rounded-lg border border-orange-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-orange-400 transition-all hover:bg-orange-500/10 hover:border-orange-500/40 active:scale-95"
         >
-          Descartar
+          Concluir
         </button>
+        <button
+        onClick={() => onLembrarDepois(task.id)}
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 transition-all hover:bg-slate-500/10 hover:border-slate-500/40 active:scale-95"
+        >
+        Lembrar Depois
+        </button>           
       </div>
       {task.date && (
         <p className="text-xs text-slate-500">
@@ -260,9 +287,11 @@ function TaskCardAniversario({
 function TaskCardInativo({
   task,
   onRemove,
+  onLembrarDepois,
 }: {
   task: TaskItem;
   onRemove: (id: string) => void;
+  onLembrarDepois: (id: string) => void;
 }) {
   const daysSinceLastVisit = (() => {
     if (!task.date) return 30;
@@ -280,7 +309,7 @@ function TaskCardInativo({
         WHATS_MSG.remarketing({
           clientName: task.clientName,
           daysSinceLastVisit,
-          studioName: STUDIO_NAME,
+          studioName: identity.name || 'FlowStudio',
         }),
       )
     : null;
@@ -306,6 +335,12 @@ function TaskCardInativo({
         >
           Descartar
         </button>
+        <button
+        onClick={() => onLembrarDepois(task.id)}
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-500/20 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 transition-all hover:bg-slate-500/10 hover:border-slate-500/40 active:scale-95"
+        >
+        Lembrar Depois
+        </button>           
       </div>
       {task.date && (
         <p className="text-xs text-slate-500">{task.description || task.title}</p>
@@ -365,6 +400,13 @@ export function TasksPage({
     setHiddenIds((prev) => new Set(prev).add(id));
   }, []);
 
+  const handleLembrarDepois = useCallback(
+    (id: string) => {
+      hideTask(id);
+    },
+    [hideTask],
+  );  
+
   const handleMarkNoShow = useCallback(
     (id: string) => { onMarkNoShow(id); hideTask(id); },
     [onMarkNoShow, hideTask],
@@ -401,21 +443,21 @@ export function TasksPage({
   return (
     <div className="flex flex-col gap-5">
       <Section
-        title="Pendente"
+        title="Aguardando Conclusão"
         icon={AlertTriangle}
         tasks={filteredTasks.overdue}
         accentClass="text-red-400"
         renderCard={(task) => (
-          <TaskCardSemConclusao task={task} onMarkNoShow={handleMarkNoShow} onComplete={handleComplete} />
+          <TaskCardSemConclusao task={task} onMarkNoShow={handleMarkNoShow} onComplete={handleComplete} onLembrarDepois={handleLembrarDepois} />
         )}
       />
       <Section
         title="Confirmação Pendente"
-        icon={MessageCircle}
+        icon={WhatsAppIcon}
         tasks={filteredTasks.pendingConfirmation}
         accentClass="text-emerald-400"
         renderCard={(task) => (
-          <TaskCardConfirmar task={task} onConfirm={handleConfirm} />
+          <TaskCardConfirmar task={task} onConfirm={handleConfirm} onLembrarDepois={handleLembrarDepois} />
         )}
       />
       <Section
@@ -424,7 +466,7 @@ export function TasksPage({
         tasks={filteredTasks.birthdays}
         accentClass="text-pink-400"
         renderCard={(task) => (
-          <TaskCardAniversario task={task} onRemove={handleRemove} />
+          <TaskCardAniversario task={task} onRemove={handleRemove} onLembrarDepois={handleLembrarDepois} />
         )}
       />
       <Section
@@ -433,7 +475,7 @@ export function TasksPage({
         tasks={filteredTasks.inactive}
         accentClass="text-orange-400"
         renderCard={(task) => (
-          <TaskCardInativo task={task} onRemove={handleRemove} />
+          <TaskCardInativo task={task} onRemove={handleRemove} onLembrarDepois={handleLembrarDepois} />
         )}
       />
     </div>

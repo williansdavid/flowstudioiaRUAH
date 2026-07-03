@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import { workingHoursSchema } from '@/lib/scheduling/workingHours.schema';
 import type { WorkingHours, DaySchedule } from '@/lib/scheduling/workingHours.schema';
 import { WEEKDAY_ORDER, WEEKDAY_LABEL } from '../types';

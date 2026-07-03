@@ -29,7 +29,7 @@ import {
 } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 
-import { GlobalLoadingIndicator } from '@/components/feedback'
+import { GlobalLoadingIndicator } from '@/features/utils/feedback'
 import { systemThemeCssHref, systemBrandingCss, systemThemeClass } from '@/lib/core/system'
 import '@/styles/app.css'
 

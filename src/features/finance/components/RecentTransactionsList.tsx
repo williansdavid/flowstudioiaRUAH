@@ -40,7 +40,7 @@ export function RecentTransactionsList({ transactions }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
+    <div className="min-w-0 rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
       <p className="mb-4 text-sm font-semibold text-slate-200">Últimas transações</p>
       <div className="divide-y divide-slate-700/20">
         {transactions.map((tx) => {

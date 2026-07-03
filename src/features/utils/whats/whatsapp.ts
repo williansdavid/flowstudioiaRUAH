@@ -30,6 +30,6 @@ export function toWhatsAppHref(
   if (digits.length < 12 || digits.length > 13) return null;
   if (!digits.startsWith('55')) return null;
 
-  const base = `https://wa.me/${digits}`;
-  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+  const base = `https://api.whatsapp.com/send?phone=${digits}`;
+  return message ? `${base}&text=${encodeURIComponent(message)}` : base;
 }

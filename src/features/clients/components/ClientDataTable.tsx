@@ -17,7 +17,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/features/utils/ui/Button'
 import { useClientsList } from '../hooks'
 import type { ClientListItem } from '../types'
 

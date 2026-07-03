@@ -5,7 +5,7 @@ import { X, Loader2, UserPlus } from 'lucide-react';
 import type { ClientOption } from '../types';
 import { useCreateQuickClient } from '../hooks';
 import { cn } from '@/lib/cn';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 interface Props {
   open: boolean;
   initialName?: string;

@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react'
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
 import { AppointmentFormModal } from '@/features/appointments/components/AppointmentFormModal'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/features/utils/ui/Button'
 import {
   getDayAppointments,
   getDayTimeOff,

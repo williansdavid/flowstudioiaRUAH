@@ -1,5 +1,9 @@
+// src/features/crm/components/CrmPage.tsx
+
 import { createFileRoute } from '@tanstack/react-router';
-import { useSuspenseQuery, useMutation } from '@tanstack/react-query';
+import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { dailyTasksQueryOptions, useResolveCrmTask, type DailyTasksData } from '@/features/crm/hooks';
 import { TasksPage, type TasksPageProps } from '@/features/crm';
 import { updateAppointmentStatus } from '@/features/crm/server/updateAppointmentStatus';
@@ -10,38 +14,44 @@ export const Route = createFileRoute('/_authed/admin/crm')({
 });
 
 function CrmPage() {
-  const { data: tasks, isLoading, error } = useSuspenseQuery(dailyTasksQueryOptions);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { data: tasks } = useSuspenseQuery(dailyTasksQueryOptions);
   const resolveCrmTaskMutation = useResolveCrmTask();
+
   const updateStatusMutation = useMutation({
-    mutationFn: (input: { id: string; status: string }) =>
+    mutationFn: (input: { id: string; status: 'pending' | 'confirmed' | 'completed' | 'no_show' | 'cancelled' }) =>
       updateAppointmentStatus({ data: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm', 'dailyTasks'] });
+      toast.success('Agendamento atualizado com sucesso!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao atualizar agendamento: ${error.message}`);
+    },
   });
 
   const handleMarkNoShow = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'no_show' });
+    const appointmentId = id.replace('apt-', '');
+    updateStatusMutation.mutate({ id: appointmentId, status: 'no_show' });
   };
 
   const handleComplete = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'completed' });
+    const appointmentId = id.replace('apt-', '');
+    navigate({ to: '/admin/pdv', search: { appointmentId } });
   };
 
   const handleConfirm = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'confirmed' });
+    const appointmentId = id.replace('apt-', '');
+    updateStatusMutation.mutate({ id: appointmentId, status: 'confirmed' });
   };
 
   const handleRemove = (id: string) => {
+    const clientId = id.replace('bday-', '').replace('rem-', '');
+    const taskType = id.startsWith('bday-') ? 'birthday' : 'remarketing';
     const today = new Date();
     const referenceDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    resolveCrmTaskMutation.mutate({
-      clientId: id,
-      taskType: 'birthday',
-      referenceDate,
-    });
-  };
-
-  const handleWhatsApp = (phone: string) => {
-    const href = `https://wa.me/${phone.replace(/\D/g, '')}`;
-    window.open(href, '_blank');
+    resolveCrmTaskMutation.mutate({ clientId, taskType, referenceDate });
   };
 
   return (

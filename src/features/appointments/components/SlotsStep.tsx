@@ -5,7 +5,7 @@ import { useAvailableSlots } from '../hooks';
 import type { DaySlots, SlotItem } from '../server/getAvailableSlots';
 import type { GetAvailableSlotsInput } from '../server/getAvailableSlots';
 import { todayLocalDate } from '../utils/todayLocalDate';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 
 const RANGE_DAYS = 14;
 

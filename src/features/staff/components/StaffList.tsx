@@ -18,11 +18,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { staffColor } from '../../appointments/components/DayCalendar/staffColor';
-import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
-import { toWhatsAppHref } from '@/lib/utils/whatsapp';
+import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
+import { toWhatsAppHref } from '@/features/utils/whats/whatsapp';
 import { useStaffList, useResendStaffInvite, useArchiveStaff } from '../hooks';
 import type { StaffListItem } from '../types';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 
 interface StaffListProps {
   onCreate?: () => void;

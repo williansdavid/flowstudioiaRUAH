@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, type KeyboardEvent } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Loader2, AlertTriangle, Camera, Plus, Hash } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/features/utils/ui/Button'
 import { cn } from '@/lib/cn'
 import { useCreateClient, useUpdateClient } from '../hooks'
 import type { ClientProfile } from '../types'

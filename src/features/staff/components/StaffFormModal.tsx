@@ -3,12 +3,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Loader2, AlertTriangle, Camera } from 'lucide-react';
 import { useCreateStaff, useUpdateStaff } from '../hooks';
 import { uploadAvatar, validateAvatarFile } from '../utils/uploadAvatar';
-import { PhoneInput } from '@/components/ui/PhoneInput';
+import { PhoneInput } from '@/features/utils/ui/PhoneInput';
 import { phoneBRSchema, formatPhoneBR } from '@/lib/core/utils';
 import type { CreateStaffInput } from '../server/createStaff';
 import type { UpdateStaffInput } from '../server/updateStaff';
 import type { StaffListItem } from '../types';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import { cn } from '@/lib/cn';
 
 const STAFF_PALETTE = [

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pencil, Plus, Loader2, AlertCircle, Scissors } from 'lucide-react';
 import { useServices, useToggleServiceActive } from '../hooks';
 import { ServiceFormModal } from './ServiceFormModal';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import type { ServiceItem } from '../types';
 
 const currency = new Intl.NumberFormat('pt-BR', {

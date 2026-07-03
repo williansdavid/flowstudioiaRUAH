@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pencil, Plus, Power, PowerOff, Loader2, AlertCircle, Package } from 'lucide-react';
 import { useProducts, useToggleProductActive } from '../hooks';
 import { ProductFormModal } from './ProductFormModal';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/features/utils/ui/Button';
 import type { ProductItem } from '../types';
 
 const currency = new Intl.NumberFormat('pt-BR', {

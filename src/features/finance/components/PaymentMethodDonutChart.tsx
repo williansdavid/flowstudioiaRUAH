@@ -20,54 +20,56 @@ export function PaymentMethodDonutChart({ data }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
+    <div className="min-w-0 rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
       <p className="mb-4 text-sm font-semibold text-slate-200">Receita por forma de pagamento</p>
 
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
-        <ResponsiveContainer width="100%" height={200} className="sm:max-w-[200px]">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="amount"
-              nameKey="paymentMethodName"
-              innerRadius={55}
-              outerRadius={85}
-              paddingAngle={2}
-              stroke="none"
-            >
-              {data.map((entry, index) => (
-                <Cell key={entry.paymentMethodId} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) => brl.format(Number(value ?? 0))}
-              contentStyle={{
-                backgroundColor: '#1e293b',
-                border: '1px solid rgba(148,163,184,0.2)',
-                borderRadius: 12,
-                color: '#e2e8f0',
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+      <div className="flex flex-col items-center gap-4 sm:flex-row">
+        <div className="h-[200px] w-full shrink-0 sm:w-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="amount"
+                nameKey="paymentMethodName"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={2}
+                stroke="none"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={entry.paymentMethodId} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value) => brl.format(Number(value ?? 0))}
+                contentStyle={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid rgba(148,163,184,0.2)',
+                  borderRadius: 12,
+                  color: '#e2e8f0',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
 
         {/* Legenda customizada: nome + valor + percentual, bem explícito */}
-        <div className="w-full space-y-2">
+        <div className="w-full min-w-0 space-y-3">
           {data.map((slice, index) => (
-            <div key={slice.paymentMethodId} className="flex items-center justify-between gap-3 text-sm">
-              <div className="flex min-w-0 items-center gap-2">
+            <div key={slice.paymentMethodId} className="min-w-0">
+              <div className="flex items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   aria-hidden
                 />
-                <span className="truncate text-slate-300">{slice.paymentMethodName}</span>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="font-semibold text-slate-100">{brl.format(slice.amount)}</span>
-                <span className="w-11 text-right text-xs text-slate-500">
-                  {Math.round(slice.percentage)}%
+                <span className="min-w-0 flex-1 break-words text-sm text-slate-300">
+                  {slice.paymentMethodName}
                 </span>
+              </div>
+              <div className="mt-0.5 flex items-baseline gap-2 pl-[18px]">
+                <span className="font-semibold text-slate-100">{brl.format(slice.amount)}</span>
+                <span className="text-xs text-slate-500">{Math.round(slice.percentage)}%</span>
               </div>
             </div>
           ))}

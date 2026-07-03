@@ -1,6 +1,6 @@
 // src/components/ui/WhatsAppButton.tsx
 import { cn } from '@/lib/cn';
-import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { WhatsAppIcon } from '@/features/utils/icons/WhatsAppIcon';
 
 interface WhatsAppButtonProps {
   /** Link wa.me gerado por toWhatsAppHref(). Se null, o botão não renderiza. */

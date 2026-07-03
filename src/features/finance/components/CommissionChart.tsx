@@ -27,7 +27,7 @@ export function CommissionChart({ items }: Props) {
   }));
 
   return (
-    <div className="rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
+    <div className="min-w-0 rounded-2xl border border-slate-700/20 bg-slate-800/40 p-5 shadow-md">
       <p className="mb-4 text-sm font-semibold text-slate-200">Faturamento x Comissão por profissional</p>
 
       {/* Totais bem explícitos no topo */}
@@ -64,7 +64,7 @@ export function CommissionChart({ items }: Props) {
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            width={110}
+            width={90}
           />
           <Tooltip
             formatter={(value, name) => [brl.format(Number(value ?? 0)), name]}

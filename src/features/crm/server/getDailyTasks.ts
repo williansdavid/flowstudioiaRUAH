@@ -272,7 +272,8 @@ try {
       .from('clients')
       .select('id, full_name, phone, last_visit')
       .not('last_visit', 'is', null)
-      .lt('last_visit', fortyFiveDaysAgo.toISOString());
+      .lt('last_visit', fortyFiveDaysAgo.toISOString())
+      .order('last_visit', { ascending: false });
 
     if (remError) {
       console.error('[crm] Erro ao buscar clientes para remarketing:', remError);
@@ -288,6 +289,7 @@ try {
           .in('client_id', candidateIds)
           .eq('task_type', 'remarketing')
           .gte('reference_date', monthStart.toISOString().split('T')[0]!);
+          
 
         if (logError) {
           console.error('[crm] Erro ao buscar logs de remarketing:', logError);

@@ -3,7 +3,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { getDashboardData, KpiGrid, RecentLeads } from '@/features/dashboard';
-import { ErrorState } from '@/components/feedback';
+import { ErrorState } from '@/features/utils/feedback';
 
 const dashboardQuery = {
   queryKey: ['dashboard'] as const,

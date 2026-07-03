@@ -2,7 +2,7 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { Button } from '@/features/utils/ui/Button';
+import { Button } from '@/components/ui/Button';
 import {
   useProducts,
   usePaymentMethods,
@@ -21,13 +21,13 @@ import type { ServiceForSaleItem } from '../server/listServicesForSale';
 import { useSession } from '@/features/auth/hooks';
 import { SplitPaymentSection } from './SplitPayment';
 
+
 export function PdvPage() {
   const search = useSearch({ from: '/_authed/admin/pdv' });
   const appointmentId = (search as { appointmentId?: string }).appointmentId;
   const navigate = useNavigate();
   const { data: session } = useSession();
   const canEdit = session?.profile.role === 'admin';
-
   const { data: appointmentData } = useAppointmentSaleData(appointmentId);
   const { data: products = [] } = useProducts();
   const { data: services = [] } = useServicesForSale();
@@ -56,24 +56,20 @@ export function PdvPage() {
     setStatus,
   } = usePdvStore();
 
-  // ── Effect 1: Limpa IndexedDB ao entrar com appointmentId ───────
+  // Hydrate do IndexedDB na montagem
   useEffect(() => {
-    if (appointmentId) {
-      clearPdvState();
-    }
-  }, [appointmentId]);
-
-  // ── Effect 2: Hydrate do IndexedDB (SÓ sem appointmentId) ──────
-  useEffect(() => {
-    if (storeAppointmentId || appointmentId) return;
+    if (storeAppointmentId) return;
     loadPdvState().then((saved) => {
-      if (saved) hydrate(saved);
+      if (saved) {
+        hydrate(saved);
+      }
     });
-  }, [appointmentId, storeAppointmentId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 3: Carrega dados do agendamento quando disponível ────
+  // Se veio de agendamento e store está vazia, carrega
   useEffect(() => {
     if (!appointmentData) return;
+    if (storeAppointmentId === appointmentId) return;
     loadFromAppointment({
       appointmentId: appointmentData.appointmentId,
       clientName: appointmentData.clientName,
@@ -81,9 +77,9 @@ export function PdvPage() {
       serviceName: appointmentData.serviceName,
       servicePrice: appointmentData.servicePrice,
     });
-  }, [appointmentData, loadFromAppointment]);
+  }, [appointmentData, appointmentId, storeAppointmentId, loadFromAppointment]);
 
-  // ── Effect 4: Persiste no IndexedDB quando o carrinho muda ──────
+  // Persiste no IndexedDB quando o carrinho muda
   useEffect(() => {
     if (!isDirty) return;
     const state = usePdvStore.getState();
@@ -116,6 +112,7 @@ export function PdvPage() {
     [addItem],
   );
 
+
   const handleAddService = useCallback(
     (service: ServiceForSaleItem) => {
       addItem({
@@ -131,24 +128,16 @@ export function PdvPage() {
     },
     [addItem],
   );
-
   const handleIncrement = useCallback((id: string) => updateQuantity(id, 1), [updateQuantity]);
   const handleDecrement = useCallback((id: string) => updateQuantity(id, -1), [updateQuantity]);
   const handleRemove = useCallback((id: string) => removeItem(id), [removeItem]);
-
-  const handleAddPaymentFn = useCallback(
-    (payment: SplitPayment) => addPayment(payment),
-    [addPayment],
-  );
-  const handleRemovePaymentFn = useCallback(
-    (methodId: string) => removePayment(methodId),
-    [removePayment],
-  );
+  const handleAddPaymentFn = useCallback((payment: SplitPayment) => addPayment(payment), [addPayment]);
+  const handleRemovePaymentFn = useCallback((methodId: string) => removePayment(methodId), [removePayment]);
 
   const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
   const paid = payments.reduce((sum, p) => sum + p.amount, 0);
   const cashMethod = paymentMethods.find(
-    (m) => m.name.toLowerCase() === 'dinheiro',
+  (m) => m.name.toLowerCase() === 'dinheiro',
   );
   const hasCashPayment = cashMethod
     ? payments.some((p) => p.paymentMethodId === cashMethod.id)
@@ -196,18 +185,20 @@ export function PdvPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
-      <PdvHeader clientName={clientName} />
+    <div className="mx-auto max-w-6xl space-y-6 p-4 pb-24 sm:p-6 sm:pb-6">
+      <PdvHeader clientName={clientName} appointmentId={storeAppointmentId ?? undefined} />
 
       {/* Desktop: grid + cart panel lateral */}
-      <div className="hidden gap-6 lg:grid lg:grid-cols-[1fr_400px]">
-        <ProductGrid
-          products={products}
-          services={services}
-          onAddProduct={handleAddProduct}
-          onAddService={handleAddService}
-        />
-        <div className="space-y-4">
+      <div className="hidden lg:grid lg:grid-cols-5 lg:gap-6">
+        <div className="lg:col-span-3">
+          <ProductGrid
+            products={products}
+            services={services}
+            onAddProduct={handleAddProduct}
+            onAddService={handleAddService}
+          />
+        </div>
+        <div className="space-y-6 lg:col-span-2">
           <CartPanel
             items={items}
             total={total}
@@ -216,25 +207,25 @@ export function PdvPage() {
             onRemove={handleRemove}
             canEdit={canEdit}
           />
-
           {items.length > 0 && (
-            <SplitPaymentSection
-              methods={paymentMethods}
-              payments={payments}
-              total={total}
-              onAddPayment={handleAddPaymentFn}
-              onRemovePayment={handleRemovePaymentFn}
-            />
-          )}
-
-          {items.length > 0 && (
-            <Button
-              onClick={handleFinalize}
-              disabled={!isComplete}
-              className="w-full"
-            >
-              Finalizar venda — R$ {total.toFixed(2)}
-            </Button>
+            <>
+              <SplitPaymentSection
+                methods={paymentMethods}
+                payments={payments}
+                total={total}
+                onAddPayment={handleAddPaymentFn}
+                onRemovePayment={handleRemovePaymentFn}
+              />
+              <Button
+                onClick={handleFinalize}
+                isLoading={status === 'processing'}
+                disabled={!isComplete || items.length === 0 || status === 'processing'}
+                className="w-full"
+                size="lg"
+              >
+                Finalizar venda — R$ {total.toFixed(2)}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -249,12 +240,14 @@ export function PdvPage() {
         />
       </div>
 
-      {/* Footer flutuante — apenas mobile */}
-      <CartFloatingFooter
-        itemCount={totalItems}
-        total={total}
-        onClick={() => setCartOpen(true)}
-      />
+{/* Footer flutuante — apenas mobile */}
+<div className="lg:hidden">
+  <CartFloatingFooter
+    itemCount={totalItems}
+    total={total}
+    onClick={() => setCartOpen(true)}
+  />
+</div>
 
       {/* Modal do carrinho (mobile) */}
       <CartModal
