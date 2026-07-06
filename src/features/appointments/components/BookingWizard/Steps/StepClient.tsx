@@ -1,4 +1,4 @@
-// src/features/appointments/components/BookingWizard/Steps/StepClient.tsx
+// src/features/appointments/components/StepClient.tsx
 import { UserPlus, CheckCircle2, ArrowLeft, Phone } from 'lucide-react';
 import { ClientCombobox } from '@/features/appointments/components/ClientCombobox';
 import { QuickClientModal } from '@/features/appointments/components/QuickClientModal';
@@ -34,7 +34,7 @@ export function StepClient({ value, onChange }: Props) {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Cliente selecionado → card de confirmação
+  // ── Cliente selecionado → card de confirmação (mantido como está) ──
   if (value) {
     return (
       <div className="flex flex-col gap-6 px-5 pt-2">
@@ -79,27 +79,18 @@ export function StepClient({ value, onChange }: Props) {
     );
   }
 
-  // Nenhum cliente selecionado → busca + cadastro
+  // ── Nenhum cliente selecionado → busca + botão cadastro inline ──
   return (
     <div className="flex flex-col gap-6 px-5 pt-2">
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-bold text-slate-100">Quem é o cliente?</h2>
-        <p className="text-sm text-slate-500">Selecione um cliente existente ou cadastre um novo.</p>
+        <h2 className="text-lg font-bold text-slate-100">Cliente</h2>
+        <p className="text-sm text-slate-500">
+          Selecione um cliente existente ou cadastre um novo.
+        </p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setQuickName('');
-            setQuickOpen(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-orange-500/30 py-2 text-sm font-semibold text-orange-400 transition-all duration-200 hover:border-orange-500/50 hover:text-orange-300 hover:bg-orange-500/10 active:scale-[0.98]"
-        >
-          <UserPlus className="h-5 w-5" />
-          Cadastrar novo cliente
-        </button>
-        <div className="flex-1 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-orange-500/30 py-2 text-sm font-semibold text-orange-400 transition-all duration-200 hover:border-orange-500/50 hover:text-orange-300 hover:bg-orange-500/10 active:scale-[0.98]">
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
           <ClientCombobox
             value={value}
             onChange={(id, name, phone) => {
@@ -114,6 +105,18 @@ export function StepClient({ value, onChange }: Props) {
             positionAbove={isMobile}
           />
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setQuickName('');
+            setQuickOpen(true);
+          }}
+          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-700/40 bg-slate-800/60 text-slate-400 transition-colors hover:border-slate-600/50 hover:text-slate-300 hover:bg-slate-800 active:scale-[0.98]"
+          aria-label="Cadastrar novo cliente"
+        >
+          <UserPlus className="h-5 w-5" />
+        </button>
       </div>
 
       <QuickClientModal

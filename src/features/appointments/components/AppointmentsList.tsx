@@ -353,15 +353,13 @@ export function AppointmentsList({ items, onEdit }: Props) {
 
   // Estado dos filtros
   // Mobile: padrão = staff logado. Desktop: padrão = "todos"
-  const [staffFilter, setStaffFilter] = useState<string>(
-    userId ?? ALL_STAFF_VALUE,
-  );
+  const [staffFilter, setStaffFilter] = useState(ALL_STAFF_VALUE);
+
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
 
   // Aplicar filtros
   const filtered = useMemo(() => {
-    // 1. Filtragem padrão: agora até 23:59
-    let result = filterByTimeRange(items);
+  let result = items;
 
     // 2. Filtro por staff
     if (staffFilter !== ALL_STAFF_VALUE) {

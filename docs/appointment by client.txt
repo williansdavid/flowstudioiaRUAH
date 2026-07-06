@@ -1,0 +1,152 @@
+╔══════════════════════════════════════════════════════════════╗
+║      FLOWSTUDIO AI — ACORDO TÉCNICO E ROADMAP              ║
+║      Missão: Agendamento pelo Cliente Final                 ║
+║      Data: 06/07/2026                                       ║
+╚══════════════════════════════════════════════════════════════╝
+
+──────────────────────────────────────────────────────────────
+1. VISÃO GERAL
+──────────────────────────────────────────────────────────────
+
+Implementar a capacidade de o cliente final da barbearia
+realizar agendamentos online através da landing page, com
+autenticação própria (role = client), área restrita do cliente,
+e notificação via Telegram ao grupo do studio.
+
+──────────────────────────────────────────────────────────────
+2. PREMISSAS VALIDADAS
+──────────────────────────────────────────────────────────────
+
+✔ Role 'client' já existe no banco (user_role enum)
+✔ canAccessAdmin() barra clientes do /admin
+✔ BookingWizard pronto com 4 passos (client → service →
+  professional → dateSlots)
+✔ Sistema de auth com login, forgot-password, reset,
+  primeiro-acesso (staff) existente
+✔ Clientes module com perfil 360º, histórico e timeline
+✔ SessionData carrega profile.id, full_name, email, role
+✔ Landing page pública usa fetchPublicServices()
+✔ Stack: TanStack Start SSR + Router + React Query +
+  Supabase + Tailwind + Vite + Netlify
+
+──────────────────────────────────────────────────────────────
+3. DECISÕES DE ARQUITETURA
+──────────────────────────────────────────────────────────────
+
+3.1 Novas rotas de cliente
+   ── _client/ (pathless layout: guard role=client)
+       ├── cliente/route.tsx   — layout topbar simplificada
+       ├── cliente/index.tsx   — dashboard c/ últimos agendamentos
+       ├── cliente/agendar.tsx — BookingWizard (cliente fixo)
+       └── cliente/agendamentos.tsx — histórico completo
+
+3.2 Login adaptado (_auth/login.tsx)
+   ── Redirecionar role=client logado → /cliente
+   ── Abaixo do form: botão "Criar conta" + link
+      "Já tenho cadastro mas não tenho senha"
+
+3.3 Cadastro de novo cliente (_auth/cadastro.tsx)
+   ── Fluxo: nome + email + celular → cria Auth user
+      (invite) → cria profiles (role=client) →
+      cria clients (profile_id) → envia email
+      de confirmação
+   ── Reutiliza mesmo mecanismo de invite do staff
+   ── Email já existente sem profile_id → instrução
+      "Solicite acesso via WhatsApp do studio"
+   ── Email já existente com profile_id → "Faça login"
+
+3.4 BookingWizard para cliente
+   ── Wrapper em cliente/agendar.tsx que preenche
+      clientId/clientName da sessão
+   ── Oculta StepClient (pula direto pro service)
+   ── Após confirmação → navega pra /cliente (não /admin)
+
+3.5 Notificação Telegram
+   ── Server function separada: POST para Bot API
+   ── Token + chat_id em env.ts (validado por Zod)
+   ── Implementação postergada (Willians ainda não
+      tem o bot token)
+
+3.6 Layout do cliente
+   ── Topbar simplificada (logo + nome do cliente + sair)
+   ── Sem sidebar complexa — navegação tipo "minha conta"
+
+──────────────────────────────────────────────────────────────
+4. NÃO ESCOPO (techdebt / exclusões)
+──────────────────────────────────────────────────────────────
+
+✗ Notificação Telegram — implementar depois que Willians
+  criar o bot token
+✗ WhatsApp integrado para clientes sem senha —
+  manter fluxo legado
+✗ Página de perfil/edição de dados do cliente na
+  área do cliente (futuro)
+✗ Programa de fidelidade (roadmap do produto)
+✗ IA / Marketing (roadmap do produto)
+
+──────────────────────────────────────────────────────────────
+5. ROADMAP DE ENTREGA
+──────────────────────────────────────────────────────────────
+
+ORDEM  ARQUIVO                              TIPO       STATUS
+─────  ───────────────────────────────────  ─────────  ──────────
+  1    src/routes/_client.tsx               NOVO       Pendente
+       (pathless layout + guard role=client)
+
+  2    src/routes/_client/cliente/route.tsx  NOVO       Pendente
+       (layout topbar simplificada)
+
+  3    src/routes/_client/cliente/index.tsx  NOVO       Pendente
+       (dashboard c/ últimos agendamentos)
+
+  4    src/features/auth/types.ts            MODIFICAR  Pendente
+       (ajuste login redirect p/ client)
+
+  5    src/routes/_auth/login.tsx            MODIFICAR  Pendente
+       (redirect client + opções cadastro)
+
+  6    src/routes/_client/cliente/agendar.tsx NOVO      Pendente
+       (BookingWizard wrapper c/ cliente fixo)
+
+  7    src/routes/_client/cliente/agendamentos.tsx NOVO Pendente
+       (histórico do cliente)
+
+  8    src/routes/_auth/cadastro.tsx         NOVO       Pendente
+       (cadastro novo cliente + server fn)
+
+  9    src/features/appointments/hooks.ts    MODIFICAR  Pendente
+       (apontamento p/ rota cliente)
+
+ 10*   src/lib/env.ts                        MODIFICAR  Futuro
+       (+ TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
+
+ 11*   Server function Telegram              NOVO       Futuro
+       (disparo pós-agendamento)
+
+──────────────────────────────────────────────────────────────
+6. CRITÉRIOS DE ACEITE
+──────────────────────────────────────────────────────────────
+
+[CA-01] Landing page → botão "Agendar" → /login
+[CA-02] Login → "Criar conta" → /cadastro (formulário)
+[CA-03] Cadastro → email de confirmação → define senha → loga
+[CA-04] Cliente logado → /cliente (dashboard)
+[CA-05] Dashboard mostra próximos agendamentos + últimos
+[CA-06] "Novo Agendamento" → wizard sem passo de cliente
+[CA-07] BookingWizard: serviço → profissional → data+horário
+[CA-08] Confirmação → salva no banco → redireciona /cliente
+[CA-09] Admin/staff NÃO acessa /cliente (guard)
+[CA-10] Client NÃO acessa /admin (guard existente)
+[CA-11] Loading/error/empty states em cada tela
+[CA-12] Mobile-first (responsivo)
+
+──────────────────────────────────────────────────────────────
+7. TECNOLOGIA — SEM MUDANÇAS
+──────────────────────────────────────────────────────────────
+
+Sem novas libs. Stack confirmada:
+TanStack Start + Router + React Query + TypeScript +
+Supabase + Tailwind + Vite + Netlify + Lucide + Sonner + Zod
+
+Nada de multi-tenant, microserviços, kubernetes, filas,
+CQRS ou event sourcing.

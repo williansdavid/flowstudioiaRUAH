@@ -17,7 +17,7 @@ export function CartFloatingFooter({ itemCount, total, onClick }: CartFloatingFo
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700/30 bg-slate-900/95 px-4 py-3 backdrop-blur-lg"
+          className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700/30 bg-slate-900/95 px-4 py-3 backdrop-blur-lg lg:hidden"
         >
           <button
             onClick={onClick}

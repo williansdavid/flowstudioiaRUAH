@@ -104,12 +104,7 @@ export function KpiGrid({ data }: Props) {
           icon={CheckCircle2}
           hint="Concluídos ÷ ativos do mês"
         />
-        <KpiCard
-          index={5}
-          label="Novos leads (mês)"
-          value={String(kpis.monthNewLeads)}
-          icon={Target}
-        />
+
         <KpiCard
           index={6}
           label="Clientes ativos"

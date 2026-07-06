@@ -1,6 +1,6 @@
 // src/features/appointments/components/ClientCombobox.tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, UserPlus, Check, X, Loader2 } from 'lucide-react';
+import { ChevronDown, UserPlus, Check, X, Loader2, User } from 'lucide-react';
 import type { ClientOption } from '../types';
 import { useClientSearch } from '../hooks/useClientSearch';
 import { maskPhoneBRInput } from '@/lib/core/utils';
@@ -30,7 +30,6 @@ function formatPhone(phone: string | null | undefined): string | null {
   return phone;
 }
 
-/** Destaca o termo buscado dentro do texto */
 function highlightText(text: string, query: string): (string | { bold: string })[] {
   if (!query.trim()) return [text];
   const escaped = query.replace('/[.*+?^${}()|[\]\]/g', '\$&');
@@ -55,7 +54,7 @@ function renderHighlighted(parts: (string | { bold: string })[]) {
 const fieldInput =
   'w-full rounded-lg border border-slate-700/40 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-200 outline-none ' +
   'transition-all duration-200 placeholder:text-slate-500 ' +
-  'focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-900';
+  'focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 focus:bg-slate-900';
 
 export function ClientCombobox({
   value,
@@ -70,6 +69,16 @@ export function ClientCombobox({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const { query, setQuery, data: clients = [], isLoading } = useClientSearch();
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const selected = useMemo(
     () => clients.find((c) => c.id === value) ?? null,
@@ -86,7 +95,7 @@ export function ClientCombobox({
   useEffect(() => { setHighlight(0); }, [query, open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobile) return;
     function onDocClick(ev: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(ev.target as Node)) {
         setOpen(false);
@@ -95,7 +104,7 @@ export function ClientCombobox({
     }
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
-  }, [open, setQuery]);
+  }, [open, isMobile, setQuery]);
 
   useEffect(() => {
     if (!open || !listRef.current) return;
@@ -119,6 +128,11 @@ export function ClientCombobox({
     onChange('', '', null);
     setQuery('');
     openDropdown();
+  }
+
+  function closeOverlay() {
+    setOpen(false);
+    setQuery('');
   }
 
   function handleKeyDown(ev: React.KeyboardEvent) {
@@ -147,6 +161,99 @@ export function ClientCombobox({
     );
   }
 
+  // ── Overlay mobile fullscreen ──
+  if (open && isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-slate-900">
+        {/* Header com input + cancelar */}
+        <div className="flex items-center gap-2 border-b border-slate-700/40 px-4 py-3">
+          <input
+            ref={inputRef}
+            type="text"
+            className="flex-1 rounded-lg border border-slate-700/40 bg-slate-800/60 px-3 py-3 text-base text-slate-200 outline-none placeholder:text-slate-500 focus:border-cyan-500/50"
+            value={displayValue}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\D/g, '');
+              setQuery(isPhoneSearch ? raw : e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Buscar por nome ou telefone…"
+            autoComplete="off"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={closeOverlay}
+            className="shrink-0 text-sm font-medium text-slate-400 hover:text-slate-300"
+          >
+            Cancelar
+          </button>
+        </div>
+
+        {/* Lista de resultados — ocupa o resto da tela */}
+        <ul ref={listRef} className="flex-1 overflow-y-auto py-1">
+          {isLoading ? (
+            <li className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Buscando…
+            </li>
+          ) : clients.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-slate-500">Nenhum cliente encontrado.</li>
+          ) : (
+            clients.map((c, idx) => {
+              const active = idx === highlight;
+              const isSel = c.id === value;
+              const nameParts = highlightText(c.name, query);
+              const phoneFormatted = formatPhone(c.phone);
+              const phoneParts = phoneFormatted ? highlightText(phoneFormatted, query) : null;
+              return (
+                <li key={c.id} data-idx={idx}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setHighlight(idx)}
+                    onClick={() => pick(c)}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                      active ? 'bg-slate-800' : ''
+                    }`}
+                  >
+                    <User className="h-4 w-4 shrink-0 text-slate-500" />
+                    <span className="flex-1 text-slate-200">
+                      {renderHighlighted(nameParts)}
+                    </span>
+                    {phoneParts && (
+                      <span className="text-sm text-slate-400">
+                        {renderHighlighted(phoneParts)}
+                      </span>
+                    )}
+                    {isSel && (
+                      <Check className="h-4 w-4 text-cyan-400 shrink-0" />
+                    )}
+                  </button>
+                </li>
+              );
+            })
+          )}
+
+          {query.trim().length > 0 && (
+            <li className="border-t border-slate-700/40">
+              <button
+                type="button"
+                onClick={() => onCreateNew(query)}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-400 transition-colors hover:bg-slate-800"
+              >
+                <UserPlus className="h-4 w-4 shrink-0" />
+                <span>
+                  Cadastrar <strong className="text-slate-200">"{query}"</strong>
+                </span>
+              </button>
+            </li>
+          )}
+        </ul>
+      </div>
+    );
+  }
+
+  // ── Desktop: botão + input + dropdown absoluto ──
   return (
     <div ref={rootRef} className="relative">
       {!open ? (
@@ -155,7 +262,7 @@ export function ClientCombobox({
           onClick={openDropdown}
           className={`${fieldInput} flex items-center justify-between text-left`}
         >
-          <span className={selected ? 'text-slate-200' : 'text-orange-400'}>
+          <span className={selected ? 'text-slate-200' : 'text-slate-400'}>
             {selectedLabel || 'Selecione…'}
           </span>
           <span className="flex items-center gap-1 shrink-0">
@@ -170,7 +277,7 @@ export function ClientCombobox({
                 <X className="h-3.5 w-3.5" />
               </span>
             )}
-            <ChevronDown className="h-4 w-4 text-orange-400" />
+            <ChevronDown className="h-4 w-4 text-slate-400" />
           </span>
         </button>
       ) : (
@@ -215,28 +322,43 @@ export function ClientCombobox({
                       type="button"
                       onMouseEnter={() => setHighlight(idx)}
                       onClick={() => pick(c)}
-                      className={`flex w-full items-center justify-between gap-2 px-3 py-2.0 text-left text-sm transition-colors ${
+                      className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
                         active ? 'bg-slate-800' : ''
                       }`}
                     >
-                      <span className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800">
+                      <User className="h-4 w-4 shrink-0 text-slate-500" />
+                      <span className="flex-1 text-slate-200">
                         {renderHighlighted(nameParts)}
                       </span>
                       {phoneParts && (
-                        <span className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800">
+                        <span className="text-sm text-slate-400">
                           {renderHighlighted(phoneParts)}
                         </span>
                       )}
                       {isSel && (
-                        <Check className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-orange-400 transition-colors hover:bg-slate-800" />
+                        <Check className="h-4 w-4 text-cyan-400 shrink-0" />
                       )}
                     </button>
                   </li>
                 );
               })
             )}
-          </ul>
 
+            {query.trim().length > 0 && (
+              <li className="border-t border-slate-700/40">
+                <button
+                  type="button"
+                  onClick={() => onCreateNew(query)}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-slate-400 transition-colors hover:bg-slate-800"
+                >
+                  <UserPlus className="h-4 w-4 shrink-0" />
+                  <span>
+                    Cadastrar <strong className="text-slate-200">"{query}"</strong>
+                  </span>
+                </button>
+              </li>
+            )}
+          </ul>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { identity } from '@/config/active-studio'
-import { useState, useCallback } from 'react';
+import { useState, useCallback,useMemo  } from 'react';
 import { motion } from 'framer-motion';
 import {
   CheckCircle2,
@@ -15,6 +15,7 @@ import { toWhatsAppHref } from '@/features/utils/whats/whatsapp';
 import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
 import { WHATS_MSG } from '@/features/utils/whats/whatsmsg';
 import { WhatsAppIcon } from '@/features/utils/icons/WhatsAppIcon';
+import { ConfirmDialog } from '@/features/utils/ui/ConfirmDialog';
 
 /* ───────── Helpers ───────── */
 
@@ -395,10 +396,25 @@ export function TasksPage({
   onRemove,
 }: TasksPageProps) {
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const [confirmTaskId, setConfirmTaskId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [confirmConfirmId, setConfirmConfirmId] = useState<string | null>(null);
+  const [confirmConcluirAniversarioId, setConfirmConcluirAniversarioId] = useState<string | null>(null);
+
 
   const hideTask = useCallback((id: string) => {
     setHiddenIds((prev) => new Set(prev).add(id));
   }, []);
+
+  const allTasks = useMemo(
+    () => [
+      ...tasks.overdue,
+      ...tasks.pendingConfirmation,
+      ...tasks.birthdays,
+      ...tasks.inactive,
+    ],
+    [tasks],
+  );
 
   const handleLembrarDepois = useCallback(
     (id: string) => {
@@ -411,6 +427,21 @@ export function TasksPage({
     (id: string) => { onMarkNoShow(id); hideTask(id); },
     [onMarkNoShow, hideTask],
   );
+  const handleRequestMarkNoShow = useCallback((id: string) => {
+    setConfirmTaskId(id);
+  }, []);
+
+  const handleRequestRemove = useCallback((id: string) => {
+    setConfirmRemoveId(id);
+  }, []);
+
+  const handleRequestConfirm = useCallback((id: string) => {
+    setConfirmConfirmId(id);
+  }, []);  
+
+  const handleRequestConcluirAniversario = useCallback((id: string) => {
+    setConfirmConcluirAniversarioId(id);
+  }, []);
 
   const handleComplete = useCallback(
     (id: string) => { onComplete(id); hideTask(id); },
@@ -448,7 +479,10 @@ export function TasksPage({
         tasks={filteredTasks.overdue}
         accentClass="text-red-400"
         renderCard={(task) => (
-          <TaskCardSemConclusao task={task} onMarkNoShow={handleMarkNoShow} onComplete={handleComplete} onLembrarDepois={handleLembrarDepois} />
+          <TaskCardSemConclusao task={task} 
+          onMarkNoShow={handleRequestMarkNoShow} 
+          onComplete={handleComplete} 
+          onLembrarDepois={handleLembrarDepois} />
         )}
       />
       <Section
@@ -457,7 +491,7 @@ export function TasksPage({
         tasks={filteredTasks.pendingConfirmation}
         accentClass="text-emerald-400"
         renderCard={(task) => (
-          <TaskCardConfirmar task={task} onConfirm={handleConfirm} onLembrarDepois={handleLembrarDepois} />
+          <TaskCardConfirmar task={task} onConfirm={handleRequestConfirm} onLembrarDepois={handleLembrarDepois} />
         )}
       />
       <Section
@@ -466,7 +500,7 @@ export function TasksPage({
         tasks={filteredTasks.birthdays}
         accentClass="text-pink-400"
         renderCard={(task) => (
-          <TaskCardAniversario task={task} onRemove={handleRemove} onLembrarDepois={handleLembrarDepois} />
+          <TaskCardAniversario task={task} onRemove={handleRequestConcluirAniversario} onLembrarDepois={handleLembrarDepois} />
         )}
       />
       <Section
@@ -475,9 +509,86 @@ export function TasksPage({
         tasks={filteredTasks.inactive}
         accentClass="text-orange-400"
         renderCard={(task) => (
-          <TaskCardInativo task={task} onRemove={handleRemove} onLembrarDepois={handleLembrarDepois} />
+          <TaskCardInativo task={task} onRemove={handleRequestRemove} onLembrarDepois={handleLembrarDepois} />
         )}
       />
+      <ConfirmDialog
+        open={confirmTaskId !== null}
+        onClose={() => setConfirmTaskId(null)}
+        onConfirm={() => {
+          if (confirmTaskId) handleMarkNoShow(confirmTaskId);
+          setConfirmTaskId(null);
+        }}
+        title="Marcar como falta?"
+        description={
+          confirmTaskId
+            ? `Confirma que "${
+                allTasks.find((t) => t.id === confirmTaskId)?.clientName ??
+                'este cliente'
+              }" não compareceu?`
+            : ''
+        }
+        confirmLabel="Sim, faltou"
+        variant="danger"
+      />
+      <ConfirmDialog
+        open={confirmRemoveId !== null}
+        onClose={() => setConfirmRemoveId(null)}
+        onConfirm={() => {
+          if (confirmRemoveId) handleRemove(confirmRemoveId);
+          setConfirmRemoveId(null);
+        }}
+        title="Descartar cliente?"
+        description={
+          confirmRemoveId
+            ? `Confirma que deseja descartar "${
+                allTasks.find((t) => t.id === confirmRemoveId)?.clientName ??
+                'este cliente'
+              }"?`
+            : ''
+        }
+        confirmLabel="Sim, descartar"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        open={confirmConfirmId !== null}
+        onClose={() => setConfirmConfirmId(null)}
+        onConfirm={() => {
+          if (confirmConfirmId) handleConfirm(confirmConfirmId);
+          setConfirmConfirmId(null);
+        }}
+        title="Confirmar presença?"
+        description={
+          confirmConfirmId
+            ? `Confirma que deseja marcar presença de "${
+                allTasks.find((t) => t.id === confirmConfirmId)?.clientName ??
+                'este cliente'
+              }"?`
+            : ''
+        }
+        confirmLabel="Sim, confirmar"
+        variant="success"
+      />      
+      <ConfirmDialog
+        open={confirmConcluirAniversarioId !== null}
+        onClose={() => setConfirmConcluirAniversarioId(null)}
+        onConfirm={() => {
+          if (confirmConcluirAniversarioId) handleRemove(confirmConcluirAniversarioId);
+          setConfirmConcluirAniversarioId(null);
+        }}
+        title="Concluir aniversariante?"
+        description={
+          confirmConcluirAniversarioId
+            ? `Confirma que deseja concluir o aniversariante "${
+                allTasks.find((t) => t.id === confirmConcluirAniversarioId)?.clientName ??
+                'este cliente'
+              }"?`
+            : ''
+        }
+        confirmLabel="Sim, concluir"
+        variant="success"
+      />      
     </div>
   );
 }

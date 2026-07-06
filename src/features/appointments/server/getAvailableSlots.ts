@@ -1,4 +1,3 @@
-// src/features/appointments/server/getAvailableSlots.ts
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
@@ -16,10 +15,6 @@ const OCCUPYING_STATUSES = ['pending', 'confirmed', 'completed'] as const;
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-/**
- * businessHours injetado pelo site (Sistema não importa de sites/).
- * Shape espelha src/sites/<studio>/config/businessHours.ts.
- */
 const businessDaySchema = z.discriminatedUnion('open', [
   z.object({ open: z.literal(false) }),
   z.object({
@@ -44,7 +39,6 @@ export type BusinessHoursInput = z.infer<typeof businessHoursSchema>;
 const inputSchema = z.object({
   staffId: z.string().uuid('Profissional inválido'),
   serviceId: z.string().uuid('Serviço inválido'),
-  // primeiro dia do range, 'YYYY-MM-DD' local UTC-3
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
   days: z.number().int().min(1).max(31).default(14),
   businessHours: businessHoursSchema,
@@ -67,7 +61,6 @@ interface Interval {
   end: number;
 }
 
-/** Índice 0..6 (0=domingo) -> nome usado no businessHours. */
 const WEEKDAY_NAMES = [
   'sunday',
   'monday',
@@ -78,26 +71,22 @@ const WEEKDAY_NAMES = [
   'saturday',
 ] as const satisfies readonly (keyof BusinessHoursInput)[];
 
-/** Soma N dias a 'YYYY-MM-DD' (aritmética em UTC, sem tocar fuso). */
 function addDays(date: string, n: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
-/** Weekday 0..6 (0=domingo) do dia local UTC-3. */
 function weekdayIndex(date: string): number {
   const d = new Date(`${date}T12:00:00-03:00`);
   const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
   return local.getUTCDay();
 }
 
-/** "HH:MM" local (UTC-3) no dia -> epoch ms. */
 function localTimeToMs(date: string, time: string): number {
   return new Date(`${date}T${time}:00-03:00`).getTime();
 }
 
-/** Range UTC [00:00, +24h) do dia local UTC-3. */
 function dayRangeISO(date: string): { start: string; end: string } {
   const start = new Date(`${date}T00:00:00-03:00`);
   const end = new Date(start);
@@ -105,7 +94,6 @@ function dayRangeISO(date: string): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-/** max(a.start,b.start) .. min(a.end,b.end). null se não há interseção. */
 function intersect(a: Interval, b: Interval): Interval | null {
   const start = Math.max(a.start, b.start);
   const end = Math.min(a.end, b.end);
@@ -135,7 +123,7 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
       throw new Error('[appointments] Sessão inválida.');
     }
 
-    // 1. Serviço: duração (valida bloco contínuo, COND. 3) + validade.
+    // 1. Serviço: duração + validade.
     const { data: service, error: svcError } = await supabase
       .from('services')
       .select('duration_minutes, is_active')
@@ -163,7 +151,6 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
     const startDate = data.startDate;
     const endDate = addDays(startDate, data.days);
 
-    // Vazio cedo: staff não-bookable ou sem grade válida.
     const workingHours = staff.is_bookable
       ? parseWorkingHours(staff.working_hours)
       : null;
@@ -172,9 +159,9 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
       return buildEmptyRange(startDate, data.days);
     }
 
-    // 3. Range global UTC para queries (1 query cada, não por dia).
+    // 3. Range global UTC para queries.
     const rangeStart = dayRangeISO(startDate).start;
-    const rangeEnd = dayRangeISO(endDate).start; // 00:00 do dia seguinte ao último
+    const rangeEnd = dayRangeISO(endDate).start;
 
     const [busyRes, timeOffRes] = await Promise.all([
       supabase
@@ -208,20 +195,14 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
     const now = Date.now();
     const result: DaySlots[] = [];
 
-    // 4. Loop por dia do range.
+    // 4. Loop por dia do range — APENAS working_hours do profissional.
     for (let i = 0; i < data.days; i++) {
       const date = addDays(startDate, i);
       const wd = weekdayIndex(date);
-      const dayName = WEEKDAY_NAMES[wd]!;
 
-      // businessHours do dia.
-      const business = data.businessHours[dayName];
-      if (!business.open) {
-        result.push({ date, slots: [] });
-        continue;
-      }
+      // 🔥 REMOVIDO: filtro por businessHours do studio
+      // O working_hours do profissional é a única fonte de verdade.
 
-      // working_hours do dia (folga fixa => null).
       const daySchedule: DaySchedule | null =
         workingHours[String(wd) as WeekdayKey];
       if (!daySchedule) {
@@ -229,22 +210,13 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
         continue;
       }
 
-      // Passo 2 da 5.4: janela base = businessHours ∩ working_hours.
-      const businessWindow: Interval = {
-        start: localTimeToMs(date, business.opensAt),
-        end: localTimeToMs(date, business.closesAt),
-      };
-      const workWindow: Interval = {
+      // Janela base = horário de trabalho do profissional (sem interseção)
+      const base: Interval = {
         start: localTimeToMs(date, daySchedule.start),
         end: localTimeToMs(date, daySchedule.end),
       };
-      const base = intersect(businessWindow, workWindow);
-      if (!base) {
-        result.push({ date, slots: [] });
-        continue;
-      }
 
-      // Busy do dia = breaks (almoço) + time_off + appointments.
+      // Busy do dia = breaks + time_off + appointments
       const dayBusy: Interval[] = [
         ...daySchedule.breaks.map((b) => ({
           start: localTimeToMs(date, b.start),
@@ -254,8 +226,7 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
         ...appointments,
       ];
 
-      // 5. Fatia grade fixa 30min; mantém slot se [slot, slot+duração]
-      //    cabe na base E não colide com nenhum busy (COND. 3).
+      // 5. Grade fixa 30min
       const slots: SlotItem[] = [];
       for (
         let slotStart = base.start;
@@ -264,7 +235,7 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
       ) {
         const slotEnd = slotStart + durationMs;
 
-        if (slotStart < now) continue; // descarta passado
+        if (slotStart < now) continue;
 
         const collides = dayBusy.some(
           (b) => b.start < slotEnd && b.end > slotStart,
@@ -283,7 +254,6 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
     return result;
   });
 
-/** Range completo com dias vazios (staff sem grade/não-bookable). */
 function buildEmptyRange(startDate: string, days: number): DaySlots[] {
   const out: DaySlots[] = [];
   for (let i = 0; i < days; i++) {

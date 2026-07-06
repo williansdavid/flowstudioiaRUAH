@@ -1,10 +1,10 @@
-// src/features/clients/hooks.ts
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { parsePostgresError } from '@/lib/parsePostgresError'
 
 import { listClients } from './server/listClients'
 import { getClientAlerts } from './server/getClientAlerts'
@@ -33,6 +33,7 @@ import { getBirthdayClients } from './server/getBirthdayClients'
 import type { GetBirthdayClientsResponse } from './server/getBirthdayClients'
 import { getNoReturnClients } from './server/getNoReturnClients'
 import type { GetNoReturnClientsResponse } from './server/getNoReturnClients'
+
 /* ───────── Queries ───────── */
 
 export function useClientsList(params: ClientQueryParams) {
@@ -128,7 +129,7 @@ export function useCreateClient() {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erro ao cadastrar cliente.')
+      toast.error(parsePostgresError(error))
     },
   })
 }
@@ -143,7 +144,7 @@ export function useUpdateClient() {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Erro ao atualizar cliente.')
+      toast.error(parsePostgresError(error))
     },
   })
 }
