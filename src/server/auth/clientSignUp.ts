@@ -2,6 +2,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { env } from '@/lib/env';
 
 const clientSignUpSchema = z.object({
   name: z.string().trim().min(1, 'Nome é obrigatório'),
@@ -37,42 +38,49 @@ export const clientSignUp = createServerFn({ method: 'POST' })
     if (existingClient?.profile_id) return { status: 'exists_with_profile' };
     if (existingClient && !existingClient.profile_id) return { status: 'exists_no_profile' };
 
-    // ── Criar auth user via admin API (invite) ──
-    const { data: authUser, error: authError } = await admin.auth.admin.inviteUserByEmail(
+    // ── Criar Auth user via CONVITE ──
+    const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
       data.email,
       {
-        data: { role: 'client', full_name: data.name },
-        redirectTo: `${import.meta.env.VITE_APP_URL}/cliente`,
+        data: {
+          role: 'client',
+          full_name: data.name,
+          phone: data.phone,   // ← ADICIONADO: phone nos metadados
+        },
+        redirectTo: `${env.VITE_APP_URL}/cliente`,
       },
     );
 
-    if (authError || !authUser?.user?.id) {
-      console.error('[clientSignUp] Erro ao criar auth user:', authError);
+    if (inviteErr || !invited?.user) {
+      const msg = inviteErr?.message ?? '';
+      if (/already.*registered|already.*exists|email.*exists/i.test(msg)) {
+        return { status: 'error', message: 'Este e-mail já está em uso.' };
+      }
+      console.error('[clientSignUp] Erro ao convidar:', inviteErr);
       return { status: 'error', message: 'Erro ao criar conta. Verifique o e-mail e tente novamente.' };
     }
 
-    const userId = authUser.user.id;
+    const userId = invited.user.id;
 
-    // ── UPSERT em profile (trigger já criou um básico) ──
-    const { error: profileError } = await admin.from('profiles').upsert(
+    // ── Upsert profile ──
+    const { error: profileErr } = await admin.from('profiles').upsert(
       {
         id: userId,
         email: data.email,
         role: 'client',
-        full_name: data.name,
-        phone: data.phone,
+        full_name: data.name,        
         is_active: true,
       },
       { onConflict: 'id' },
     );
 
-    if (profileError) {
-      console.error('[clientSignUp] Erro ao upsert profile:', profileError);
+    if (profileErr) {
+      console.error('[clientSignUp] Erro ao upsert profile:', profileErr);
       await admin.auth.admin.deleteUser(userId);
       return { status: 'error', message: 'Erro ao criar conta. Tente novamente.' };
     }
 
-    // ── Clients: o trigger já criou/vinculou se achou match por email
+    // ── Clients: trigger já pode ter vinculado por email ──
     const { data: linkedClient } = await admin
       .from('clients')
       .select('id')
