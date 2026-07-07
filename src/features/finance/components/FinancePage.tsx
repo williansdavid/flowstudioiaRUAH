@@ -8,6 +8,7 @@ import { RevenueTrendChart } from './RevenueTrendChart';
 import { RevenueByStaffList } from './RevenueByStaffList';
 import { CommissionChart } from './CommissionChart';
 import { RecentTransactionsList } from './RecentTransactionsList';
+import { NewExpenseButton } from './NewExpenseButton';
 import {
   useFinanceSummary,
   useRevenueByPaymentMethod,
@@ -61,7 +62,10 @@ export function FinancePage() {
           <h1 className="text-2xl font-bold text-slate-100">Financeiro</h1>
           <p className="text-sm text-slate-500">Faturamento, despesas e formas de pagamento</p>
         </div>
-        <PeriodFilter value={period} onChange={setPeriod} />
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodFilter value={period} onChange={setPeriod} />
+          <NewExpenseButton />
+        </div>
       </div>
 
       {period === 'custom' ? (

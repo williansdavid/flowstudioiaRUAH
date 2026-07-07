@@ -1,9 +1,11 @@
+// src/features/admin/components/AdminLayout.tsx
 import { useState, useEffect } from 'react';
 import { Outlet, useMatches } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { TopbarSlotProvider } from '../contexts/topbar-slot';
 import { useSignOut } from '@/features/auth/hooks';
 import type { SessionData } from '@/features/auth/types';
 import { BottomTab } from './BottomTab';
@@ -106,6 +108,7 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
 
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
+      <TopbarSlotProvider>  
         <Topbar title={title} onOpenMenu={() => setMobileOpen(true)} />
         <main className="relative flex-1 overflow-y-auto p-4 pb-14 lg:p-6 lg:pb-6">
           <div
@@ -116,6 +119,7 @@ export function AdminLayout({ session, studioName }: AdminLayoutProps) {
             <Outlet />
           </div>
         </main>
+        </TopbarSlotProvider>     
         <BottomTab />
       </div>
     </div>

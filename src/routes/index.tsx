@@ -1,4 +1,5 @@
-﻿/**
+﻿// src/routes/index.tsx
+/**
  * / — Landing Pública do Ruah Barber Lounge (Módulo 2 — Site)
  * ----------------------------------------------------------------
  * Concentra os ASSETS, TEMA e SEMÂNTICA de studio:

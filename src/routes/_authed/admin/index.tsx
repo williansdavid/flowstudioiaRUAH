@@ -1,3 +1,4 @@
+// src/_authed/admin/index.tsx
 import { RevenueByStaffChart } from '@/features/dashboard/components/RevenueByStaffChart';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';

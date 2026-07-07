@@ -1,4 +1,6 @@
-﻿/**
+﻿// src/routes/__root.tsx
+
+/**
  * __root.tsx — Root Route do TanStack React Start
  * ----------------------------------------------------------------
  * Responsabilidade: SHELL NEUTRO ABSOLUTO do app.

@@ -1,3 +1,4 @@
+// src/routes/_authed.tsx
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { getSession } from '@/server/auth/getSession';
 import { canAccessAdmin } from '@/features/auth/types';

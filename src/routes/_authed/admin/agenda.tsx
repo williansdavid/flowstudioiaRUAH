@@ -1,13 +1,14 @@
 // src/routes/_authed/admin/agenda.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus } from 'lucide-react'
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
 import { AppointmentFormModal } from '@/features/appointments/components/AppointmentFormModal'
 import { Button } from '@/features/utils/ui/Button'
+import { useTopbarSlot } from '@/features/admin-shell/contexts/topbar-slot'
 import {
   getDayAppointments,
   getDayTimeOff,
@@ -65,6 +66,7 @@ function AgendaPage() {
     open: false,
     mode: { kind: 'create' },
   })
+  const { setContent: setTopbarContent } = useTopbarSlot()
 
   const { data: appointments } = useSuspenseQuery({
     queryKey: ['appointments', 'day', date],
@@ -92,6 +94,35 @@ function AgendaPage() {
   })
 
   const isToday = date === today
+
+  // Injeta o cabeçalho compacto no slot do Topbar em mobile
+  useEffect(() => {
+    setTopbarContent(
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+          <Calendarcon className="h-4 w-4" />
+        </div>
+        <div className="flex flex-col justify-center leading-tight min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+              Agenda
+            </span>
+            {isToday && (
+              <span className="inline-flex items-center rounded-full bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 text-[9px] font-medium text-cyan-400">
+                Hoje
+              </span>
+            )}
+          </div>
+          <span className="truncate text-sm font-bold capitalize leading-tight text-slate-100">
+            {format(new Date(date + 'T00:00:00'), "EEEE, d 'de' MMMM", {
+              locale: ptBR,
+            })}
+          </span>
+        </div>
+      </div>
+    )
+    return () => setTopbarContent(null)
+  }, [date, isToday, setTopbarContent])
 
   const handleAppointmentClick = (appointment: AppointmentItem) => {
     setModal({ open: true, mode: { kind: 'edit', appointment } })
@@ -122,8 +153,6 @@ function AgendaPage() {
     if (e.target.value) setDate(e.target.value)
   }
 
-  const dateObj = new Date(date + 'T00:00:00')
-
   const renderControls = (isMobile: boolean) => (
     <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-between' : 'hidden sm:flex'}`}>
       <button
@@ -141,7 +170,7 @@ function AgendaPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="relative flex flex-1 sm:flex-none items-center justify-center border-x border-slate-700 px-1.5 sm:px-3 py-2.5 sm:py-2 min-w-0">
-          <CalendarIcon className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 flex-shrink-0" />
+          <Calendarcon className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 flex-shrink-0" />
           <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
             {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </span>
@@ -173,11 +202,11 @@ function AgendaPage() {
   return (
     <div className="h-full w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6 min-h-0">
-        {/* Header Fixo */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 pt-4 pb-3 sm:p-0">
+        {/* Header Fixo — escondido em mobile (vai pro slot do Topbar) */}
+        <div className="hidden sm:flex flex-shrink-0 items-center justify-between px-4 pt-4 pb-3 sm:p-0">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-              <CalendarIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+              <Calendarcon className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
             <div className="flex flex-col justify-center">
               <div className="flex items-center gap-2 mb-0.5">
@@ -189,7 +218,7 @@ function AgendaPage() {
                 )}
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 capitalize leading-none">
-                {format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                {format(new Date(date + 'T00:00:00'), "EEEE, d 'de' MMMM", { locale: ptBR })}
               </h1>
             </div>
           </div>
