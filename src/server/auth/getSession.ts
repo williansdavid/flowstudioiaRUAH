@@ -1,3 +1,4 @@
+// src/server/auth/getSession.ts
 import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import type { SessionData } from '@/features/auth/types';

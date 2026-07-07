@@ -1,4 +1,7 @@
 // src/features/appointments/index.ts
+
+export { getClientAppointments } from './server/getClientAppointments';
+
 export { todayLocalDate } from './utils/todayLocalDate';
 export { AppointmentFormModal } from './components/AppointmentFormModal';
 export { getDayAppointments, type GetDayAppointmentsInput } from './server/getDayAppointments';
@@ -34,3 +37,7 @@ export type {
   ServiceOption,
   ClientOption,
 } from './types';
+export {
+  createClientAppointment,
+  type CreateClientAppointmentInput,
+} from './server/createClientAppointment';

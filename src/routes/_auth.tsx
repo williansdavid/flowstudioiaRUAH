@@ -1,3 +1,4 @@
+// src/routes/_auth.tsx
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { systemThemeClass } from '@/lib/core/system'
 

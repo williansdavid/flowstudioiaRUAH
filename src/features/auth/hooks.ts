@@ -24,7 +24,10 @@ export function useSignIn() {
     onSuccess: async (session) => {
       queryClient.setQueryData(authKeys.session, session);
       queryClient.clear();
-      await router.navigate({ to: '/admin' });
+
+      const role = session?.profile?.role;
+      const redirectTo = role === 'client' ? '/cliente' : '/admin';
+      await router.navigate({ to: redirectTo });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Não foi possível entrar.');

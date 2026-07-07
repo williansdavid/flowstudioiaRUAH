@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ClientRouteImport } from './routes/_client'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,8 +18,12 @@ import { Route as AuthPrimeiroAcessoRouteImport } from './routes/_auth/primeiro-
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AuthCadastroRouteImport } from './routes/_auth/cadastro'
+import { Route as ClientClienteRouteRouteImport } from './routes/_client/cliente/route'
 import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
+import { Route as ClientClienteIndexRouteImport } from './routes/_client/cliente/index'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
+import { Route as ClientClienteAgendarRouteImport } from './routes/_client/cliente/agendar'
+import { Route as ClientClienteAgendamentosRouteImport } from './routes/_client/cliente/agendamentos'
 import { Route as AuthedAdminServicosRouteImport } from './routes/_authed/admin/servicos'
 import { Route as AuthedAdminProdutosRouteImport } from './routes/_authed/admin/produtos'
 import { Route as AuthedAdminPdvRouteImport } from './routes/_authed/admin/pdv'
@@ -32,6 +37,10 @@ import { Route as AuthedAdminAgendaRouteImport } from './routes/_authed/admin/ag
 import { Route as AuthedAdminEquipeIndexRouteImport } from './routes/_authed/admin/equipe/index'
 import { Route as AuthedAdminEquipeStaffIdHorariosRouteImport } from './routes/_authed/admin/equipe/$staffId/horarios'
 
+const ClientRoute = ClientRouteImport.update({
+  id: '/_client',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -70,16 +79,37 @@ const AuthCadastroRoute = AuthCadastroRouteImport.update({
   path: '/cadastro',
   getParentRoute: () => AuthRoute,
 } as any)
+const ClientClienteRouteRoute = ClientClienteRouteRouteImport.update({
+  id: '/cliente',
+  path: '/cliente',
+  getParentRoute: () => ClientRoute,
+} as any)
 const AuthedAdminRouteRoute = AuthedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthedRoute,
+} as any)
+const ClientClienteIndexRoute = ClientClienteIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClientClienteRouteRoute,
 } as any)
 const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
+const ClientClienteAgendarRoute = ClientClienteAgendarRouteImport.update({
+  id: '/agendar',
+  path: '/agendar',
+  getParentRoute: () => ClientClienteRouteRoute,
+} as any)
+const ClientClienteAgendamentosRoute =
+  ClientClienteAgendamentosRouteImport.update({
+    id: '/agendamentos',
+    path: '/agendamentos',
+    getParentRoute: () => ClientClienteRouteRoute,
+  } as any)
 const AuthedAdminServicosRoute = AuthedAdminServicosRouteImport.update({
   id: '/servicos',
   path: '/servicos',
@@ -145,6 +175,7 @@ const AuthedAdminEquipeStaffIdHorariosRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AuthedAdminRouteRouteWithChildren
+  '/cliente': typeof ClientClienteRouteRouteWithChildren
   '/cadastro': typeof AuthCadastroRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -160,7 +191,10 @@ export interface FileRoutesByFullPath {
   '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/produtos': typeof AuthedAdminProdutosRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
+  '/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
+  '/cliente/agendar': typeof ClientClienteAgendarRoute
   '/admin/': typeof AuthedAdminIndexRoute
+  '/cliente/': typeof ClientClienteIndexRoute
   '/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
   '/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -180,7 +214,10 @@ export interface FileRoutesByTo {
   '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/produtos': typeof AuthedAdminProdutosRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
+  '/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
+  '/cliente/agendar': typeof ClientClienteAgendarRoute
   '/admin': typeof AuthedAdminIndexRoute
+  '/cliente': typeof ClientClienteIndexRoute
   '/admin/equipe': typeof AuthedAdminEquipeIndexRoute
   '/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -189,7 +226,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/_authed': typeof AuthedRouteWithChildren
+  '/_client': typeof ClientRouteWithChildren
   '/_authed/admin': typeof AuthedAdminRouteRouteWithChildren
+  '/_client/cliente': typeof ClientClienteRouteRouteWithChildren
   '/_auth/cadastro': typeof AuthCadastroRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -205,7 +244,10 @@ export interface FileRoutesById {
   '/_authed/admin/pdv': typeof AuthedAdminPdvRoute
   '/_authed/admin/produtos': typeof AuthedAdminProdutosRoute
   '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
+  '/_client/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
+  '/_client/cliente/agendar': typeof ClientClienteAgendarRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
+  '/_client/cliente/': typeof ClientClienteIndexRoute
   '/_authed/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
   '/_authed/admin/equipe/$staffId/horarios': typeof AuthedAdminEquipeStaffIdHorariosRoute
 }
@@ -214,6 +256,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/cliente'
     | '/cadastro'
     | '/forgot-password'
     | '/login'
@@ -229,7 +272,10 @@ export interface FileRouteTypes {
     | '/admin/pdv'
     | '/admin/produtos'
     | '/admin/servicos'
+    | '/cliente/agendamentos'
+    | '/cliente/agendar'
     | '/admin/'
+    | '/cliente/'
     | '/admin/equipe/'
     | '/admin/equipe/$staffId/horarios'
   fileRoutesByTo: FileRoutesByTo
@@ -249,7 +295,10 @@ export interface FileRouteTypes {
     | '/admin/pdv'
     | '/admin/produtos'
     | '/admin/servicos'
+    | '/cliente/agendamentos'
+    | '/cliente/agendar'
     | '/admin'
+    | '/cliente'
     | '/admin/equipe'
     | '/admin/equipe/$staffId/horarios'
   id:
@@ -257,7 +306,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/_authed'
+    | '/_client'
     | '/_authed/admin'
+    | '/_client/cliente'
     | '/_auth/cadastro'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -273,7 +324,10 @@ export interface FileRouteTypes {
     | '/_authed/admin/pdv'
     | '/_authed/admin/produtos'
     | '/_authed/admin/servicos'
+    | '/_client/cliente/agendamentos'
+    | '/_client/cliente/agendar'
     | '/_authed/admin/'
+    | '/_client/cliente/'
     | '/_authed/admin/equipe/'
     | '/_authed/admin/equipe/$staffId/horarios'
   fileRoutesById: FileRoutesById
@@ -282,10 +336,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   AuthedRoute: typeof AuthedRouteWithChildren
+  ClientRoute: typeof ClientRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_client': {
+      id: '/_client'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ClientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -342,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCadastroRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_client/cliente': {
+      id: '/_client/cliente'
+      path: '/cliente'
+      fullPath: '/cliente'
+      preLoaderRoute: typeof ClientClienteRouteRouteImport
+      parentRoute: typeof ClientRoute
+    }
     '/_authed/admin': {
       id: '/_authed/admin'
       path: '/admin'
@@ -349,12 +418,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminRouteRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_client/cliente/': {
+      id: '/_client/cliente/'
+      path: '/'
+      fullPath: '/cliente/'
+      preLoaderRoute: typeof ClientClienteIndexRouteImport
+      parentRoute: typeof ClientClienteRouteRoute
+    }
     '/_authed/admin/': {
       id: '/_authed/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthedAdminIndexRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_client/cliente/agendar': {
+      id: '/_client/cliente/agendar'
+      path: '/agendar'
+      fullPath: '/cliente/agendar'
+      preLoaderRoute: typeof ClientClienteAgendarRouteImport
+      parentRoute: typeof ClientClienteRouteRoute
+    }
+    '/_client/cliente/agendamentos': {
+      id: '/_client/cliente/agendamentos'
+      path: '/agendamentos'
+      fullPath: '/cliente/agendamentos'
+      preLoaderRoute: typeof ClientClienteAgendamentosRouteImport
+      parentRoute: typeof ClientClienteRouteRoute
     }
     '/_authed/admin/servicos': {
       id: '/_authed/admin/servicos'
@@ -516,10 +606,37 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
+interface ClientClienteRouteRouteChildren {
+  ClientClienteAgendamentosRoute: typeof ClientClienteAgendamentosRoute
+  ClientClienteAgendarRoute: typeof ClientClienteAgendarRoute
+  ClientClienteIndexRoute: typeof ClientClienteIndexRoute
+}
+
+const ClientClienteRouteRouteChildren: ClientClienteRouteRouteChildren = {
+  ClientClienteAgendamentosRoute: ClientClienteAgendamentosRoute,
+  ClientClienteAgendarRoute: ClientClienteAgendarRoute,
+  ClientClienteIndexRoute: ClientClienteIndexRoute,
+}
+
+const ClientClienteRouteRouteWithChildren =
+  ClientClienteRouteRoute._addFileChildren(ClientClienteRouteRouteChildren)
+
+interface ClientRouteChildren {
+  ClientClienteRouteRoute: typeof ClientClienteRouteRouteWithChildren
+}
+
+const ClientRouteChildren: ClientRouteChildren = {
+  ClientClienteRouteRoute: ClientClienteRouteRouteWithChildren,
+}
+
+const ClientRouteWithChildren =
+  ClientRoute._addFileChildren(ClientRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   AuthedRoute: AuthedRouteWithChildren,
+  ClientRoute: ClientRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

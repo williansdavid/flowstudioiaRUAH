@@ -13,35 +13,11 @@ const SLOT_STEP_MIN = 30;
 /** Status que ocupam slot. cancelled/no_show liberam (decisão #10). */
 const OCCUPYING_STATUSES = ['pending', 'confirmed', 'completed'] as const;
 
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-const businessDaySchema = z.discriminatedUnion('open', [
-  z.object({ open: z.literal(false) }),
-  z.object({
-    open: z.literal(true),
-    opensAt: z.string().regex(TIME_RE),
-    closesAt: z.string().regex(TIME_RE),
-  }),
-]);
-
-const businessHoursSchema = z.object({
-  sunday: businessDaySchema,
-  monday: businessDaySchema,
-  tuesday: businessDaySchema,
-  wednesday: businessDaySchema,
-  thursday: businessDaySchema,
-  friday: businessDaySchema,
-  saturday: businessDaySchema,
-});
-
-export type BusinessHoursInput = z.infer<typeof businessHoursSchema>;
-
 const inputSchema = z.object({
   staffId: z.string().uuid('Profissional inválido'),
   serviceId: z.string().uuid('Serviço inválido'),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
   days: z.number().int().min(1).max(31).default(14),
-  businessHours: businessHoursSchema,
 });
 
 export type GetAvailableSlotsInput = z.infer<typeof inputSchema>;
@@ -60,16 +36,6 @@ interface Interval {
   start: number; // epoch ms
   end: number;
 }
-
-const WEEKDAY_NAMES = [
-  'sunday',
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-] as const satisfies readonly (keyof BusinessHoursInput)[];
 
 function addDays(date: string, n: number): string {
   const d = new Date(`${date}T00:00:00Z`);
@@ -200,9 +166,6 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
       const date = addDays(startDate, i);
       const wd = weekdayIndex(date);
 
-      // 🔥 REMOVIDO: filtro por businessHours do studio
-      // O working_hours do profissional é a única fonte de verdade.
-
       const daySchedule: DaySchedule | null =
         workingHours[String(wd) as WeekdayKey];
       if (!daySchedule) {
@@ -210,7 +173,7 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
         continue;
       }
 
-      // Janela base = horário de trabalho do profissional (sem interseção)
+      // Janela base = horário de trabalho do profissional
       const base: Interval = {
         start: localTimeToMs(date, daySchedule.start),
         end: localTimeToMs(date, daySchedule.end),

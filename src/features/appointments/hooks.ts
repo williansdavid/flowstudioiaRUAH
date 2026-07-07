@@ -1,4 +1,3 @@
-// src/features/appointments/hooks.ts
 import {
   useMutation,
   useQuery,
@@ -27,7 +26,6 @@ import {
 } from './server/createQuickClient';
 import {
   getAvailableSlots,
-  type GetAvailableSlotsInput,
   type DaySlots,
 } from './server/getAvailableSlots';
 
@@ -65,7 +63,7 @@ export function useCreateAppointment() {
   return useMutation({
     mutationFn: (input: CreateAppointmentInput) =>
       createAppointment({ data: input }),
-      onSuccess: async () => {
+    onSuccess: async () => {
       toast.success('Agendamento criado.');
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
@@ -117,7 +115,7 @@ export function useCreateQuickClient() {
   return useMutation({
     mutationFn: async (data: {
       fullName: string;
-      phone: string; // Agora é obrigatório
+      phone: string;
       email?: string;
       birthDay?: number;
       birthMonth?: number;
@@ -133,12 +131,13 @@ export function useCreateQuickClient() {
     },
   });
 }
+
 interface UseAvailableSlotsParams {
   staffId: string | null;
   serviceId: string | null;
   startDate: string; // 'YYYY-MM-DD'
   days?: number;
-  businessHours: GetAvailableSlotsInput['businessHours'];
+  // businessHours REMOVIDO — o server fn não usa mais
 }
 
 export function useAvailableSlots({
@@ -146,7 +145,6 @@ export function useAvailableSlots({
   serviceId,
   startDate,
   days = 14,
-  businessHours,
 }: UseAvailableSlotsParams) {
   return useQuery<DaySlots[], Error>({
     queryKey: [
@@ -164,7 +162,6 @@ export function useAvailableSlots({
           serviceId: serviceId!,
           startDate,
           days,
-          businessHours,
         },
       }),
     enabled: Boolean(staffId && serviceId),
@@ -172,3 +169,5 @@ export function useAvailableSlots({
     refetchOnWindowFocus: true,
   });
 }
+
+export { useCreateClientAppointment } from './hooks/useCreateClientAppointment';

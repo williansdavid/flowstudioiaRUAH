@@ -1,4 +1,3 @@
-// src/routes/_authed/admin/agendar-novo.tsx
 import { createFileRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { BookingWizard } from '@/features/appointments/components/BookingWizard/BookingWizard';
@@ -7,7 +6,6 @@ import {
   listBookableStaff,
   todayLocalDate,
 } from '@/features/appointments';
-import { businessHours } from '@/sites/ruah/config/businessHours';
 
 export const Route = createFileRoute('/_authed/admin/agendar-novo')({
   staticData: { title: 'Novo Agendamento' },
@@ -40,7 +38,7 @@ function NovoAgendamentoPage() {
     <BookingWizard
       services={services}
       staff={staff}
-      businessHours={businessHours}
+      // businessHours REMOVIDO
     />
   );
 }

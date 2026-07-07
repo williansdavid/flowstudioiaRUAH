@@ -6,8 +6,12 @@ import { LoginSplitLayout } from '@/features/auth/components/login/LoginSplitLay
 export const Route = createFileRoute('/_auth/login')({
   beforeLoad: async () => {
     const session = await getSession();
-    if (session && canAccessAdmin(session.profile.role)) {
+    if (!session) return;
+    if (canAccessAdmin(session.profile.role)) {
       throw redirect({ to: '/admin' });
+    }
+    if (session.profile.role === 'client') {
+      throw redirect({ to: '/cliente' });
     }
   },
   component: LoginSplitLayout,

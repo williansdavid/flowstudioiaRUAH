@@ -1,9 +1,7 @@
-// src/features/appointments/components/SlotsStep.tsx
 import { useMemo, useState } from 'react';
 import { AlertCircle, CalendarX, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useAvailableSlots } from '../hooks';
 import type { DaySlots, SlotItem } from '../server/getAvailableSlots';
-import type { GetAvailableSlotsInput } from '../server/getAvailableSlots';
 import { todayLocalDate } from '../utils/todayLocalDate';
 import { Button } from '@/features/utils/ui/Button';
 
@@ -12,7 +10,6 @@ const RANGE_DAYS = 14;
 interface SlotsStepProps {
   staffId: string | null;
   serviceId: string | null;
-  businessHours: GetAvailableSlotsInput['businessHours'];
   /** Slot escolhido (controlado pelo wizard pai). */
   selectedStartsAt: string | null;
   onSelect: (slot: SlotItem) => void;
@@ -42,7 +39,6 @@ function formatTime(iso: string): string {
 export function SlotsStep({
   staffId,
   serviceId,
-  businessHours,
   selectedStartsAt,
   onSelect,
 }: SlotsStepProps) {
@@ -69,7 +65,7 @@ export function SlotsStep({
     serviceId,
     startDate,
     days: RANGE_DAYS,
-    businessHours,
+    // businessHours REMOVIDO — o server fn não usa mais
   });
 
   // Pré-requisito do wizard: Janela 1 incompleta.

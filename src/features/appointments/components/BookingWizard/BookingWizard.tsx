@@ -1,4 +1,3 @@
-// src/features/appointments/components/BookingWizard/BookingWizard.tsx
 import { useState, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15,14 +14,12 @@ import { Button } from '@/features/utils/ui/Button';
 import type { WizardStep, WizardSelection } from './BookingWizard.types';
 import { STEP_LABELS, STEP_ORDER } from './BookingWizard.types';
 import type { BookableStaffItem, ServiceOption } from '@/features/appointments/types';
-import type { BusinessHours } from '@/sites/ruah/types';
 import { cn } from '@/lib/cn';
 import type { AppointmentItem } from '@/features/appointments';
 
 interface Props {
   services: ServiceOption[];
   staff: BookableStaffItem[];
-  businessHours: BusinessHours;
 }
 
 type ModalState = {
@@ -63,7 +60,10 @@ const dateFmt = new Intl.DateTimeFormat('pt-BR', {
   month: 'short',
 });
 
-function getStepSummary(step: WizardStep, sel: WizardSelection): { label: string; sub: string } | null {
+function getStepSummary(
+  step: WizardStep,
+  sel: WizardSelection,
+): { label: string; sub: string } | null {
   switch (step) {
     case 'client':
       return sel.clientName ? { label: sel.clientName, sub: '' } : null;
@@ -83,37 +83,70 @@ function getStepSummary(step: WizardStep, sel: WizardSelection): { label: string
 
 function getStepIcon(step: WizardStep) {
   switch (step) {
-    case 'client': return User;
-    case 'service': return Scissors;
-    case 'professional': return User;
-    case 'dateSlots': return CalendarDays;
+    case 'client':
+      return User;
+    case 'service':
+      return Scissors;
+    case 'professional':
+      return User;
+    case 'dateSlots':
+      return CalendarDays;
   }
 }
 
 // ── Mapa de campos por step + limpeza ─────────────────────────
 const FIELDS_TO_CLEAR: Record<number, (keyof WizardSelection)[]> = {
   0: [
-    'serviceId', 'serviceName', 'serviceDuration', 'servicePrice',
-    'staffId', 'staffName', 'staffAvatarUrl', 'staffColor',
-    'date', 'slotStartsAt', 'slotEndsAt',
+    'serviceId',
+    'serviceName',
+    'serviceDuration',
+    'servicePrice',
+    'staffId',
+    'staffName',
+    'staffAvatarUrl',
+    'staffColor',
+    'date',
+    'slotStartsAt',
+    'slotEndsAt',
   ],
   1: [
-    'staffId', 'staffName', 'staffAvatarUrl', 'staffColor',
-    'date', 'slotStartsAt', 'slotEndsAt',
+    'staffId',
+    'staffName',
+    'staffAvatarUrl',
+    'staffColor',
+    'date',
+    'slotStartsAt',
+    'slotEndsAt',
   ],
   2: ['date', 'slotStartsAt', 'slotEndsAt'],
 };
 
 const defaultValues: WizardSelection = {
-  clientId: '', clientName: '',
-  serviceId: '', serviceName: '', serviceDuration: 0, servicePrice: 0,
-  staffId: '', staffName: '', staffAvatarUrl: null, staffColor: null,
-  date: '', slotStartsAt: '', slotEndsAt: '',
+  clientId: '',
+  clientName: '',
+  serviceId: '',
+  serviceName: '',
+  serviceDuration: 0,
+  servicePrice: 0,
+  staffId: '',
+  staffName: '',
+  staffAvatarUrl: null,
+  staffColor: null,
+  date: '',
+  slotStartsAt: '',
+  slotEndsAt: '',
 };
 
 // ── Função pura: calcula completedUntil a partir de uma WizardSelection ──
 function calcCompletedUntil(sel: WizardSelection): number {
-  if (sel.clientId && sel.serviceId && sel.staffId && sel.date && sel.slotStartsAt) return 3;
+  if (
+    sel.clientId &&
+    sel.serviceId &&
+    sel.staffId &&
+    sel.date &&
+    sel.slotStartsAt
+  )
+    return 3;
   if (sel.clientId && sel.serviceId && sel.staffId) return 2;
   if (sel.clientId && sel.serviceId) return 1;
   if (sel.clientId) return 0;
@@ -121,7 +154,10 @@ function calcCompletedUntil(sel: WizardSelection): number {
 }
 
 // ── Função pura: limpa campos futuros a partir de um stepIndex ──
-function clearFutureFields(sel: WizardSelection, fromStep: number): WizardSelection {
+function clearFutureFields(
+  sel: WizardSelection,
+  fromStep: number,
+): WizardSelection {
   const next = { ...sel };
   for (let i = fromStep; i < STEP_ORDER.length; i++) {
     const toClear = FIELDS_TO_CLEAR[i];
@@ -137,7 +173,7 @@ function clearFutureFields(sel: WizardSelection, fromStep: number): WizardSelect
 }
 
 // ── Componente principal ──────────────────────────────────────
-export function BookingWizard({ services, staff, businessHours }: Props) {
+export function BookingWizard({ services, staff }: Props) {
   const navigate = useNavigate();
 
   // Mobile
@@ -150,47 +186,76 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
   const [completedUntil, setCompletedUntil] = useState(-1);
 
   const createMutation = useCreateAppointment();
+
   const currentIndex = STEP_ORDER.indexOf(step);
   const isLastStep = step === 'dateSlots';
   const allCompleted = completedUntil === 3;
 
   const canGoNext = (() => {
     switch (step) {
-      case 'client': return !!selection.clientId;
-      case 'service': return !!selection.serviceId;
-      case 'professional': return !!selection.staffId;
-      case 'dateSlots': return !!selection.date && !!selection.slotStartsAt;
-      default: return false;
+      case 'client':
+        return !!selection.clientId;
+      case 'service':
+        return !!selection.serviceId;
+      case 'professional':
+        return !!selection.staffId;
+      case 'dateSlots':
+        return !!selection.date && !!selection.slotStartsAt;
+      default:
+        return false;
     }
   })();
 
   // ── Atualizar seleção com clear cascade ──
-  const updateSelection = useCallback((patch: Partial<WizardSelection>) => {
-    setSelection((prev) => {
-      const patchedKeys = Object.keys(patch) as (keyof WizardSelection)[];
-      let changedStep = -1;
-      for (const key of patchedKeys) {
-        if (['clientId', 'clientName'].includes(key)) changedStep = 0;
-        else if (['serviceId', 'serviceName', 'serviceDuration', 'servicePrice'].includes(key)) changedStep = 1;
-        else if (['staffId', 'staffName', 'staffAvatarUrl', 'staffColor'].includes(key)) changedStep = 2;
-        else if (['date', 'slotStartsAt', 'slotEndsAt'].includes(key)) changedStep = 3;
-      }
+  const updateSelection = useCallback(
+    (patch: Partial<WizardSelection>) => {
+      setSelection((prev) => {
+        const patchedKeys = Object.keys(
+          patch,
+        ) as (keyof WizardSelection)[];
+        let changedStep = -1;
+        for (const key of patchedKeys) {
+          if (['clientId', 'clientName'].includes(key)) changedStep = 0;
+          else if (
+            [
+              'serviceId',
+              'serviceName',
+              'serviceDuration',
+              'servicePrice',
+            ].includes(key)
+          )
+            changedStep = 1;
+          else if (
+            [
+              'staffId',
+              'staffName',
+              'staffAvatarUrl',
+              'staffColor',
+            ].includes(key)
+          )
+            changedStep = 2;
+          else if (
+            ['date', 'slotStartsAt', 'slotEndsAt'].includes(key)
+          )
+            changedStep = 3;
+        }
 
-      const oldCompleted = calcCompletedUntil(prev);
-      const merged = { ...prev, ...patch };
+        const oldCompleted = calcCompletedUntil(prev);
+        const merged = { ...prev, ...patch };
 
-      if (changedStep >= 0 && changedStep < oldCompleted) {
-        const cleaned = clearFutureFields(merged, changedStep);
-        setCompletedUntil(calcCompletedUntil(cleaned));
-        return cleaned;
-      }
+        if (changedStep >= 0 && changedStep < oldCompleted) {
+          const cleaned = clearFutureFields(merged, changedStep);
+          setCompletedUntil(calcCompletedUntil(cleaned));
+          return cleaned;
+        }
 
-      setCompletedUntil(calcCompletedUntil(merged));
-      return merged;
-    });
-  }, []);
+        setCompletedUntil(calcCompletedUntil(merged));
+        return merged;
+      });
+    },
+    [],
+  );
 
-  // 🔥 CORRIGIDO: reopenStep força completedUntil pro step anterior ao reaberto
   const reopenStep = useCallback((reopenIndex: number) => {
     setSelection((prev) => {
       const cleaned = clearFutureFields(prev, reopenIndex);
@@ -226,7 +291,14 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
   // ── Confirmar ──
   const handleConfirm = useCallback(() => {
     if (!allCompleted) return;
-    if (!selection.clientId || !selection.serviceId || !selection.staffId || !selection.slotStartsAt || !selection.slotEndsAt) return;
+    if (
+      !selection.clientId ||
+      !selection.serviceId ||
+      !selection.staffId ||
+      !selection.slotStartsAt ||
+      !selection.slotEndsAt
+    )
+      return;
 
     createMutation.mutate(
       {
@@ -251,7 +323,9 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
         return (
           <StepClient
             value={selection.clientId}
-            onChange={(id, name) => updateSelection({ clientId: id, clientName: name })}
+            onChange={(id, name) =>
+              updateSelection({ clientId: id, clientName: name })
+            }
           />
         );
       case 'service':
@@ -260,7 +334,12 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
             services={services}
             value={selection.serviceId}
             onChange={(id, name, duration, price) =>
-              updateSelection({ serviceId: id, serviceName: name, serviceDuration: duration, servicePrice: price })
+              updateSelection({
+                serviceId: id,
+                serviceName: name,
+                serviceDuration: duration,
+                servicePrice: price,
+              })
             }
           />
         );
@@ -270,7 +349,12 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
             staff={staff}
             value={selection.staffId}
             onChange={(id, name, avatarUrl, color) =>
-              updateSelection({ staffId: id, staffName: name, staffAvatarUrl: avatarUrl, staffColor: color })
+              updateSelection({
+                staffId: id,
+                staffName: name,
+                staffAvatarUrl: avatarUrl,
+                staffColor: color,
+              })
             }
           />
         );
@@ -282,9 +366,12 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
             slotEndsAt={selection.slotEndsAt}
             staffId={selection.staffId}
             serviceId={selection.serviceId}
-            businessHours={businessHours}
             onChange={(date, startsAt, endsAt) =>
-              updateSelection({ date, slotStartsAt: startsAt, slotEndsAt: endsAt })
+              updateSelection({
+                date,
+                slotStartsAt: startsAt,
+                slotEndsAt: endsAt,
+              })
             }
           />
         );
@@ -300,48 +387,44 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
     const summary = getStepSummary(s, selection);
 
     return (
-      <div
-        key={s}
-          className={cn(
-          'flex flex-col rounded-2xl border p-4 transition-all duration-200 min-h-0',
-          isActive && 'border-cyan-500/30 bg-slate-900 shadow-lg shadow-cyan-500/5',
-          isCompleted && !isActive && 'border-slate-700/20 bg-slate-900/60',
-          isLocked && 'border-slate-800/30 bg-slate-900/30 opacity-50',
-        )}
-      >
-        {/* Header do step */}
-        <div className="mb-3 flex items-center gap-2 border-b border-slate-700/20 pb-2.5">
-          <div
-            className={cn(
-              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all',
-              isCompleted && !isActive && 'bg-emerald-500 text-white',
-              isActive && 'border-2 border-cyan-400 bg-slate-800 text-cyan-400',
-              isLocked && 'border border-slate-600 bg-slate-800/50 text-slate-600',
-            )}
-          >
-            {isCompleted && !isActive ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <span>{i + 1}</span>
-            )}
-          </div>
+      <div key={s} className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          {isCompleted && !isActive ? (
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15">
+              <Check className="h-4 w-4 text-emerald-400" />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold',
+                isActive
+                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400'
+                  : 'border-slate-700 text-slate-600',
+              )}
+            >
+              {i + 1}
+            </div>
+          )}
           <span
             className={cn(
-              'text-[11px] font-bold uppercase tracking-wider',
-              isCompleted && !isActive && 'text-emerald-400',
-              isActive && 'text-cyan-400',
-              isLocked && 'text-slate-600',
+              'text-xs font-semibold uppercase tracking-wider',
+              isActive
+                ? 'text-cyan-400'
+                : isCompleted
+                  ? 'text-emerald-400'
+                  : 'text-slate-600',
             )}
           >
             {STEP_LABELS[s]}
           </span>
         </div>
 
-        {/* Conteúdo */}
         {isLocked && (
-          <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <Lock className="h-4 w-4 text-slate-600" />
-            <p className="text-[11px] text-slate-600">Preencha o passo anterior</p>
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-700/30 p-4 text-center">
+            <Lock className="h-5 w-5 text-slate-600" />
+            <p className="text-xs text-slate-600">
+              Preencha o passo anterior
+            </p>
           </div>
         )}
 
@@ -351,29 +434,26 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
             onClick={() => reopenStep(i)}
             className="group flex flex-col gap-2 rounded-xl border border-slate-700/20 bg-slate-800/30 p-3 text-left transition-all duration-200 hover:border-cyan-500/20 hover:bg-slate-800/60"
           >
-            <Icon className="h-3.5 w-3.5 text-slate-500 group-hover:text-cyan-400 transition-colors" />
-            <p className="text-sm font-bold text-slate-200 group-hover:text-cyan-300 transition-colors truncate">
+            <p className="text-sm font-semibold text-slate-200">
               {summary.label}
             </p>
             {summary.sub && (
               <p className="text-xs text-slate-500">{summary.sub}</p>
             )}
-            <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 group-hover:text-cyan-500 transition-colors">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-500 opacity-0 transition-opacity group-hover:opacity-100">
               Clique para alterar
-            </span>
+            </p>
           </button>
         )}
 
         {isCompleted && !isActive && !summary && (
-          <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <Check className="h-4 w-4 text-emerald-500/50" />
-            <p className="text-[11px] text-slate-600">Concluído</p>
+          <div className="rounded-xl border border-slate-700/20 bg-slate-800/30 p-3 text-center">
+            <p className="text-xs text-emerald-500">Concluído</p>
           </div>
         )}
 
-        {/* 🔥 Scroll interno quando o step ativo tiver muito conteúdo (ex: StepDateSlots) */}
         {isActive && (
-          <div className="flex-1 overflow-y-auto min-h-0 -mx-1 px-1">
+          <div className="max-h-[400px] overflow-y-auto">
             {renderStepComponent(s)}
           </div>
         )}
@@ -382,86 +462,61 @@ export function BookingWizard({ services, staff, businessHours }: Props) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-slate-950 text-slate-100">
+    <>
       {/* ─── DESKTOP (lg+) ─── */}
-      {/* 🔥 px-3 → px-1 pra puxar tudo pra esquerda */}
-      <div className="hidden lg:flex flex-1 flex-col overflow-hidden px-1 py-5">
-        {/* Header mais compacto */}
-        <div className="mb-4 flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-            <CalendarDays className="h-4 w-4" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-slate-100">Novo Agendamento</h1>
-            <p className="text-[10px] text-slate-500">Preencha os passos abaixo.</p>
-          </div>
+      <div className="hidden lg:flex lg:flex-col lg:gap-6">
+        <div>
+          <h2 className="text-lg font-bold text-slate-100">
+            Novo Agendamento
+          </h2>
+          <p className="text-sm text-slate-500">
+            Preencha os passos abaixo.
+          </p>
         </div>
 
-        <div className="grid flex-1 grid-cols-[1.8fr_1fr_1.3fr_1.3fr] gap-3 overflow-hidden px-2">
+        <div className="flex flex-col gap-5">
           {STEP_ORDER.map((s, i) => renderDesktopColumn(s, i))}
         </div>
 
         {allCompleted && (
-          <div className="mt-4 flex justify-center border-t border-slate-700/20 pt-4">
-            <Button
-              type="button"
-              onClick={handleConfirm}
-              variant="primary"
-              size="lg"
-              className="gap-2 min-w-[240px]"
-              isLoading={createMutation.isPending}
-            >
-              <Check className="h-5 w-5" />
-              Confirmar agendamento
-            </Button>
-          </div>
+          <Button
+            type="button"
+            onClick={handleConfirm}
+            disabled={createMutation.isPending}
+            className="w-full"
+          >
+            {createMutation.isPending ? 'Salvando…' : 'Confirmar agendamento'}
+          </Button>
         )}
       </div>
 
       {/* ─── MOBILE (<lg) ─── */}
-      <div className="flex flex-1 flex-col lg:hidden">
-        {!showConfirm && <BookingWizardHeader currentStep={step} />}
+      <div className="flex flex-col lg:hidden">
+        <BookingWizardHeader currentStep={step} />
 
-        <div className="flex-1 overflow-y-auto">
-          <AnimatePresence mode="wait" custom={direction}>
-            {showConfirm ? (
-              <motion.div
-                key="confirm"
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="h-full"
-              >
-                <StepConfirm selection={selection} isSaving={createMutation.isPending} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key={step}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                {renderStepComponent(step)}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div className="h-20" />
-        </div>
+        {!showConfirm && (
+          <div className="flex-1 overflow-y-auto">
+            {renderStepComponent(step)}
+          </div>
+        )}
 
-        <BookingWizardFooter
-          onBack={goBack}
-          onNext={showConfirm ? handleConfirm : goNext}
-          canGoNext={showConfirm ? true : canGoNext}
-          isFirstStep={step === 'client' && !showConfirm}
-          isLastStep={false}
-          isConfirming={showConfirm}
-          isSaving={createMutation.isPending}
-        />
+        {showConfirm ? (
+          <StepConfirm
+            selection={selection}
+            isSaving={createMutation.isPending}
+          />
+        ) : (
+          <BookingWizardFooter
+            onBack={goBack}
+            onNext={goNext}
+            canGoNext={canGoNext}
+            isFirstStep={currentIndex === 0}
+            isLastStep={isLastStep}
+            isConfirming={false}
+            isSaving={false}
+          />
+        )}
       </div>
-    </div>
+    </>
   );
 }

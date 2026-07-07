@@ -1,3 +1,5 @@
+// src/features/admin-shell/components/BottomTab.tsx
+
 import { useMatches, useNavigate } from '@tanstack/react-router';
 import {
   NotebookPenIcon,
