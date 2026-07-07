@@ -140,10 +140,10 @@ export function useEstablishRecoverySession() {
       if (cancelled) return;
 
       if (error) {
+        console.error('[verifyOtp] ERRO:', JSON.stringify({ code: error.code, message: error.message, status: error.status }));
         fail('Link inválido ou expirado. Solicite um novo.');
         return;
       }
-
       // Limpa o token da URL — evita reuso/replay ao recarregar.
       window.history.replaceState(null, '', window.location.pathname);
       setStatus('ready');
