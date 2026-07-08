@@ -1,3 +1,4 @@
+// src/routes/_client/cliente/agendamentos.tsx
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { CalendarCheck, Clock, ChevronLeft, Loader2 } from 'lucide-react'

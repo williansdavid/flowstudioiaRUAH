@@ -88,8 +88,11 @@ export function ProductsList() {
                       : 'opacity-60',
                   ].join(' ')}
                 >
-                  {/* Avatar / Imagem */}
-                  <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
+                  {/* Avatar / Imagem — AGORA CLICÁVEL */}
+                  <div
+                    onClick={() => openEdit(product)}
+                    className="relative aspect-square w-full overflow-hidden bg-zinc-800 cursor-pointer"
+                  >
                     {product.avatarUrl ? (
                       <img
                         src={product.avatarUrl}
@@ -102,11 +105,11 @@ export function ProductsList() {
                       </div>
                     )}
 
-{!product.isActive && (
-  <div className="absolute left-2 top-2 rounded-md bg-red-500/20 px-3 py-1 text-sm font-bold text-red-400 ring-1 ring-red-500/30 backdrop-blur-sm">
-    Inativo
-  </div>
-)}
+                    {!product.isActive && (
+                      <div className="absolute left-2 top-2 rounded-md bg-red-500/20 px-3 py-1 text-sm font-bold text-red-400 ring-1 ring-red-500/30 backdrop-blur-sm">
+                        Inativo
+                      </div>
+                    )}
 
                     {/* Departamento badge */}
                     {product.department && (
@@ -130,7 +133,7 @@ export function ProductsList() {
                       </span>
                     </div>
 
-                    {/* Ações — visíveis sempre */}
+                    {/* Ações */}
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         onClick={() => openEdit(product)}
@@ -173,7 +176,7 @@ export function ProductsList() {
         </div>
       </div>
 
-      {/* Footer mobile — Novo Produto */}
+      {/* Footer mobile */}
       <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-slate-800/60 bg-slate-950">
         <Button variant="primary" size="md" className="w-full" onClick={openCreate}>
           <Plus className="h-4 w-4" />

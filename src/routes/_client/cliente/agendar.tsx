@@ -3,15 +3,16 @@ import { createServerFn } from '@tanstack/react-start';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { ClientBookingWizard } from '@/features/appointments/components/ClientBookingWizard';
+import { BookingWizard } from '@/features/appointments/components/BookingWizard/BookingWizard';
 import type { ServiceOption, BookableStaffItem } from '@/features/appointments/types';
 import { Button } from '@/features/utils/ui/Button';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
 
 // ── Server functions ──────────────────────────────────────────
 
 const listActiveServices = createServerFn({ method: 'GET' })
   .handler(async (): Promise<ServiceOption[]> => {
-    const supabase = createSupabaseServer();
+    const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from('services')
       .select('id, name, duration_minutes, price')
@@ -28,19 +29,34 @@ const listActiveServices = createServerFn({ method: 'GET' })
 
 const listBookableStaff = createServerFn({ method: 'GET' })
   .handler(async (): Promise<BookableStaffItem[]> => {
-    const supabase = createSupabaseServer();
+    const supabase = createSupabaseAdmin();
+    // 1. Busca staffs + profile_id
     const { data, error } = await supabase
       .from('staff')
-      .select('id, name, display_order, avatar_url, color')
+      .select('id, full_name, display_order, color, profile_id')
       .eq('is_bookable', true)
       .order('display_order', { ascending: true, nullsFirst: false })
-      .order('name');
+      .order('full_name');
     if (error) throw new Error('Erro ao carregar profissionais.');
-    return data.map((s) => ({
+
+    // 2. Busca profiles dos profissionais
+    const profileIds = (data as any[]).map((s) => s.profile_id).filter(Boolean) as string[];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', profileIds);
+
+    // 3. Map profile_id → avatar_url
+    const profileMap = new Map<string, string | null>(
+      (profiles as any[])?.map((p) => [p.id, p.avatar_url ?? null]) ?? [],
+    );
+
+    // 4. Merge manual
+    return (data as any[]).map((s) => ({
       id: s.id,
-      name: s.name,
+      name: s.full_name,
       displayOrder: s.display_order ?? 999,
-      avatarUrl: s.avatar_url,
+      avatarUrl: profileMap.get(s.profile_id) ?? null,
       color: s.color,
       isBookable: true,
     }));
@@ -122,10 +138,11 @@ function AgendarPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <ClientBookingWizard
+    <div className="mx-auto max-w-6xl px-4 py-4 sm:py-8">
+      <BookingWizard
         services={servicesQuery.data}
         staff={staffQuery.data}
+        mode="client"
         clientName={clientNameQuery.data}
       />
     </div>

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 
 interface Props {
   value: string;
-  onChange: (clientId: string, clientName: string) => void;
+  onChange: (clientId: string, clientName: string, clientPhone?: string | null) => void;
 }
 
 function formatPhone(phone: string | null): string | null {
@@ -34,7 +34,8 @@ export function StepClient({ value, onChange }: Props) {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // ── Cliente selecionado → card de confirmação (mantido como está) ──
+  // ── Cliente selecionado → card de confirmação ──
+
   if (value) {
     return (
       <div className="flex flex-col gap-6 px-5 pt-2">
@@ -42,6 +43,7 @@ export function StepClient({ value, onChange }: Props) {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15">
             <CheckCircle2 className="h-7 w-7 text-emerald-400" />
           </div>
+
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wider text-emerald-400/70">
               Cliente selecionado
@@ -54,9 +56,10 @@ export function StepClient({ value, onChange }: Props) {
               </p>
             )}
           </div>
+
           <button
             type="button"
-            onClick={() => { onChange('', ''); setSelectedName(''); setSelectedPhone(null); }}
+            onClick={() => { onChange('', '', null); setSelectedName(''); setSelectedPhone(null); }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700/40 px-4 py-2 text-sm font-medium text-slate-400 transition-all hover:border-slate-600/50 hover:text-slate-300 active:scale-[0.98]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -69,7 +72,7 @@ export function StepClient({ value, onChange }: Props) {
           initialName={quickName}
           onClose={() => setQuickOpen(false)}
           onCreated={(c) => {
-            onChange(c.id, c.name);
+            onChange(c.id, c.name, c.phone ?? null);
             setSelectedName(c.name);
             setSelectedPhone(c.phone ?? null);
             setQuickOpen(false);
@@ -80,6 +83,7 @@ export function StepClient({ value, onChange }: Props) {
   }
 
   // ── Nenhum cliente selecionado → busca + botão cadastro inline ──
+
   return (
     <div className="flex flex-col gap-6 px-5 pt-2">
       <div className="flex flex-col gap-1">
@@ -96,7 +100,7 @@ export function StepClient({ value, onChange }: Props) {
             onChange={(id, name, phone) => {
               setSelectedName(name);
               setSelectedPhone(phone);
-              onChange(id, name);
+              onChange(id, name, phone);
             }}
             onCreateNew={(name) => {
               setQuickName(name);
@@ -124,7 +128,7 @@ export function StepClient({ value, onChange }: Props) {
         initialName={quickName}
         onClose={() => setQuickOpen(false)}
         onCreated={(c) => {
-          onChange(c.id, c.name);
+          onChange(c.id, c.name, c.phone ?? null);
           setSelectedName(c.name);
           setSelectedPhone(c.phone ?? null);
           setQuickOpen(false);

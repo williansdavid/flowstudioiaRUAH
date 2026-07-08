@@ -6,7 +6,6 @@ import {
   listBookableStaff,
   todayLocalDate,
 } from '@/features/appointments';
-
 export const Route = createFileRoute('/_authed/admin/agendar-novo')({
   staticData: { title: 'Novo Agendamento' },
   loader: async ({ context: { queryClient } }) => {
@@ -23,7 +22,6 @@ export const Route = createFileRoute('/_authed/admin/agendar-novo')({
   },
   component: NovoAgendamentoPage,
 });
-
 function NovoAgendamentoPage() {
   const { data: services } = useSuspenseQuery({
     queryKey: ['appointments', 'services'],
@@ -33,12 +31,11 @@ function NovoAgendamentoPage() {
     queryKey: ['appointments', 'staff'],
     queryFn: () => listBookableStaff(),
   });
-
   return (
     <BookingWizard
       services={services}
       staff={staff}
-      // businessHours REMOVIDO
+      mode="admin"
     />
   );
 }

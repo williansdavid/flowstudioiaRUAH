@@ -1,7 +1,9 @@
-import { createFileRoute, Outlet, Link, useRouter } from '@tanstack/react-router'
-import { LogOut, ArrowLeftFromLine, CalendarCheck, Menu } from 'lucide-react'
+import { createFileRoute, Outlet, Link } from '@tanstack/react-router'
+import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { useSession, useSignOut } from '@/features/auth/hooks'
+import { Sidebar } from '@/features/client-shell/components/Sidebar'
+import { branding } from '@/config/active-studio'
 
 export const Route = createFileRoute('/_client/cliente')({
   component: ClientLayout,
@@ -10,117 +12,77 @@ export const Route = createFileRoute('/_client/cliente')({
 function ClientLayout() {
   const { data: session } = useSession()
   const signOut = useSignOut()
-  const router = useRouter()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const studioName = import.meta.env.VITE_STUDIO_NAME ?? 'FlowStudio'
-  const firstName = session?.profile?.full_name?.split(' ')[0] ?? 'Cliente'
+  const studioName = branding.logo.alt
+
+  if (!session) return null
+
+  const closeSidebar = () => setSidebarOpen(false)
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
-      {/* ─── Topbar ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-          {/* Logo + nome do studio */}
-          <Link to="/cliente" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-              <span className="text-sm font-bold">FS</span>
-            </div>
-            <span className="hidden text-sm font-semibold sm:inline">
-              {studioName}
-            </span>
-          </Link>
+    <div className="flex h-screen overflow-hidden bg-slate-950">
+      {/* ─── Overlay mobile ──────────────────────────── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
 
-          {/* Nav desktop */}
-          <nav className="hidden items-center gap-4 sm:flex">
-            <Link
-              to="/cliente/agendamentos"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
-              activeProps={{ className: 'bg-slate-800/60 text-cyan-400' }}
-            >
-              <CalendarCheck className="h-4 w-4" />
-              Meus agendamentos
-            </Link>
+      {/* ─── Sidebar ──────────────────────────────────── */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 shrink-0 transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:relative lg:translate-x-0`}
+      >
+        <Sidebar
+          session={session}
+          studioName={studioName}
+          onSignOut={() => signOut.mutate()}
+          isSigningOut={signOut.isPending}
+          onNavigate={closeSidebar}
+        />
+      </div>
 
-            <a
-              href="/"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
-            >
-              <ArrowLeftFromLine className="h-4 w-4" />
-              Voltar ao site
-            </a>
-
-            <div className="flex items-center gap-3 border-l border-slate-800 pl-4">
-              <span className="text-sm text-slate-300">
-                Olá, <span className="font-medium">{firstName}</span>
-              </span>
-              <button
-                onClick={() => signOut.mutate()}
-                disabled={signOut.isPending}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
-                aria-label="Sair"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
-              </button>
-            </div>
-          </nav>
-
-          {/* Mobile: hamburger */}
+      {/* ─── Conteúdo ─────────────────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Topbar com logo + nome do studio (sempre visível, igual admin) */}
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-800/60 bg-slate-950/90 px-4 backdrop-blur-xl">
+          {/* Hamburger só no mobile */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex items-center gap-2 rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 sm:hidden"
-            aria-label="Abrir menu"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex items-center justify-center rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 lg:hidden"
+            aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}
           >
-            <Menu className="h-5 w-5" />
+            {sidebarOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
-        </div>
 
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="border-t border-slate-800/60 bg-slate-950 sm:hidden">
-            <div className="space-y-1 px-4 py-3">
-              <div className="mb-3 px-3 text-sm text-slate-300">
-                Olá, <span className="font-medium">{firstName}</span>
-              </div>
-              <Link
-                to="/cliente/agendamentos"
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-slate-400 transition hover:bg-slate-800"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <CalendarCheck className="h-4 w-4" />
-                Meus agendamentos
-              </Link>
-              <a
-                href="/"
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-slate-400 transition hover:bg-slate-800"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <ArrowLeftFromLine className="h-4 w-4" />
-                Voltar ao site
-              </a>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  signOut.mutate()
-                }}
-                disabled={signOut.isPending}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
-              >
-                <LogOut className="h-4 w-4" />
-                {signOut.isPending ? 'Saindo...' : 'Sair'}
-              </button>
-            </div>
+          {/* Logo + Nome do studio (whitelabel) */}
+          <Link
+            to="/cliente"
+            className="flex items-center gap-2 text-sm font-semibold text-slate-100"
+          >
+            <img
+              src={branding.logo.dark}
+              alt={studioName}
+              className="h-7 w-auto object-contain"
+            />
+            {studioName}
+          </Link>
+        </header>
+
+        {/* Área de scroll do conteúdo */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto h-full max-w-7xl p-4 sm:p-6 lg:px-8">
+            <Outlet />
           </div>
-        )}
-      </header>
-
-      {/* ─── Conteúdo ─────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto h-full max-w-7xl p-4 sm:p-6 lg:px-8">
-          <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

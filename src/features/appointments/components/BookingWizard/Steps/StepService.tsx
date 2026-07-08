@@ -1,88 +1,82 @@
-// src/features/appointments/components/BookingWizard/Steps/StepService.tsx
-
-import { Scissors, Clock, DollarSign } from 'lucide-react';
+import { Scissors } from 'lucide-react';
+import { Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { ServiceOption } from '@/features/appointments/types';
 
 interface Props {
   services: ServiceOption[];
   value: string;
-  onChange: (serviceId: string, serviceName: string, duration: number, price: number) => void;
+  onChange: (id: string, name: string, duration: number, price: number) => void;
 }
 
 export function StepService({ services, value, onChange }: Props) {
-  if (services.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 px-5 pt-10 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800">
-          <Scissors className="h-6 w-6 text-slate-500" />
-        </div>
-        <p className="text-sm font-medium text-slate-500">Nenhum serviço disponível no momento.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-4 px-5 pt-2">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-bold text-slate-100">Qual o serviço?</h2>
-        <p className="text-sm text-slate-500">Escolha o serviço que será realizado.</p>
-      </div>
+    <div className="px-0 pt-0 sm:px-5 sm:pt-2">
+      <p className="hidden text-lg font-bold text-slate-100 sm:block">
+        Qual o serviço?
+      </p>
+      <p className="hidden text-sm text-slate-400 sm:block">
+        Escolha o serviço que será realizado.
+      </p>
 
-      <div className="flex flex-col gap-2">
-        {services.map((service) => {
-          const isSelected = value === service.id;
+      <div className="mt-0 sm:mt-4 flex flex-col gap-2">
+        {services.map((svc) => {
+          const selected = value === svc.id;
 
           return (
             <button
-              key={service.id}
+              key={svc.id}
               type="button"
-              onClick={() => onChange(service.id, service.name, service.durationMinutes, Number(service.price))}
+              onClick={() =>
+                onChange(svc.id, svc.name, svc.durationMinutes, svc.price)
+              }
               className={cn(
-                'flex items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200 active:scale-[0.98]',
-                isSelected
-                  ? 'border-cyan-500/40 bg-cyan-500/10 ring-1 ring-cyan-500/20'
-                  : 'border-slate-700/30 bg-slate-800/40 hover:border-slate-600/50 hover:bg-slate-800/70',
+                'flex items-center gap-3 rounded-2xl border bg-gradient-to-b p-3.5 text-left transition-all duration-200 hover:brightness-125 active:scale-[0.99]',
+                selected
+                  ? 'from-cyan-500/15 to-cyan-500/5 border-cyan-500/30 shadow-lg shadow-cyan-500/15 ring-1 ring-cyan-500/10'
+                  : 'from-slate-800/40 to-slate-800/10 border-slate-700/30',
               )}
             >
-              {/* Ícone */}
+              {/* Scissors icon */}
               <div
                 className={cn(
-                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors',
-                  isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-700/30 text-slate-500',
+                  'flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-colors',
+                  selected
+                    ? 'bg-cyan-500/15 text-cyan-400'
+                    : 'bg-slate-700/30 text-slate-500',
                 )}
               >
-                <Scissors className="h-5 w-5" />
+                <Scissors className="size-5" />
               </div>
 
-              {/* Info */}
-              <div className="min-w-0 flex-1">
-                <p className={cn('text-sm font-bold', isSelected ? 'text-cyan-300' : 'text-slate-100')}>
-                  {service.name}
-                </p>
-                <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {service.durationMinutes}min
+              {/* Texto */}
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-sm font-semibold text-slate-200">
+                  {svc.name}
+                </span>
+                <div className="flex items-center gap-3 text-xs text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <Clock className="size-3" />
+                    {svc.durationMinutes}min
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    {Number(service.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="size-3" />
+                    R$ {svc.price.toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              {/* Check */}
+              {/* Circle indicator */}
               <div
                 className={cn(
-                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-all',
-                  isSelected ? 'bg-cyan-500 text-white' : 'border border-slate-600',
+                  'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
+                  selected
+                    ? 'border-cyan-400 bg-cyan-500 shadow-sm shadow-cyan-500/20 ring-1 ring-cyan-500/20'
+                    : 'border-slate-600',
                 )}
               >
-                {isSelected && (
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+                {selected && (
+                  <div className="size-2 rounded-full bg-white" />
                 )}
               </div>
             </button>

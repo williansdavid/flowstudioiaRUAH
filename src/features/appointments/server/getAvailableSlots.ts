@@ -1,11 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
-import {
-  parseWorkingHours,
-  type DaySchedule,
-  type WeekdayKey,
-} from '@/lib/scheduling/workingHours.schema';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { parseWorkingHours, type DaySchedule, type WeekdayKey } from '@/lib/scheduling/workingHours.schema';
 
 /** Granularidade FIXA da grade (decisão #8). */
 const SLOT_STEP_MIN = 30;
@@ -24,7 +21,7 @@ export type GetAvailableSlotsInput = z.infer<typeof inputSchema>;
 
 export interface SlotItem {
   startsAt: string; // ISO UTC
-  endsAt: string; // ISO UTC
+  endsAt: string;   // ISO UTC
 }
 
 export interface DaySlots {
@@ -79,44 +76,46 @@ interface TimeOffRow {
 export const getAvailableSlots = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<DaySlots[]> => {
-    const supabase = createSupabaseServer();
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    // ── 0. Auth com server client (sessão do cookie) ──
+    const authSupabase = createSupabaseServer();
+    const { data: { user }, error: userError } = await authSupabase.auth.getUser();
     if (userError || !user) {
       throw new Error('[appointments] Sessão inválida.');
     }
 
-    // 1. Serviço: duração + validade.
+    // ── 1. Queries com admin client (bypass RLS) ──
+    const supabase = createSupabaseAdmin();
+
+    // 2. Serviço: duração + validade.
     const { data: service, error: svcError } = await supabase
       .from('services')
       .select('duration_minutes, is_active')
       .eq('id', data.serviceId)
       .single();
+
     if (svcError || !service) {
       throw new Error('[appointments] Serviço não encontrado.');
     }
     if (!service.is_active) {
       throw new Error('[appointments] Serviço inativo.');
     }
+
     const durationMs = service.duration_minutes * 60 * 1000;
     const stepMs = SLOT_STEP_MIN * 60 * 1000;
 
-    // 2. Staff: working_hours + bookable.
+    // 3. Staff: working_hours + bookable.
     const { data: staff, error: staffError } = await supabase
       .from('staff')
       .select('working_hours, is_bookable')
       .eq('id', data.staffId)
       .single();
+
     if (staffError || !staff) {
       throw new Error('[appointments] Profissional não encontrado.');
     }
 
     const startDate = data.startDate;
     const endDate = addDays(startDate, data.days);
-
     const workingHours = staff.is_bookable
       ? parseWorkingHours(staff.working_hours)
       : null;
@@ -125,7 +124,7 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
       return buildEmptyRange(startDate, data.days);
     }
 
-    // 3. Range global UTC para queries.
+    // 4. Range global UTC para queries.
     const rangeStart = dayRangeISO(startDate).start;
     const rangeEnd = dayRangeISO(endDate).start;
 
@@ -161,13 +160,12 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
     const now = Date.now();
     const result: DaySlots[] = [];
 
-    // 4. Loop por dia do range — APENAS working_hours do profissional.
+    // 5. Loop por dia do range — APENAS working_hours do profissional.
     for (let i = 0; i < data.days; i++) {
       const date = addDays(startDate, i);
       const wd = weekdayIndex(date);
+      const daySchedule: DaySchedule | null = workingHours[String(wd) as WeekdayKey];
 
-      const daySchedule: DaySchedule | null =
-        workingHours[String(wd) as WeekdayKey];
       if (!daySchedule) {
         result.push({ date, slots: [] });
         continue;
@@ -189,7 +187,7 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
         ...appointments,
       ];
 
-      // 5. Grade fixa 30min
+      // 6. Grade fixa 30min
       const slots: SlotItem[] = [];
       for (
         let slotStart = base.start;
@@ -197,7 +195,6 @@ export const getAvailableSlots = createServerFn({ method: 'GET' })
         slotStart += stepMs
       ) {
         const slotEnd = slotStart + durationMs;
-
         if (slotStart < now) continue;
 
         const collides = dayBusy.some(

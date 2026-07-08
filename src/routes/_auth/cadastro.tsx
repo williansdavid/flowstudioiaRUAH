@@ -150,6 +150,7 @@ function CadastroPage() {
             </h2>
             <p className="text-sm text-[var(--color-text-muted)]">
               Enviamos um e-mail de confirmação para{' '}
+               -  Verifique a caixa de spam ou lixo eletrônico.
               <strong className="text-[var(--color-text)]">{submittedEmail}</strong>.
               Clique no link para definir sua senha e acessar sua conta.
             </p>

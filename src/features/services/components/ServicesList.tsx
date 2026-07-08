@@ -82,8 +82,11 @@ export function ServicesList() {
                       : 'opacity-60',
                   ].join(' ')}
                 >
-                  {/* Imagem */}
-                  <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
+                  {/* Imagem — AGORA CLICÁVEL */}
+                  <div
+                    onClick={() => openEdit(service)}
+                    className="relative aspect-square w-full overflow-hidden bg-zinc-800 cursor-pointer"
+                  >
                     {service.imageUrl ? (
                       <img
                         src={service.imageUrl}
@@ -137,23 +140,22 @@ export function ServicesList() {
                         Editar
                       </button>
 
-                      {/* Toggle ativar/desativar */}
-                        <button
-                          onClick={() =>
-                            toggleActive.mutate(
-                              { id: service.id, isActive: !service.isActive },
-                              { onSuccess: () => refetch() }
-                            )
-                          }
-                          disabled={toggleActive.isPending}
-                          className={[
-                            'relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200',
-                            service.isActive
-                              ? 'bg-emerald-500/80 hover:bg-emerald-500'
-                              : 'bg-zinc-700 hover:bg-zinc-600',
-                          ].join(' ')}
-                          title={service.isActive ? 'Desativar' : 'Reativar'}
-                        >
+                      <button
+                        onClick={() =>
+                          toggleActive.mutate(
+                            { id: service.id, isActive: !service.isActive },
+                            { onSuccess: () => refetch() }
+                          )
+                        }
+                        disabled={toggleActive.isPending}
+                        className={[
+                          'relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors duration-200',
+                          service.isActive
+                            ? 'bg-emerald-500/80 hover:bg-emerald-500'
+                            : 'bg-zinc-700 hover:bg-zinc-600',
+                        ].join(' ')}
+                        title={service.isActive ? 'Desativar' : 'Reativar'}
+                      >
                         <span
                           className={[
                             'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200',
