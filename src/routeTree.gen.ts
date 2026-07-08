@@ -22,6 +22,7 @@ import { Route as ClientClienteRouteRouteImport } from './routes/_client/cliente
 import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
 import { Route as ClientClienteIndexRouteImport } from './routes/_client/cliente/index'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
+import { Route as ClientClientePerfilRouteImport } from './routes/_client/cliente/perfil'
 import { Route as ClientClienteAgendarRouteImport } from './routes/_client/cliente/agendar'
 import { Route as ClientClienteAgendamentosRouteImport } from './routes/_client/cliente/agendamentos'
 import { Route as AuthedAdminServicosRouteImport } from './routes/_authed/admin/servicos'
@@ -98,6 +99,11 @@ const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const ClientClientePerfilRoute = ClientClientePerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => ClientClienteRouteRoute,
 } as any)
 const ClientClienteAgendarRoute = ClientClienteAgendarRouteImport.update({
   id: '/agendar',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
   '/cliente/agendar': typeof ClientClienteAgendarRoute
+  '/cliente/perfil': typeof ClientClientePerfilRoute
   '/admin/': typeof AuthedAdminIndexRoute
   '/cliente/': typeof ClientClienteIndexRoute
   '/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
   '/cliente/agendar': typeof ClientClienteAgendarRoute
+  '/cliente/perfil': typeof ClientClientePerfilRoute
   '/admin': typeof AuthedAdminIndexRoute
   '/cliente': typeof ClientClienteIndexRoute
   '/admin/equipe': typeof AuthedAdminEquipeIndexRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
   '/_client/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
   '/_client/cliente/agendar': typeof ClientClienteAgendarRoute
+  '/_client/cliente/perfil': typeof ClientClientePerfilRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
   '/_client/cliente/': typeof ClientClienteIndexRoute
   '/_authed/admin/equipe/': typeof AuthedAdminEquipeIndexRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/admin/servicos'
     | '/cliente/agendamentos'
     | '/cliente/agendar'
+    | '/cliente/perfil'
     | '/admin/'
     | '/cliente/'
     | '/admin/equipe/'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/admin/servicos'
     | '/cliente/agendamentos'
     | '/cliente/agendar'
+    | '/cliente/perfil'
     | '/admin'
     | '/cliente'
     | '/admin/equipe'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/_authed/admin/servicos'
     | '/_client/cliente/agendamentos'
     | '/_client/cliente/agendar'
+    | '/_client/cliente/perfil'
     | '/_authed/admin/'
     | '/_client/cliente/'
     | '/_authed/admin/equipe/'
@@ -431,6 +443,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthedAdminIndexRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_client/cliente/perfil': {
+      id: '/_client/cliente/perfil'
+      path: '/perfil'
+      fullPath: '/cliente/perfil'
+      preLoaderRoute: typeof ClientClientePerfilRouteImport
+      parentRoute: typeof ClientClienteRouteRoute
     }
     '/_client/cliente/agendar': {
       id: '/_client/cliente/agendar'
@@ -609,12 +628,14 @@ const AuthedRouteWithChildren =
 interface ClientClienteRouteRouteChildren {
   ClientClienteAgendamentosRoute: typeof ClientClienteAgendamentosRoute
   ClientClienteAgendarRoute: typeof ClientClienteAgendarRoute
+  ClientClientePerfilRoute: typeof ClientClientePerfilRoute
   ClientClienteIndexRoute: typeof ClientClienteIndexRoute
 }
 
 const ClientClienteRouteRouteChildren: ClientClienteRouteRouteChildren = {
   ClientClienteAgendamentosRoute: ClientClienteAgendamentosRoute,
   ClientClienteAgendarRoute: ClientClienteAgendarRoute,
+  ClientClientePerfilRoute: ClientClientePerfilRoute,
   ClientClienteIndexRoute: ClientClienteIndexRoute,
 }
 

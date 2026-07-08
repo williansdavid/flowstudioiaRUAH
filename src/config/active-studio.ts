@@ -1,3 +1,5 @@
+// src/config
+
 /**
  * active-studio.ts — SWITCH do Studio Ativo (CAMADA NÚCLEO)
  * ----------------------------------------------------------------
@@ -15,3 +17,4 @@
  */
 
 export * from '@/sites/ruah/studio'
+export const siteUrl = 'http://www.ruahbarbearia.com.br/'
