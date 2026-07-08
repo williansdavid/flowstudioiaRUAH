@@ -263,19 +263,21 @@ export function BookingWizard({ services, staff, mode, clientName }: Props) {
             }
           />
         );
-      case 'dateSlots':
-        return (
-          <StepDateSlots
-            staffId={selection.staffId}
-            serviceId={selection.serviceId}
-            value={selection.date}
-            slotStartsAt={selection.slotStartsAt}
-            slotEndsAt={selection.slotEndsAt}
-            onChange={(date, startsAt, endsAt) =>
-              updateSelection({ date, slotStartsAt: startsAt, slotEndsAt: endsAt })
-            }
-          />
-        );
+// No BookingWizard.tsx, encontrar o case 'dateSlots' no switch
+case 'dateSlots':
+  return (
+    <StepDateSlots
+      value={selection.date}
+      slotStartsAt={selection.slotStartsAt}
+      slotEndsAt={selection.slotEndsAt}
+      staffId={selection.staffId}
+      serviceId={selection.serviceId}
+      onChange={(date, slotStartsAt, slotEndsAt) =>
+        updateSelection({ date, slotStartsAt, slotEndsAt })
+      }
+      onSlotConfirmed={goNext}  // 🔥 NOVO — fecha modal + avança pro Confirm direto
+    />
+  );
     }
   };
 
@@ -335,17 +337,20 @@ export function BookingWizard({ services, staff, mode, clientName }: Props) {
             }
           />
 
-          {/* Coluna 4 — Data e horário */}
-          <StepDateSlots
-            staffId={selection.staffId}
-            serviceId={selection.serviceId}
-            value={selection.date}
-            slotStartsAt={selection.slotStartsAt}
-            slotEndsAt={selection.slotEndsAt}
-            onChange={(date, startsAt, endsAt) =>
-              updateSelection({ date, slotStartsAt: startsAt, slotEndsAt: endsAt })
-            }
-          />
+{/* Coluna 4 — Data e horário */}
+<div className="min-w-0">
+  <StepDateSlots
+    staffId={selection.staffId}
+    serviceId={selection.serviceId}
+    value={selection.date}
+    slotStartsAt={selection.slotStartsAt}
+    slotEndsAt={selection.slotEndsAt}
+    onChange={(date, startsAt, endsAt) =>
+      updateSelection({ date, slotStartsAt: startsAt, slotEndsAt: endsAt })
+    }
+    onSlotConfirmed={goNext}
+  />
+</div>
         </div>
 
         {/* Barra de confirmação */}
