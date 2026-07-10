@@ -26,11 +26,13 @@ import { Route as ClientClientePerfilRouteImport } from './routes/_client/client
 import { Route as ClientClienteAgendarRouteImport } from './routes/_client/cliente/agendar'
 import { Route as ClientClienteAgendamentosRouteImport } from './routes/_client/cliente/agendamentos'
 import { Route as AuthedAdminServicosRouteImport } from './routes/_authed/admin/servicos'
+import { Route as AuthedAdminRelatoriosRouteImport } from './routes/_authed/admin/relatorios'
 import { Route as AuthedAdminProdutosRouteImport } from './routes/_authed/admin/produtos'
 import { Route as AuthedAdminPdvRouteImport } from './routes/_authed/admin/pdv'
 import { Route as AuthedAdminFinanceiroRouteImport } from './routes/_authed/admin/financeiro'
 import { Route as AuthedAdminEquipeRouteImport } from './routes/_authed/admin/equipe'
 import { Route as AuthedAdminCrmRouteImport } from './routes/_authed/admin/crm'
+import { Route as AuthedAdminComissoesRouteImport } from './routes/_authed/admin/comissoes'
 import { Route as AuthedAdminClientesRouteImport } from './routes/_authed/admin/clientes'
 import { Route as AuthedAdminAgendarNovoRouteImport } from './routes/_authed/admin/agendar-novo'
 import { Route as AuthedAdminAgendamentosRouteImport } from './routes/_authed/admin/agendamentos'
@@ -121,6 +123,11 @@ const AuthedAdminServicosRoute = AuthedAdminServicosRouteImport.update({
   path: '/servicos',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
+const AuthedAdminRelatoriosRoute = AuthedAdminRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
 const AuthedAdminProdutosRoute = AuthedAdminProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
@@ -144,6 +151,11 @@ const AuthedAdminEquipeRoute = AuthedAdminEquipeRouteImport.update({
 const AuthedAdminCrmRoute = AuthedAdminCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminComissoesRoute = AuthedAdminComissoesRouteImport.update({
+  id: '/comissoes',
+  path: '/comissoes',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
 const AuthedAdminClientesRoute = AuthedAdminClientesRouteImport.update({
@@ -191,11 +203,13 @@ export interface FileRoutesByFullPath {
   '/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
   '/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/admin/clientes': typeof AuthedAdminClientesRoute
+  '/admin/comissoes': typeof AuthedAdminComissoesRoute
   '/admin/crm': typeof AuthedAdminCrmRoute
   '/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/produtos': typeof AuthedAdminProdutosRoute
+  '/admin/relatorios': typeof AuthedAdminRelatoriosRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
   '/cliente/agendar': typeof ClientClienteAgendarRoute
@@ -216,10 +230,12 @@ export interface FileRoutesByTo {
   '/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
   '/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/admin/clientes': typeof AuthedAdminClientesRoute
+  '/admin/comissoes': typeof AuthedAdminComissoesRoute
   '/admin/crm': typeof AuthedAdminCrmRoute
   '/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/admin/pdv': typeof AuthedAdminPdvRoute
   '/admin/produtos': typeof AuthedAdminProdutosRoute
+  '/admin/relatorios': typeof AuthedAdminRelatoriosRoute
   '/admin/servicos': typeof AuthedAdminServicosRoute
   '/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
   '/cliente/agendar': typeof ClientClienteAgendarRoute
@@ -246,11 +262,13 @@ export interface FileRoutesById {
   '/_authed/admin/agendamentos': typeof AuthedAdminAgendamentosRoute
   '/_authed/admin/agendar-novo': typeof AuthedAdminAgendarNovoRoute
   '/_authed/admin/clientes': typeof AuthedAdminClientesRoute
+  '/_authed/admin/comissoes': typeof AuthedAdminComissoesRoute
   '/_authed/admin/crm': typeof AuthedAdminCrmRoute
   '/_authed/admin/equipe': typeof AuthedAdminEquipeRouteWithChildren
   '/_authed/admin/financeiro': typeof AuthedAdminFinanceiroRoute
   '/_authed/admin/pdv': typeof AuthedAdminPdvRoute
   '/_authed/admin/produtos': typeof AuthedAdminProdutosRoute
+  '/_authed/admin/relatorios': typeof AuthedAdminRelatoriosRoute
   '/_authed/admin/servicos': typeof AuthedAdminServicosRoute
   '/_client/cliente/agendamentos': typeof ClientClienteAgendamentosRoute
   '/_client/cliente/agendar': typeof ClientClienteAgendarRoute
@@ -275,11 +293,13 @@ export interface FileRouteTypes {
     | '/admin/agendamentos'
     | '/admin/agendar-novo'
     | '/admin/clientes'
+    | '/admin/comissoes'
     | '/admin/crm'
     | '/admin/equipe'
     | '/admin/financeiro'
     | '/admin/pdv'
     | '/admin/produtos'
+    | '/admin/relatorios'
     | '/admin/servicos'
     | '/cliente/agendamentos'
     | '/cliente/agendar'
@@ -300,10 +320,12 @@ export interface FileRouteTypes {
     | '/admin/agendamentos'
     | '/admin/agendar-novo'
     | '/admin/clientes'
+    | '/admin/comissoes'
     | '/admin/crm'
     | '/admin/financeiro'
     | '/admin/pdv'
     | '/admin/produtos'
+    | '/admin/relatorios'
     | '/admin/servicos'
     | '/cliente/agendamentos'
     | '/cliente/agendar'
@@ -329,11 +351,13 @@ export interface FileRouteTypes {
     | '/_authed/admin/agendamentos'
     | '/_authed/admin/agendar-novo'
     | '/_authed/admin/clientes'
+    | '/_authed/admin/comissoes'
     | '/_authed/admin/crm'
     | '/_authed/admin/equipe'
     | '/_authed/admin/financeiro'
     | '/_authed/admin/pdv'
     | '/_authed/admin/produtos'
+    | '/_authed/admin/relatorios'
     | '/_authed/admin/servicos'
     | '/_client/cliente/agendamentos'
     | '/_client/cliente/agendar'
@@ -472,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminServicosRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
+    '/_authed/admin/relatorios': {
+      id: '/_authed/admin/relatorios'
+      path: '/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AuthedAdminRelatoriosRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
     '/_authed/admin/produtos': {
       id: '/_authed/admin/produtos'
       path: '/produtos'
@@ -505,6 +536,13 @@ declare module '@tanstack/react-router' {
       path: '/crm'
       fullPath: '/admin/crm'
       preLoaderRoute: typeof AuthedAdminCrmRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/comissoes': {
+      id: '/_authed/admin/comissoes'
+      path: '/comissoes'
+      fullPath: '/admin/comissoes'
+      preLoaderRoute: typeof AuthedAdminComissoesRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
     '/_authed/admin/clientes': {
@@ -588,11 +626,13 @@ interface AuthedAdminRouteRouteChildren {
   AuthedAdminAgendamentosRoute: typeof AuthedAdminAgendamentosRoute
   AuthedAdminAgendarNovoRoute: typeof AuthedAdminAgendarNovoRoute
   AuthedAdminClientesRoute: typeof AuthedAdminClientesRoute
+  AuthedAdminComissoesRoute: typeof AuthedAdminComissoesRoute
   AuthedAdminCrmRoute: typeof AuthedAdminCrmRoute
   AuthedAdminEquipeRoute: typeof AuthedAdminEquipeRouteWithChildren
   AuthedAdminFinanceiroRoute: typeof AuthedAdminFinanceiroRoute
   AuthedAdminPdvRoute: typeof AuthedAdminPdvRoute
   AuthedAdminProdutosRoute: typeof AuthedAdminProdutosRoute
+  AuthedAdminRelatoriosRoute: typeof AuthedAdminRelatoriosRoute
   AuthedAdminServicosRoute: typeof AuthedAdminServicosRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
 }
@@ -602,11 +642,13 @@ const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
   AuthedAdminAgendamentosRoute: AuthedAdminAgendamentosRoute,
   AuthedAdminAgendarNovoRoute: AuthedAdminAgendarNovoRoute,
   AuthedAdminClientesRoute: AuthedAdminClientesRoute,
+  AuthedAdminComissoesRoute: AuthedAdminComissoesRoute,
   AuthedAdminCrmRoute: AuthedAdminCrmRoute,
   AuthedAdminEquipeRoute: AuthedAdminEquipeRouteWithChildren,
   AuthedAdminFinanceiroRoute: AuthedAdminFinanceiroRoute,
   AuthedAdminPdvRoute: AuthedAdminPdvRoute,
   AuthedAdminProdutosRoute: AuthedAdminProdutosRoute,
+  AuthedAdminRelatoriosRoute: AuthedAdminRelatoriosRoute,
   AuthedAdminServicosRoute: AuthedAdminServicosRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
 }

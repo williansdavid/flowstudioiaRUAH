@@ -19,23 +19,10 @@ function sumAmount(rows: { amount: number | string }[]): number {
   return rows.reduce((acc: number, row: { amount: number | string }) => acc + Number(row.amount), 0);
 }
 
-interface CommissionRow {
-  amount: number | string;
-  staff: { commission_rate: number | string | null } | null;
-}
-
-function sumCommission(rows: CommissionRow[]): number {
-  return rows.reduce((acc: number, row: CommissionRow) => {
-    const rate = Number(row.staff?.commission_rate ?? 0);
-    return acc + Number(row.amount) * (rate / 100);
-  }, 0);
-}
-
 export const getFinanceSummary = createServerFn({ method: 'GET' })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<FinanceSummary> => {
     const supabase = createSupabaseServer();
-
     const {
       data: { user },
       error: userError,
@@ -54,7 +41,6 @@ export const getFinanceSummary = createServerFn({ method: 'GET' })
         .eq('type', type)
         .gte('occurred_at', `${start}T00:00:00`)
         .lte('occurred_at', `${end}T23:59:59`);
-
       if (error) throw error;
       return sumAmount(rows ?? []);
     }
@@ -66,7 +52,6 @@ export const getFinanceSummary = createServerFn({ method: 'GET' })
         .eq('status', 'completed')
         .gte('starts_at', `${start}T00:00:00`)
         .lte('starts_at', `${end}T23:59:59`);
-
       if (error) throw error;
       return count ?? 0;
     }
@@ -74,14 +59,13 @@ export const getFinanceSummary = createServerFn({ method: 'GET' })
     async function sumCommissionInRange(start: string, end: string) {
       const { data: rows, error } = await supabase
         .from('finance_transactions')
-        .select('amount, staff(commission_rate)')
+        .select('commission_value')
         .eq('type', 'income')
         .not('staff_id', 'is', null)
         .gte('occurred_at', `${start}T00:00:00`)
         .lte('occurred_at', `${end}T23:59:59`);
-
       if (error) throw error;
-      return sumCommission((rows ?? []) as unknown as CommissionRow[]);
+      return (rows ?? []).reduce((acc, row) => acc + Number(row.commission_value ?? 0), 0);
     }
 
     const [

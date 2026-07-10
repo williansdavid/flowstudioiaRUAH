@@ -54,15 +54,11 @@ export function useAppointmentSaleData(appointmentId: string | undefined) {
 
 export function useFinalizeSale() {
   const queryClient = useQueryClient();
-  const router = useRouter();
   return useMutation({
     mutationFn: (input: CreateSaleInput) => createSale({ data: input }),
     onSuccess: () => {
       queryClient.invalidateQueries();
       toast.success('Venda finalizada com sucesso!');
-      router.invalidate().then(() => {
-        router.navigate({ to: '/admin' });
-      });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erro ao finalizar venda.');

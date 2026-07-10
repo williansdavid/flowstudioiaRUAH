@@ -48,6 +48,14 @@ export interface StaffRevenueItem {
   /** revenue * (commissionRate / 100) */
   commission: number;
   appointmentsCount: number;
+  /** Total de comissão vindo de produtos */
+  commissionProducts: number;
+  /** Total de comissão vindo de serviços */
+  commissionServices: number;
+  /** Receita gerada com produtos */
+  revenueProducts: number;
+  /** Receita gerada com serviços */
+  revenueServices: number;
 }
 
 export type TransactionType = 'income' | 'expense';
@@ -72,4 +80,36 @@ export interface TransactionItem {
   paymentMethodName: string | null;
   staffName: string | null;
   referenceId: string | null;
+}
+
+// ─── Comission settlement (acerto de comissões) ───
+
+/** Resumo por profissional para a tela de acerto */
+export interface StaffCommissionSummary {
+  staffId: string;
+  staffName: string;
+  staffColor: string | null;
+  staffAvatarUrl: string | null;
+  totalRevenue: number;
+  totalCommission: number;
+  settledCommission: number;
+  pendingCommission: number;
+  appointmentCount: number;
+}
+
+/** Transação individual no extrato do acerto */
+export interface CommissionTransaction {
+  id: string;
+  category: TransactionCategory;
+  amount: number;
+  commissionValue: number;
+  description: string | null;
+  occurredAt: string;
+  isSettled: boolean;
+  settledAt: string | null;
+}
+
+/** Input para marcar transações como acertadas */
+export interface SettleCommissionInput {
+  transactionIds: string[];
 }

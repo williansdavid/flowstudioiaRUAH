@@ -10,6 +10,8 @@ import {
   PackagePlus,
   NotebookIcon,
   NotebookPenIcon,
+  DollarSign,
+  BarChart3,
     
 } from 'lucide-react';
 import type { NavItem, NavSection } from '../types';
@@ -26,6 +28,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Produtos', to: '/admin/produtos', icon: PackagePlus, roles: ['admin', 'staff'], section: 'Cadastros' },
   { label: 'Equipe', to: '/admin/equipe', icon: UserCog, roles: ['admin', 'staff'], section: 'Gestão' },
   { label: 'Financeiro', to: '/admin/financeiro', icon: Wallet, roles: ['admin'], section: 'Gestão' },
+  { label: 'Comissões',  to: '/admin/comissoes',  icon: DollarSign, roles: ['admin', 'staff'], section: 'Gestão' },
+   { label: 'Relatórios', to: '/admin/relatorios', icon: BarChart3, roles: ['admin'], section: 'Gestão' },  // ← novo
 ] as const;
 
 /** Ordem fixa das seções na sidebar */

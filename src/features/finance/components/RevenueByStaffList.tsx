@@ -25,33 +25,55 @@ export function RevenueByStaffList({ items }: Props) {
 
       {/* Mobile: cards empilhados (sem scroll horizontal) */}
       <div className="space-y-3 sm:hidden">
-        {items.map((item) => (
-          <div key={item.staffId} className="rounded-xl border border-slate-700/20 bg-slate-900/30 p-3">
-            <div className="flex min-w-0 items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <span
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: item.staffColor ?? '#94a3b8' }}
-                  aria-hidden
-                />
-                <span className="truncate font-medium text-slate-200">{item.staffName}</span>
+        {items.map((item) => {
+          const servPct = item.revenueServices > 0
+            ? Math.round((item.commissionServices / item.revenueServices) * 100) : 0;
+          const prodPct = item.revenueProducts > 0
+            ? Math.round((item.commissionProducts / item.revenueProducts) * 100) : 0;
+
+          return (
+            <div key={item.staffId} className="rounded-xl border border-slate-700/20 bg-slate-900/30 p-3">
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: item.staffColor ?? '#94a3b8' }}
+                    aria-hidden
+                  />
+                  <span className="truncate font-medium text-slate-200">{item.staffName}</span>
+                </div>
+                <span className="shrink-0 text-xs text-slate-500">{item.appointmentsCount} atend.</span>
               </div>
-              <span className="shrink-0 text-xs text-slate-500">{item.appointmentsCount} atend.</span>
+              <div className="mt-2 flex items-center justify-between gap-2 text-sm">
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Recebido</p>
+                  <p className="truncate font-semibold text-slate-100">{brl.format(item.revenue)}</p>
+                </div>
+                <div className="min-w-0 text-right">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Comissão</p>
+                  <p className="truncate font-semibold text-orange-400">{brl.format(item.commission)}</p>
+                </div>
+              </div>
+
+              {item.commissionProducts > 0 || item.commissionServices > 0 ? (
+                <div className="mt-2 space-y-1 border-t border-slate-700/10 pt-2 text-xs">
+                  {item.commissionServices > 0 ? (
+                    <div className="flex items-center justify-between text-slate-400">
+                      <span>Serviços</span>
+                      <span>{brl.format(item.commissionServices)} <span className="text-slate-500">({servPct}%)</span></span>
+                    </div>
+                  ) : null}
+                  {item.commissionProducts > 0 ? (
+                    <div className="flex items-center justify-between text-slate-400">
+                      <span>Produtos</span>
+                      <span>{brl.format(item.commissionProducts)} <span className="text-slate-500">({prodPct}%)</span></span>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
-            <div className="mt-2 flex items-center justify-between gap-2 text-sm">
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-slate-500">Recebido</p>
-                <p className="truncate font-semibold text-slate-100">{brl.format(item.revenue)}</p>
-              </div>
-              <div className="min-w-0 text-right">
-                <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                  Comissão ({item.commissionRate}%)
-                </p>
-                <p className="truncate font-semibold text-orange-400">{brl.format(item.commission)}</p>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <div className="flex items-center justify-between border-t border-slate-700/20 pt-3 text-sm font-semibold">
           <span className="text-slate-300">Total</span>
           <span className="text-slate-100">{brl.format(totalRevenue)}</span>
@@ -71,28 +93,44 @@ export function RevenueByStaffList({ items }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/10">
-            {items.map((item) => (
-              <tr key={item.staffId}>
-                <td className="py-3 pr-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: item.staffColor ?? '#94a3b8' }}
-                      aria-hidden
-                    />
-                    <span className="truncate font-medium text-slate-200">{item.staffName}</span>
-                  </div>
-                </td>
-                <td className="py-3 pr-3 text-right text-slate-400">{item.appointmentsCount}</td>
-                <td className="py-3 pr-3 text-right font-semibold text-slate-100">
-                  {brl.format(item.revenue)}
-                </td>
-                <td className="py-3 text-right">
-                  <span className="font-semibold text-orange-400">{brl.format(item.commission)}</span>
-                  <span className="ml-1 text-xs text-slate-500">({item.commissionRate}%)</span>
-                </td>
-              </tr>
-            ))}
+            {items.map((item) => {
+              const servPct = item.revenueServices > 0
+                ? Math.round((item.commissionServices / item.revenueServices) * 100) : 0;
+              const prodPct = item.revenueProducts > 0
+                ? Math.round((item.commissionProducts / item.revenueProducts) * 100) : 0;
+
+              return (
+                <tr key={item.staffId}>
+                  <td className="py-3 pr-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: item.staffColor ?? '#94a3b8' }}
+                        aria-hidden
+                      />
+                      <span className="truncate font-medium text-slate-200">{item.staffName}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 pr-3 text-right text-slate-400">{item.appointmentsCount}</td>
+                  <td className="py-3 pr-3 text-right font-semibold text-slate-100">
+                    {brl.format(item.revenue)}
+                  </td>
+                  <td className="py-3 text-right">
+                    <div className="font-semibold text-orange-400">{brl.format(item.commission)}</div>
+                    {item.commissionProducts > 0 || item.commissionServices > 0 ? (
+                      <div className="mt-0.5 space-y-0.5 text-[11px] leading-tight text-slate-500">
+                        {item.commissionServices > 0 ? (
+                          <div>Serv. {brl.format(item.commissionServices)} ({servPct}%)</div>
+                        ) : null}
+                        {item.commissionProducts > 0 ? (
+                          <div>Prod. {brl.format(item.commissionProducts)} ({prodPct}%)</div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
           <tfoot>
             <tr className="border-t border-slate-700/20 font-semibold">

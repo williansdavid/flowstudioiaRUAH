@@ -29,10 +29,11 @@ import baseCss from './styles/base.css?url'
 import animationsCss from './styles/animations.css?url'
 import galleryCss from './styles/gallery.css?url'
 import testimonialsCss from './styles/testimonials.css?url'
+import { businessHours } from './config/businessHours'
 
 // ─────────────────────────── Dados crus ───────────────────────────
 export { branding, content, identity, buildLocalBusinessJsonLd }
-
+export { businessHours }
 // ──────────────────────── Valores computados ──────────────────────
 
 /** CSS variables geradas a partir do branding (injetado via <style>). */
