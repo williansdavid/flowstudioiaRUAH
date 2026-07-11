@@ -101,7 +101,10 @@ export function StepDateSlots({
 }: Props) {
   const today = todayLocal();
   const [weekOffset, setWeekOffset] = useState(0);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i + weekOffset * 7));
+  const todayDate = new Date(today + 'T12:00:00-03:00');
+  const dow = todayDate.getDay();
+  const weekStart = addDays(today, -dow);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i + weekOffset * 7));
   const date = value || today;
 
   const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots({

@@ -1,0 +1,766 @@
+================================================================================
+                    FLOWSTUDIO AI — MANUAL TÉCNICO
+         Documentação Técnica de Referência — Versão 2.1
+                         10 de julho de 2026
+================================================================================
+
+================================================================================
+1. VISÃO GERAL E MODELO DE NEGÓCIO
+================================================================================
+
+O FlowStudio AI é uma plataforma white-label de alto desempenho, projetada
+especificamente para atender às necessidades de studios de beleza, barbearias
+e centros de estética. O sistema opera sob um modelo de ISOLAMENTO TOTAL POR
+CLIENTE, garantindo máxima segurança, performance e personalização para cada
+studio [1].
+
+Cada studio cliente do FlowStudio AI possui uma instância completamente
+dedicada e isolada, composta por:
+
+• Deploy Independente: Cada studio tem seu próprio deploy no Netlify,
+  assegurando autonomia e performance otimizada.
+• Banco de Dados Dedicado: Um projeto isolado no Supabase, incluindo
+  PostgreSQL, autenticação (Auth) e Row Level Security (RLS).
+• Identidade Visual Personalizada: Configurações de branding e landing pages
+  exclusivas em src/sites/<slug>/, permitindo identidade própria [1][2].
+
+1.1 Estrutura de Módulos
+
+O sistema é arquitetado em dois núcleos fundamentais:
+
+1. Sistema (Core): Localizado em src/lib/ e src/features/, contém a lógica
+   de negócio compartilhada, componentes de interface administrativa e
+   integrações de infraestrutura. Representa o núcleo comum.
+2. Site (Studio): Localizado em src/sites/<slug>/, gerencia a presença
+   digital pública de cada studio e consome o core através de fachadas.
+
+REGRADE OURO DA MODULARIDADE:
+É estritamente proibido que src/lib/ importe diretamente de src/sites/.
+Em vez disso, src/sites/ DEVE consumir funcionalidades de src/lib/core/
+exclusivamente via fachadas como buildBrandingCss.ts e buildSeo.ts [2].
+
+================================================================================
+2. ARQUITETURA GERAL
+================================================================================
+
+Fluxo de dados: Internet → Netlify SSR → TanStack Start + Router →
+React Query + Server Functions → Supabase (PostgreSQL, Auth, Storage, RLS)
+
+Componentes:
+• Netlify SSR: Hospedagem com suporte a Server-Side Rendering para SEO e
+  performance. Cada studio tem deploy independente.
+• TanStack Start + Router: Roteamento tipado e gerenciamento de estado.
+• React Query + Server Functions: Camada de abstração para API e mutações.
+• Supabase: Backend-as-a-Service (PostgreSQL, Auth, Storage, RLS).
+
+2.1 ATUALIZAÇÃO v2.1 — Marco Desvinculo Site x Sistema (commit 3fd90d7)
+
+• __root.tsx: Tornou-se shell neutro absoluto. Removidos tema, SEO, fonts,
+  JSON-LD e styleHrefs específicos do site.
+• _auth.tsx: Zona de sistema para telas de autenticação (sem guard).
+• _authed.tsx: Aplica systemThemeClass + guard de sessão/role. Sem sessão
+  ativa → redireciona para /login. Role negada → /login.
+• index.tsx: Rota raiz '/' absorve identidade do studio (tema, SEO,
+  OpenGraph, JSON-LD).
+• Auth funcional e testada ("CABEADA" — validado em 10/06/2026).
+• Zonas congeladas: src/sites/ruah/ não recebe alterações de feature
+  (somente landing page).
+
+================================================================================
+3. STACK TECNOLÓGICA
+================================================================================
+
+3.1 Tecnologias Core
+
+• Framework: TanStack Start (SSR) + TanStack Router + TanStack React Query
+• Backend: Supabase (PostgreSQL, Auth, Storage, Row Level Security)
+• Linguagem: TypeScript com noUncheckedIndexedAccess: true
+• Estilização: Tailwind CSS + Framer Motion + Radix UI
+• Build/Ferramentas: Vite + PostCSS
+• Infraestrutura: Netlify (SSR Functions + deploy automatizado)
+• Utilitários: lucide-react (ícones), sonner (toasts), zod (validação)
+
+3.2 Adições v2.0 e v2.1 (mantidas)
+
+• Zustand: Gerenciamento de estado global leve para UI
+• Date-fns: Manipulação e formatação de datas
+• Recharts: Visualização de dados e gráficos
+• IDB (IndexedDB): Cache local para persistência offline
+
+3.3 Tecnologias Proibidas
+
+• Redux (substituído por React Query/Zustand)
+• Axios (substituído por fetch nativo em Server Functions)
+• Bibliotecas de UI pesadas sem suporte a Tailwind
+• Microsserviços, multi-tenant de banco único, Kubernetes, filas de
+  mensagens complexas, CQRS, Event Sourcing
+
+================================================================================
+4. ESTRUTURA DE DIRETÓRIOS
+================================================================================
+
+src/
+├── features/                  # Módulos de negócio isolados
+│   ├── admin-shell/           # Layout e navegação administrativa
+│   ├── appointments/          # Gestão de agendamentos
+│   ├── auth/                  # Autenticação e controle de acesso
+│   ├── client-shell/          # (NOVO v2.1) Portal do cliente final
+│   ├── clients/               # (v2.0) Gestão de clientes e métricas
+│   ├── crm/                   # (v2.0) Tarefas e logs de CRM
+│   ├── dashboard/             # Indicadores e métricas
+│   ├── finance/               # (NOVO v2.1) Financeiro completo
+│   ├── products/              # (v2.0) Produtos e comissões
+│   ├── report/                # (NOVO v2.1) Relatórios gerenciais
+│   ├── sales/                 # PDV e vendas
+│   ├── services/              # Catálogo de serviços
+│   ├── staff/                 # Gestão de profissionais
+│   └── utils/                 # (NOVO v2.1) Utilitários entre features
+│
+├── lib/                       # Lógica core e tipos globais
+│   ├── core/                  # Branding system, types, utils
+│   ├── errors/                # parseBusinessError.ts
+│   ├── public/                # Funções públicas (sem auth)
+│   ├── query/                 # Config do TanStack Query
+│   ├── scheduling/            # workingHours.schema.ts
+│   ├── supabase/              # admin, client, server, types
+│   ├── cn.ts                  # Utilitário classnames
+│   ├── env.ts                 # Variáveis de ambiente tipadas
+│   ├── parsePostgresError.ts  # Parse de erros do banco
+│   └── studioTime.ts          # Fuso horário do studio
+│
+├── routes/                    # Definição de rotas TanStack Router
+│   ├── __root.tsx             # Shell neutro
+│   ├── index.tsx              # Landing page do studio
+│   ├── _auth.tsx              # Zona de autenticação
+│   ├── _auth/
+│   │   ├── login.tsx
+│   │   ├── forgot-password.tsx
+│   │   ├── reset-password.tsx
+│   │   └── primeiro-acesso.tsx
+│   ├── _authed.tsx            # Zona protegida (admin)
+│   ├── _authed/admin/         # Rotas administrativas
+│   ├── _client.tsx            # Zona do cliente
+│   └── _client/cliente/       # (NOVO) Portal do cliente
+│
+├── server/
+│   └── auth/                  # signIn, signOut, getSession, requestPasswordReset
+│
+├── sites/
+│   └── ruah/                  # Studio Ruah (exemplo)
+│
+└── styles/                    # Definições globais CSS/Tailwind
+
+NOTA: O diretório src/components/ NÃO existe como diretório separado no
+repositório atual (confirmado via inspeção).
+
+================================================================================
+5. ESTRUTURA DE FEATURES (MÓDULOS DE NEGÓCIO)
+================================================================================
+
+5.1 admin-shell
+
+Fornece a moldura do sistema administrativo. Componentes principais:
+• AdminLayout: Estrutura principal com sidebar + topbar + content area
+• Sidebar: Navegação lateral com itens por role/permissão
+• Topbar: Cabeçalho com informações do usuário e avatar
+• SidebarItem: Item de navegação individual
+• PlaceholderScreen: Tela placeholder para módulos em construção
+• nav-items.ts: Sistema de navegação por role
+
+Este módulo é o esqueleto sobre o qual todas as telas administrativas são
+montadas. Foi criado durante a Sprint 1.5 como parte da refatoração do
+núcleo pluggable.
+
+5.2 appointments
+
+Coração operacional do sistema. Componentes e estrutura:
+• AppointmentFormModal: Modal de criação/edição com todos os campos
+• BookingWizard: Assistente multi-step (4 passos):
+  - Passo 1: Seleciona serviço (listActiveServices)
+  - Passo 2: Seleciona profissional (listBookableStaff)
+  - Passo 3: Escolhe data/horário (getAvailableSlots)
+  - Passo 4: Confirma dados (createAppointment)
+• DayCalendar: Visualização da agenda diária dos profissionais
+• hooks.ts: Hooks personalizados para estado e cache
+• server/: Funções CRUD completas
+• types.ts: Tipos para appointment, booking, slots
+• utils/: Cálculo de slots e detecção de conflitos
+• Integração com WhatsApp para notificações
+
+5.3 auth
+
+Sistema de autenticação completo integrado ao Supabase Auth.
+• Telas: login, forgot-password, reset-password, primeiro-acesso
+• Server Functions: signIn, signOut, getSession, requestPasswordReset
+• Proteção de rotas via guard em _authed.tsx
+• Sessão persistida e resolvida em SSR (sem flash)
+• Cookies seguros para manutenção de sessão entre páginas
+
+5.4 dashboard
+
+Visualização de métricas em tempo real.
+• KPIs: faturamento do dia/mês, ocupação da agenda, ticket médio
+• Server Functions:
+  - getDashboardData: Dados consolidados
+  - getRevenueByStaff: Receita por profissional
+• Gráficos interativos com Recharts
+
+5.5 Clients (v2.0)
+
+Perfil 360° do cliente com visão completa.
+• Dados cadastrais, histórico de visitas, timeline de eventos
+• Insights automáticos: LTV, ticket médio, churn risk
+• Alertas: aniversariantes, VIPs, clientes sem retorno (45+ dias)
+• Tabela client_events para registro de interações
+
+5.6 CRM (v2.0)
+
+Motor de tarefas automatizado baseado em eventos do sistema.
+• Geração automática para: no-show, aniversários, remarketing
+• Registro completo em crm_logs
+• Rastreamento de interações e resoluções
+• Integração com client_events para timeline
+
+5.7 Products (v2.0)
+
+Catálogo de produtos físicos.
+• Controle de estoque e departamentos
+• Regras de comissionamento por produto/profissional
+• Integração total com PDV
+• Tabelas: products, sales, sale_items, sale_payments
+
+5.8 sales / PDV
+
+Ponto de Venda completo integrado ao fluxo de agendamentos.
+• Componentes: ProductGrid, CartPanel, SplitPayment
+• Server Functions (6):
+  - createSale, createSaleDraft
+  - listProducts, listPaymentMethods
+  - getSaleDraft, getAppointmentSaleData
+• Split de pagamento: dinheiro + cartão + PIX
+
+5.9 services
+
+Gestão do catálogo de serviços.
+• Componentes: ServiceFormModal, ServicesList
+• Server Functions (4):
+  - createService, updateService
+  - deactivateService, listServices
+• Campos: nome, descrição, duração, preço, categoria, comissão
+
+5.10 staff
+
+Gestão completa de profissionais.
+• Componentes: StaffFormModal, WorkingHoursEditor, StaffTimeOffManager
+• Server Functions (12):
+  - createStaff, updateStaff, archiveStaff, resendStaffInvite
+  - getStaffWorkingHours, updateStaffWorkingHours
+  - createTimeOff, updateTimeOff, deleteTimeOff, listTimeOff
+  - listStaff, _buildTimeOffConflicts
+• Suporte a convite por email com token de acesso
+
+5.11 client-shell (NOVO v2.1)
+
+Portal do cliente final. Localizado em src/features/client-shell/.
+• Histórico de agendamentos do cliente
+• Reagendamento online
+• Perfil e dados cadastrais
+• Histórico de compras e serviços realizados
+Representa a expansão da plataforma para atender também o usuário cliente.
+
+5.12 finance (NOVO v2.1)
+
+Módulo financeiro completo. Localizado em src/features/finance/.
+• Fluxo de caixa (contas a pagar/receber)
+• Conciliação de transações originadas no PDV
+• Relatórios de receita por profissional
+• Análise de despesas e DRE simplificado
+• Complementa a tabela finance_transactions
+
+5.13 report (NOVO v2.1)
+
+Motor de relatórios gerenciais. Localizado em src/features/report/.
+• Geração de relatórios de performance
+• Exportação de dados
+• Análises consolidadas para tomada de decisão
+
+5.14 utils (NOVO v2.1)
+
+Utilitários compartilhados entre features. Localizado em src/features/utils/.
+• Formatadores de moeda
+• Validadores de documento (CPF, CNPJ)
+• Helpers de data
+• Evita duplicação de lógica entre features
+
+================================================================================
+6. ROTAS
+================================================================================
+
+Rotas Públicas:
+  / (index.tsx)           Landing page do studio com identidade completa
+
+Rotas de Autenticação (_auth):
+  /login                  Login com email/senha
+  /forgot-password        Recuperação de senha
+  /reset-password         Reset de senha
+  /primeiro-acesso        Primeiro cadastro
+
+Rotas Administrativas (_authed):
+  /admin                  Dashboard administrativo
+  /admin/agenda           Calendário de agendamentos
+  /admin/agendamentos     Lista de agendamentos
+  /admin/agendar-novo     BookingWizard (4 passos)
+  /admin/clientes         Gestão de clientes
+  /admin/equipe           Lista de profissionais
+  /admin/equipe/horarios  Horários da equipe
+  /admin/equipe/$staffId/horarios  Horários de profissional específico
+  /admin/financeiro       Módulo financeiro
+  /admin/pdv?appointmentId=xxx  Ponto de venda
+  /admin/servicos         Catálogo de serviços
+
+Rotas do Cliente (_client) — NOVO v2.1:
+  /cliente                Portal do cliente logado
+  /cliente/historico      Histórico de agendamentos
+  /cliente/perfil         Dados cadastrais
+
+================================================================================
+7. BANCO DE DADOS (SUPABASE)
+================================================================================
+
+7.1 Tabelas Principais
+
+• profiles: Usuários e profissionais (nome, email, avatar, role, studio_id)
+• clients: Clientes com métricas de retenção (LTV, churn_risk, última visita)
+• staff: Profissionais (comissões, especialidades, ativo/inativo)
+• services: Serviços (nome, duração, preço, categoria, comissão)
+• appointments: Agendamentos (cliente, serviço, staff, data/hora, status)
+• staff_time_off: Bloqueios de agenda (férias, folgas, intervalos)
+• finance_transactions: Movimentações financeiras
+• leads: Leads capturados (fonte, status, origem)
+• payment_methods: Formas de pagamento
+• products: (v2.0) Produtos com comissão e departamento
+• sales: (v2.0) Vendas realizadas
+• sale_items: (v2.0) Itens da venda
+• sale_payments: (v2.0) Pagamentos da venda
+• client_events: (v2.0) Eventos do cliente para timeline
+• crm_logs: (v2.0) Histórico de tarefas de CRM
+
+7.2 Views
+
+• clients_view: Visão consolidada de clientes com dados agregados
+
+7.3 Enums
+
+• appointment_status: pending, confirmed, in_progress, completed, cancelled,
+  no_show
+• user_role: admin, staff, client
+• lead_source: website, instagram, facebook, indicação, whatsapp, outros
+• lead_status: new, contacted, qualified, converted, lost
+• transaction_category: income, expense
+• transaction_type: service, product, split_receivable, fee, discount
+• task_type_enum: no_show_followup, birthday, return_reminder, review_request
+
+7.4 Funções SQL
+
+• current_user_role(): Retorna a role do usuário logado
+• handle_appointment_lifecycle(): Trigger que automatiza criação de logs de
+  CRM e registros financeiros. CRÍTICO: Requer payment_method_id para
+  concluir transação financeira.
+
+7.5 Tabelas Planejadas
+
+• whatsapp_messages: Mensagens enviadas por WhatsApp
+• whatsapp_settings: Configurações de integração WhatsApp
+• ai_messages: Mensagens do assistente IA
+
+================================================================================
+8. SERVER FUNCTIONS
+================================================================================
+
+8.1 appointments/ (11 funções)
+
+  createAppointment         Cria agendamento com validação de conflito
+  updateAppointment         Atualiza dados do agendamento
+  deleteAppointment         Remove agendamento
+  updateAppointmentStatus   Transiciona status (dispara triggers CRM/Financeiro)
+  getDayAppointments        Lista agendamentos do dia
+  getDayTimeOff             Lista bloqueios do dia
+  getAvailableSlots         Calcula horários livres
+  createQuickClient         Cria cliente rápido durante agendamento
+  listActiveServices        Lista serviços ativos para booking
+  listBookableStaff         Lista profissionais disponíveis
+  listClientsForSelect      Lista clientes para campo de seleção
+
+8.2 dashboard/ (2 funções)
+
+  getDashboardData          Dados consolidados do dashboard
+  getRevenueByStaff         Receita por profissional para gráficos
+
+8.3 sales/ (6 funções)
+
+  createSale                Finaliza venda no PDV
+  createSaleDraft           Cria rascunho de venda
+  listProducts              Lista produtos para o carrinho
+  listPaymentMethods        Lista formas de pagamento
+  getSaleDraft              Recupera rascunho de venda
+  getAppointmentSaleData    Dados da venda vinculada ao agendamento
+
+8.4 services/ (4 funções)
+
+  createService             Cria novo serviço
+  updateService             Atualiza serviço existente
+  deactivateService         Desativa serviço
+  listServices              Lista todos os serviços
+
+8.5 staff/ (12 funções)
+
+  createStaff               Cria profissional com convite
+  updateStaff               Atualiza dados do profissional
+  archiveStaff              Arquivar profissional (lógico)
+  resendStaffInvite         Reenviar convite por email
+  getStaffWorkingHours      Obter horários de trabalho
+  updateStaffWorkingHours   Atualizar horários
+  createTimeOff             Criar bloqueio de agenda
+  updateTimeOff             Atualizar bloqueio
+  deleteTimeOff             Remover bloqueio
+  listTimeOff               Listar bloqueios
+  listStaff                 Listar profissionais
+  _buildTimeOffConflicts    (interna) Detectar conflitos de horário
+
+8.6 auth/ (4 funções)
+
+  getSession                Obter sessão atual
+  signIn                    Login com email/senha
+  signOut                   Logout
+  requestPasswordReset      Solicitar reset de senha
+
+================================================================================
+9. LIB (NÚCLEO COMPARTILHADO)
+================================================================================
+
+Arquivos raiz:
+• cn.ts: Concatenação de classnames (clsx + tailwind-merge)
+• env.ts: Variáveis de ambiente tipadas e validadas
+• studioTime.ts: Fuso horário do studio (consistência independente de
+  localização do servidor/cliente)
+• parsePostgresError.ts: Traduz erros do PostgreSQL em mensagens amigáveis
+
+Diretórios:
+• core/: Núcleo do sistema (branding system, types, utils)
+• errors/: parseBusinessError.ts para erros de negócio
+• public/: Funções públicas sem auth (services.ts, types.ts)
+• query/: Configuração do TanStack Query client
+• scheduling/: Schemas de horário de trabalho (workingHours.schema.ts com
+  DaySchedule, WeekdayKey, parseWorkingHours)
+• supabase/: Clients de acesso (admin.ts, client.ts, server.ts, types.ts)
+• utils/: Utilitários (whatsapp.ts — toWhatsAppHref)
+
+================================================================================
+10. SITES (POR STUDIO)
+================================================================================
+
+Cada studio possui implementação única em src/sites/<slug>/:
+
+Estrutura padrão:
+  src/sites/<slug>/
+  ├── config/
+  │   ├── branding.ts       # Cores, fontes, logo
+  │   ├── identity.ts       # Nome, descrição, redes sociais
+  │   ├── content.ts        # Conteúdo textual da landing page
+  │   ├── businessHours.ts  # Horário de funcionamento (BusinessHours)
+  │   ├── seo/jsonLd.ts     # Schema JSON-LD para SEO
+  │   └── index.ts          # Barrel export
+  ├── components/
+  │   ├── floating/         # Componentes flutuantes (WhatsApp button)
+  │   ├── icons/            # Ícones personalizados
+  │   ├── layout/           # Layout da landing page
+  │   ├── motion/           # Animações personalizadas
+  │   └── sections/         # Seções da landing page
+  ├── lib/                  # Biblioteca específica
+  ├── types/                # Tipos específicos (BusinessHours)
+  ├── utils/                # Utilitários específicos
+  └── studio.ts             # Centralizador de configurações
+
+10.1 Exemplo: Studio Ruah
+
+Seções da landing page:
+• HeroSection: Banner principal com nome e chamada
+• AboutSection: Sobre o studio
+• ServicesSection: Catálogo de serviços
+• GallerySection: Galeria de fotos
+• HoursSection: Horário de funcionamento
+• TestimonialsSection: Depoimentos de clientes
+• Botão flutuante do WhatsApp com link direto
+• SEO otimizado com JSON-LD (Organization, LocalBusiness, Service)
+
+Horário de funcionamento Ruah:
+• Terça a Sexta: 09:00 às 19:00
+• Sábado: 08:00 às 16:00
+• Domingo e Segunda: Fechado
+
+Variáveis de ambiente do site:
+• VITE_STUDIO_NAME: Nome do studio
+• VITE_STUDIO_SLUG: Slug único do studio
+
+================================================================================
+11. CONFIGURAÇÃO E INFRAESTRUTURA
+================================================================================
+
+11.1 Variáveis de Ambiente
+
+  SUPABASE_SERVICE_ROLE_KEY    Chave de serviço Supabase (server-side only)
+  VITE_APP_URL                 URL pública da aplicação
+  VITE_STUDIO_NAME             Nome do studio
+  VITE_STUDIO_SLUG             Slug do studio
+  VITE_SUPABASE_ANON_KEY       Chave anônima Supabase
+  VITE_SUPABASE_URL            URL do projeto Supabase
+
+11.2 Deploy
+
+Automatizado via Netlify. Cada git push na branch main dispara build e
+deploy. Processo: Vite build → TanStack Start SSR → Netlify Functions.
+Cada studio possui deploy independente com variáveis exclusivas.
+
+11.3 Arquivos de Configuração Raiz
+
+• package.json: Dependências e scripts (dev, build, start, typecheck, lint)
+• tsconfig.json: TypeScript strict mode com noUncheckedIndexedAccess
+• vite.config.ts: Configurações Vite
+• tailwind.config.ts: Configurações Tailwind CSS
+• postcss.config.js: Configurações PostCSS
+• netlify.toml: Build command, publish dir, redirects, headers
+• .env.example: Template de variáveis de ambiente
+• .editorconfig: Configurações de editor
+• .gitignore: Arquivos ignorados
+• .npmrc: Configurações npm
+
+11.4 Estatísticas do Repositório (NOVO v2.1)
+
+  Repositório:    williansdavid/flowstudioiaRUAH
+  Total commits:  96 (até 10/07/2026)
+  Branch padrão:  main
+  Criado em:      21/05/2026
+  Stars:          1
+  Linguagem:      TypeScript
+  Frameworks:     TanStack Start, Vite, Tailwind CSS
+  Backend:        Supabase
+
+================================================================================
+12. CONVENÇÕES E PADRÕES
+================================================================================
+
+12.1 Arquitetura Baseada em Features
+
+Cada feature em src/features/<nome>/ segue:
+  components/     Componentes React da feature
+  hooks.ts        Hooks personalizados (React Query)
+  server/         Server Functions específicas
+  types.ts        Tipos TypeScript
+  utils/          Utilitários
+  index.ts        Barrel export
+
+12.2 Regras de Engenharia
+
+• Sem acesso direto ao Supabase via React (sempre createServerFn)
+• SQL inline proibido (toda query via Server Functions)
+• Features autocontidas (cada uma gerencia seus próprios dados)
+• Invalidar Query Keys após mutations
+• Mobile First (toda interface responsiva)
+• SSR Safe (código executa em servidor e cliente)
+• Tipagem 100% (TypeScript strict, sem any)
+• Zod para validação de schemas em Server Functions
+
+12.3 Convenção de Query Keys
+
+Padrão hierárquico para invalidação precisa:
+  ['appointments', 'list', { date, staffId }]
+  ['appointments', 'detail', { appointmentId }]
+  ['staff', 'list']
+  ['staff', 'workingHours', { staffId }]
+  ['sales', 'draft', { appointmentId }]
+  ['services', 'list']
+  ['dashboard', 'data', { period }]
+
+12.4 Regras de UI
+
+• Mobile-first: toda interface responsiva
+• Estados obrigatórios: loading (skeleton/spinner), erro (mensagem + retry),
+  vazio (empty state)
+• beforeunload: alerta ao fechar modal com dados não salvos
+• framer-motion: animações suaves
+• active:scale-95: feedback tátil em botões
+
+================================================================================
+13. FLUXOS DE TRABALHO
+================================================================================
+
+13.1 Fluxo de Agendamento
+
+1. Cliente acessa BookingWizard (ou admin agenda manualmente)
+2. Passo 1: Seleciona serviço (listActiveServices)
+3. Passo 2: Seleciona profissional (listBookableStaff)
+4. Passo 3: Escolhe data/horário (getAvailableSlots — calcula slots com
+   base em working hours e time off)
+5. Passo 4: Confirma dados (createAppointment com validação de conflito)
+6. Agendamento aparece na Agenda do admin (getDayAppointments)
+7. Profissional realiza atendimento
+8. Admin conclui agendamento e abre PDV
+9. PDV: adiciona produtos, aplica split de pagamento
+10. createSale finaliza venda → gera finance_transactions
+11. Appointment status alterado para completed
+12. Trigger handle_appointment_lifecycle dispara eventos CRM
+
+13.2 Fluxo do PDV
+
+1. Agendamento concluído ou venda avulsa
+2. Carrinho: adicionar produtos/serviços
+3. Aplicar descontos se necessário
+4. SplitPayment: dividir valor entre formas de pagamento
+5. Confirmar venda (createSale)
+6. createSaleDraft para rascunhos
+7. Transação financeira registrada em finance_transactions
+8. Estoque de produtos atualizado
+9. Status do appointment atualizado para completed
+10. CRM Log gerado para registro
+
+13.3 Fluxo do CRM
+
+1. Evento detectado (appointment no_show, aniversário, cliente sem retorno
+   há 45+ dias)
+2. Evento registrado em client_events
+3. Motor de tarefas do CRM avalia o evento
+4. Tarefa gerada e registrada em crm_logs
+5. Notificação enviada ao admin
+6. Admin executa ação (contato, oferta, etc.)
+7. Tarefa marcada como resolvida
+8. Dashboard atualizado com métricas de CRM
+
+================================================================================
+14. ROADMAP
+================================================================================
+
+14.1 Implementado
+
+SPRINT 1 — AUTH + LOGIN (CONCLUÍDA)
+• src/features/auth/ (types, queries, hooks, components)
+• src/server/auth/ (signIn, signOut, getSession)
+• Telas: login, forgot-password, reset-password, primeiro-acesso
+• beforeLoad de sessão SSR no TanStack Router
+• Login funcional com email/senha contra Supabase Auth
+• Sessão persistida e resolvida em SSR (sem flash)
+• Guard bloqueia /admin/* sem sessão
+• Typecheck + build verdes; console limpo
+
+SPRINT 1.5 — REFACTOR NÚCLEO PLUGGABLE + ADMIN SHELL (CONCLUÍDA)
+• Extração do núcleo compartilhado (types + fachadas) para lib/core
+• Isolamento de dados públicos da landing em lib/public
+• Criação da feature admin-shell (casca do admin)
+• Árvore de rotas /admin com placeholders
+• Limpeza de legado (admConfig, calendar, features CRUD antigas, themes
+  CSS, UI kit antigo, .exe acidental)
+• Typecheck + build verdes
+• Merge fast-forward na main (commit 6ffff34) + push
+• Núcleo desacoplado e pluggable; admin com casca completa
+
+14.2 Em Desenvolvimento
+
+SPRINT 3 — APPOINTMENTS COMPLETOS (EM ANDAMENTO)
+• Payment method ID — trigger trg_appointment_lifecycle requer
+  payment_method_id. A UI deve coletar forma de pagamento ao concluir.
+• Receita (finance_transactions) materializada pelo trigger — feature
+  NÃO deve inserir/duplicar transação manualmente.
+
+PRÓXIMOS PASSOS PLANEJADOS
+• Integração WhatsApp API para lembretes e notificações
+• IA para análise preditiva de faturamento
+• Sugestão de marketing baseada em dados de clientes
+• Programa de fidelidade e reward points
+
+REGRAS DE EXECUÇÃO DO ROADMAP
+• Uma sprint por vez; não iniciar a próxima sem fechar a anterior
+• Sempre validar typecheck + build antes de fechar
+• Sempre atualizar CHECKPOINT.md ao fechar uma sprint
+• Sempre atualizar TECHDEBT.md quando novo débito for identificado
+• Sempre criar ADR para decisões que afetam o núcleo
+• Mudanças no roadmap devem ser explícitas e datadas
+
+================================================================================
+15. DÍVIDA TÉCNICA
+================================================================================
+
+Baseado em docs/TECHDEBT.md (validado em 10/06/2026):
+
+DEBT-002 [MEDIUM] — UI Kit inexistente
+Sem primitivos compartilhados (Input, Button, Field, Card). Cada tela
+reimplementa estilos inline com Tailwind + tokens CSS. Admin-shell, telas
+placeholder, dashboard e appointments seguem sem primitivo compartilhado.
+Resolver como sprint própria (possivelmente junto com DEBT-011).
+
+DEBT-006 [MEDIUM] — Cobertura de features
+Várias telas ainda utilizam PlaceholderScreen. Necessário implementar telas
+reais para clients, CRM, products.
+
+DEBT-010 — Barrel feature auth (RESOLVIDO)
+Problema de barrel export na feature auth foi corrigido.
+
+DEBT-011 [MEDIUM] — Forms auth com inputs inline
+Formulários de autenticação utilizando inputs inline sem componente
+compartilhado. Migrar para Input primitivo do UI Kit.
+
+DEBT-018 [LOW] — Lixo de styles no Ruah
+Arquivos de estilo residuais no Studio Ruah (base.css.err, base.csse).
+Baixa prioridade, apenas limpeza.
+
+================================================================================
+16. DOCUMENTOS DO PROJETO
+================================================================================
+
+O diretório docs/ do repositório mantém:
+
+  FlowStudio AI — Manual Técnico.md.txt   (v2.0 original, ~43KB)
+  ARQUITETURA DO SISTEMAv2.txt            (141 linhas, reescrita p/ v2.0)
+  ARQUITETURAv1.txt                       (versão 1.0)
+  ARCHITECTURE.md.txt                     (documento em inglês)
+  CHECKPOINT.md                           (estado real em 10/06/2026)
+  ROADMAP.md                              (planejamento de sprints)
+  TECHDEBT.md                             (dívida técnica)
+  ADR/                                    (Architecture Decision Records)
+  🏛️ Arquitetura Real do FlowStudio AI.txt (diagrama ASCII)
+  ai/                                     (documentos de IA)
+  legacy/                                 (documentos legados)
+  mapeamento para separacao do site e sistema/ (docs sobre desvinculo)
+
+================================================================================
+REFERÊNCIAS
+================================================================================
+
+[1] FlowStudio AI — ARQUITETURA DO SISTEMA (Versão 2.0)
+[2] FlowStudio AI — Arquitetura do Sistema (Versão 1.0)
+[3] CHECKPOINT.md — Estado real do código validado em 10/06/2026
+[4] ROADMAP.md — Roadmap do projeto
+[5] TECHDEBT.md — Registro de dívida técnica
+
+================================================================================
+PROPÓSITO DO DOCUMENTO
+================================================================================
+
+Este manual técnico serve como um guia abrangente para o FlowStudio AI,
+cobrindo desde a arquitetura de alto nível até detalhes de implementação e
+regras de negócio. Ele é destinado a:
+
+• Onboarding de novos desenvolvedores
+• Referência para manutenção
+• Documentação de arquitetura
+• Documentação de banco de dados
+• Documentação das regras de negócio
+• Documentação dos fluxos do sistema
+
+Local e data: Brasília, 10 de julho de 2026
+
+Documento elaborado em 10 de julho de 2026. As informações contidas
+refletem o estado real do repositório williansdavid/flowstudioiaRUAH
+com 96 commits, branch main, validado até a data deste documento.
+
+================================================================================
+                        FIM DO DOCUMENTO
+================================================================================

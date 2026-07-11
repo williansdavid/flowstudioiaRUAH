@@ -144,7 +144,7 @@ export function FinanceTab() {
             Faturamento, despesas e formas de pagamento
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="items-center gap-10">
           <PeriodFilter value={period} onChange={setPeriod} />
         </div>
         <div className="min-w-0">
@@ -153,7 +153,7 @@ export function FinanceTab() {
             disabled={isGenerating}
             className={cn(
               'flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition shadow-sm',
-              'border-blue-500 bg-blue-500/20 text-blue-300',
+              'border-blue-500/30 bg-blue-500/20 text-blue-300',
                'hover:bg-blue-500 hover:border-blue-400',
                'disabled:cursor-not-allowed disabled:opacity-50',
             )}

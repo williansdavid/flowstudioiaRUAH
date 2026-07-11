@@ -10,12 +10,12 @@ const OPTIONS: { value: FinancePeriod; label: string }[] = [
   { value: 'today', label: 'Hoje' },
   { value: 'week', label: 'Esta semana' },
   { value: 'month', label: 'Este mês' },
-  { value: 'custom', label: 'Personalizado' },
+  { value: 'custom', label: 'Escolha' },
 ];
 
 export function PeriodFilter({ value, onChange }: Props) {
   return (
-    <div className="flex w-full gap-0 overflow-x-auto rounded-2xl border border-slate-700/20 bg-slate-800/40 p-1.5 sm:w-fit">
+    <div className="flex w-full gap-0 overflow-x-auto rounded-2xl border border-slate-700/0 bg-slate-800/40 p-1.5 sm:w-fit">
       {OPTIONS.map((opt) => {
         const isActive = opt.value === value;
         return (
