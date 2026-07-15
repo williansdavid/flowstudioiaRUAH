@@ -40,6 +40,7 @@ export function KpiGrid({ data }: Props) {
           label="Meus agendamentos hoje"
           value={String(data.kpis.todayAppointments)}
           icon={CalendarDays}
+          accent="cyan"
         />
         <KpiCard
           index={1}
@@ -47,6 +48,7 @@ export function KpiGrid({ data }: Props) {
           value={String(data.kpis.activeClients)}
           icon={UserCheck}
           hint={`Visita nos últimos ${INACTIVE_CLIENT_DAYS} dias`}
+          accent="emerald"
         />
         <KpiCard
           index={2}
@@ -54,6 +56,7 @@ export function KpiGrid({ data }: Props) {
           value={String(data.kpis.inactiveClients)}
           icon={UserX}
           hint={`Sem visita há +${INACTIVE_CLIENT_DAYS} dias`}
+          accent="rose"
         />
       </div>
     );
@@ -72,6 +75,7 @@ export function KpiGrid({ data }: Props) {
           value={brl.format(kpis.monthRevenue.value)}
           icon={DollarSign}
           delta={toDelta(kpis.monthRevenue)}
+          accent="emerald"
         />
         <KpiCard
           index={1}
@@ -79,6 +83,7 @@ export function KpiGrid({ data }: Props) {
           value={brl.format(kpis.avgTicket.value)}
           icon={Receipt}
           delta={toDelta(kpis.avgTicket)}
+          accent="blue"
         />
         <KpiCard
           index={2}
@@ -86,12 +91,14 @@ export function KpiGrid({ data }: Props) {
           value={String(kpis.newClients.value)}
           icon={UserPlus}
           delta={toDelta(kpis.newClients)}
+          accent="violet"
         />
         <KpiCard
           index={3}
           label="Agendamentos hoje"
           value={String(kpis.todayAppointments)}
           icon={CalendarDays}
+          accent="cyan"
         />
       </div>
 
@@ -103,14 +110,15 @@ export function KpiGrid({ data }: Props) {
           value={kpis.completionRate === null ? '—' : `${Math.round(kpis.completionRate)}%`}
           icon={CheckCircle2}
           hint="Concluídos ÷ ativos do mês"
+          accent="amber"
         />
-
         <KpiCard
           index={6}
           label="Clientes ativos"
           value={String(kpis.activeClients)}
           icon={UserCheck}
           hint={`Visita nos últimos ${INACTIVE_CLIENT_DAYS} dias`}
+          accent="emerald"
         />
         <KpiCard
           index={7}
@@ -118,6 +126,7 @@ export function KpiGrid({ data }: Props) {
           value={String(kpis.inactiveClients)}
           icon={UserX}
           hint={`Sem visita há +${INACTIVE_CLIENT_DAYS} dias`}
+          accent="rose"
         />
       </div>
     </div>

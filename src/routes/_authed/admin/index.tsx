@@ -1,9 +1,11 @@
-// src/_authed/admin/index.tsx
+// src/routes/_authed/admin/index.tsx
 import { RevenueByStaffChart } from '@/features/dashboard/components/RevenueByStaffChart';
+import { OccupancyRateChart } from '@/features/dashboard/components/OccupancyRateChart';
+import { StaffPerformanceCard } from '@/features/dashboard/components/StaffPerformanceCard';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
-import { getDashboardData, KpiGrid, RecentLeads } from '@/features/dashboard';
+import { getDashboardData, KpiGrid } from '@/features/dashboard';
 import { ErrorState } from '@/features/utils/feedback';
 
 const dashboardQuery = {
@@ -33,24 +35,28 @@ function DashboardPage() {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {/* KPIs: mobile no meio, desktop ocupa a linha inteira no topo */}
-      <div className="order-2 lg:order-1 lg:col-span-2">
+      {/* KPIs: mobile por último, desktop ocupa a linha inteira no topo */}
+      <div className="order-4 lg:order-1 lg:col-span-2">
         <KpiGrid data={data} />
       </div>
 
-      {/* RecentLeads: mobile por último, desktop coluna esquerda da 2ª linha */}
-      <div className="order-3 lg:order-2">
-        <RecentLeads leads={data.recentLeads} />
+      {/* Receita: mobile no topo, desktop coluna direita da 2ª linha */}
+      <div className="order-1 lg:order-2">
+        <RevenueByStaffChart />
       </div>
 
-      {/* Gráfico: mobile no topo, desktop coluna direita da 2ª linha */}
-      <div className="order-1 lg:order-3">
-        <RevenueByStaffChart />
+      {/* Ocupação: mobile abaixo da receita, desktop coluna esquerda da 2ª linha */}
+      <div className="order-2 lg:order-3">
+        <OccupancyRateChart />
+      </div>
+
+      {/* Desempenho da Equipe: mobile último, desktop full width na 3ª linha */}
+      <div className="order-3 lg:order-4 lg:col-span-2">
+        <StaffPerformanceCard />
       </div>
     </div>
   );
 }
-
 
 function DashboardError({ error, reset }: ErrorComponentProps) {
   const queryClient = useQueryClient();

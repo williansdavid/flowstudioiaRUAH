@@ -25,17 +25,13 @@ export const getRevenueByPaymentMethod = createServerFn({ method: 'GET' })
 
     const range = getPeriodRange(data.period, data.customRange);
 
-    // NOTA: não há FK registrada entre finance_transactions.payment_method_id e
-    // payment_methods no schema cache do PostgREST, então o embed automático
-    // `payment_methods(name)` falha com "Could not find a relationship...".
-    // Fazemos o join manualmente em JS em vez de depender do embed.
+    // --- ORIGEM CORRIGIDA: sale_payments ao invés de finance_transactions ---
     const [{ data: rows, error }, { data: methods, error: methodsError }] = await Promise.all([
       supabase
-        .from('finance_transactions')
+        .from('sale_payments')
         .select('amount, payment_method_id')
-        .eq('type', 'income')
-        .gte('occurred_at', `${range.start}T00:00:00`)
-        .lte('occurred_at', `${range.end}T23:59:59`),
+        .gte('created_at', `${range.start}T00:00:00`)
+        .lte('created_at', `${range.end}T23:59:59`),
       supabase.from('payment_methods').select('id, name'),
     ]);
 
