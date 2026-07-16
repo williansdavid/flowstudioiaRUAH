@@ -102,14 +102,7 @@ export function LoginSplitLayout() {
                   to="/forgot-password"
                   className="group inline-flex items-center gap-2 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-accent)]"
                   style={{ fontFamily: 'var(--font-heading)' }}
-                >
-                  <KeyRound className="h-4 w-4" aria-hidden />
-                  <span>
-                    Já fui cliente e não tenho senha{' '}
-                    <span className="font-semibold underline underline-offset-2">
-                      Recuperar acesso
-                    </span>
-                  </span>
+                >                  
                 </Link>
               </div>
             </div>

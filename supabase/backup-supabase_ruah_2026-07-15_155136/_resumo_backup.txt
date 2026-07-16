@@ -1,0 +1,17 @@
+RESUMO DO BACKUP
+━━━━━━━━━━━━━━━━
+Studio:       ruah
+Data/Hora:    2026-07-15_155136
+Supabase Ref: oizhhijrswsiowbybqvj
+Host:         db.oizhhijrswsiowbybqvj.supabase.co
+Banco:        postgres
+
+Arquivos gerados:
+  Full dump:   _full_dump_ruah.sql
+  Camadas:     camadas/schema_*.sql
+  Tabelas:     tabelas_criticas/dados_*.sql
+
+Comandos de restore (exemplos):
+  psql -h SEU_HOST -U postgres -d postgres -f _full_dump_ruah.sql
+  psql -h SEU_HOST -U postgres -d postgres -f camadas/schema_public.sql
+  psql -h SEU_HOST -U postgres -d postgres -f tabelas_criticas/dados_profiles.sql

@@ -3,6 +3,9 @@ import {
   CalendarPlus,
   CalendarCheck,
   User,
+  StickyNote,
+  Sticker,
+  Globe,
 } from 'lucide-react'
 import type { NavItem, NavSection } from '../types'
 
@@ -35,6 +38,14 @@ export const CLIENT_NAV_ITEMS: readonly NavItem[] = [
     section: 'Conta',
     roles: ['client'],
   },
+
+  {
+    label: 'Voltar ao site',
+    to: '/',
+    icon: Globe,
+    section: 'Conta',
+    roles: ['client'],
+  },  
 ] as const
 
 const SECTION_ORDER = ['Início', 'Agenda', 'Conta'] as const
