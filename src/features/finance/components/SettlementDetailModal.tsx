@@ -245,7 +245,7 @@ export function SettlementDetailModal({ staff, open, onClose, period, allowSettl
             {' · '}            
             {settledRows.length} acertada{settledRows.length !== 1 ? 's' : ''}
             </div>
-            <span className="text-xs text-slate-100" >
+            <span className="text-xs text-slate-200" >
             {allowSettlement && selectedIds.size > 0
               ? `  ${selectedIds.size}    
               selecionada${selectedIds.size !== 1 ? 's' : ''} `
