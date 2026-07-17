@@ -1,9 +1,11 @@
 // src/routes/_authed/admin/agendamentos.tsx
+
 import { useState } from 'react';
 import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { format, subDays, addDays, parseISO } from 'date-fns';         // ← adicionado subDays, addDays, parseISO
 import { Button } from '@/features/utils/ui/Button';
 import {
   getDayAppointments,
@@ -74,10 +76,7 @@ function AgendamentosPage() {
   const navigate = useNavigate();
   const today = todayLocalDate();
   const [date, setDate] = useState(today);
-  const [modal, setModal] = useState<ModalState>({
-    open: false,
-    mode: { kind: 'create' },
-  });
+  const [modal, setModal] = useState<ModalState>({ open: false, mode: { kind: 'create' } });
 
   const { data: appointments } = useSuspenseQuery(dayQuery(date));
   const { data: clients } = useSuspenseQuery(clientsQuery);
@@ -90,17 +89,15 @@ function AgendamentosPage() {
 
   const isToday = date === today;
 
+  // ─── CORRIGIDO: date-fns em vez de new Date(string) — Safari-safe ───
   const handlePrevDay = () => {
-    const prev = new Date(date);
-    prev.setDate(prev.getDate() - 1);
-    setDate(prev.toISOString().split('T')[0]!);
-  };
+    setDate(format(subDays(parseISO(date), 1), 'yyyy-MM-dd'))
+  }
 
   const handleNextDay = () => {
-    const next = new Date(date);
-    next.setDate(next.getDate() + 1);
-    setDate(next.toISOString().split('T')[0]!);
-  };
+    setDate(format(addDays(parseISO(date), 1), 'yyyy-MM-dd'))
+  }
+  // ─────────────────────────────────────────────────────────────────────
 
   const handleToday = () => setDate(today);
 
@@ -113,41 +110,42 @@ function AgendamentosPage() {
   };
 
   const renderControls = (isMobile: boolean) => (
-    <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-between' : 'hidden sm:flex'}`}>
-      <button
-        onClick={handleToday}
-        className="flex-shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-slate-100 active:scale-95"
-      >
-        Hoje
-      </button>
-      <div className="flex flex-1 sm:flex-none items-center justify-between overflow-hidden rounded-lg border border-slate-700 bg-slate-900 mx-1 sm:mx-0 min-w-0">
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-center rounded-lg border border-slate-700/40 bg-slate-800/60">
         <button
           onClick={handlePrevDay}
-          className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
+          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
           aria-label="Dia anterior"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <div className="relative flex flex-1 sm:flex-none items-center justify-center border-x border-slate-700 px-1.5 sm:px-3 py-2.5 sm:py-2 min-w-0">
-          <CalendarIcon className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 flex-shrink-0" />
-          <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
-            {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-          </span>
-          <input
-            type="date"
-            value={date}
-            onChange={handleDateChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          />
-        </div>
+
+        <button
+          onClick={handleToday}
+          className="flex h-9 items-center justify-center px-2 text-[11px] font-bold uppercase tracking-wider text-cyan-400 transition-colors hover:text-cyan-300 active:scale-95"
+        >
+          Hoje
+        </button>
+
         <button
           onClick={handleNextDay}
-          className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
+          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
           aria-label="Próximo dia"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+
+      <div className="relative">
+        <CalendarIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        <input
+          type="date"
+          value={date}
+          onChange={handleDateChange}
+          className="h-9 w-0 appearance-none overflow-hidden rounded-lg border border-slate-700/40 bg-slate-800/60 pl-8 pr-3 text-sm font-medium text-slate-200 opacity-0 transition-all focus:w-44 focus:opacity-100 sm:w-44 sm:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+        />
+      </div>
+
       {/* ÚNICO botão Novo — navega pro wizard */}
       <Button
         onClick={() => navigate({ to: '/admin/agendar-novo' })}
@@ -162,40 +160,38 @@ function AgendamentosPage() {
   );
 
   return (
-    <div className="h-full w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-      <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6 min-h-0">
-        {/* Header desktop */}
-        <div className="flex-shrink-0 hidden sm:flex items-center justify-between sm:p-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-              <CalendarIcon className="h-6 w-6 sm:h-7 sm:w-7" />
-            </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider">Agendamentos</span>
-                {isToday && (
-                  <span className="inline-flex items-center rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] sm:text-xs font-medium text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
-                    Hoje
-                  </span>
-                )}
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 leading-none">
-                {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
-              </h1>
-            </div>
-          </div>
-          {renderControls(false)}
+    <div className="flex h-full flex-col gap-5 p-6">
+      {/* Header desktop */}
+      <div className="hidden sm:flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-slate-100">Agendamentos</h1>
+          {isToday && (
+            <span className="rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-400">
+              Hoje
+            </span>
+          )}
+          <span className="text-sm font-medium text-slate-400">
+            {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'long',
+            })}
+          </span>
         </div>
+        {renderControls(false)}
+      </div>
 
-        {/* Lista */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-0">
-          <AppointmentsList items={appointments} onEdit={handleAppointmentClick} />
-        </div>
+      {/* Lista */}
+      <div className="flex-1">
+        <AppointmentsList
+          items={appointments}
+          onEdit={handleAppointmentClick}
+        />
+      </div>
 
-        {/* Rodapé mobile */}
-        <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-slate-800/60 bg-slate-950">
-          {renderControls(true)}
-        </div>
+      {/* Rodapé mobile */}
+      <div className="flex sm:hidden border-t border-slate-800/60 pt-4">
+        {renderControls(true)}
       </div>
 
       {/* Modal só pra EDIÇÃO (quando clica no lápis) */}
@@ -218,8 +214,7 @@ function AgendamentosError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   return (
     <ErrorState
-      error={error}
-      message="Não foi possível carregar os agendamentos. Tente novamente."
+      message="Não foi possível carregar os agendamentos."
       onRetry={async () => {
         await queryClient.invalidateQueries({ queryKey: ['appointments'] });
         reset();

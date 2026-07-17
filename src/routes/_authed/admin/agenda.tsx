@@ -1,8 +1,9 @@
 // src/routes/_authed/admin/agenda.tsx
+
 import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import { format, subDays, addDays, parseISO } from 'date-fns'  // ← adicionado subDays, addDays, parseISO
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus } from 'lucide-react'
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
@@ -52,20 +53,15 @@ export const Route = createFileRoute('/_authed/admin/agenda')({
 
 type ModalState =
   | { open: false; mode: { kind: 'create' } }
-  | {
-      open: true
-      mode:
-        | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
-        | { kind: 'edit'; appointment: AppointmentItem }
-    }
+  | { open: true; mode:
+      | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
+      | { kind: 'edit'; appointment: AppointmentItem }
+  }
 
 function AgendaPage() {
   const today = todayLocalDate()
   const [date, setDate] = useState(today)
-  const [modal, setModal] = useState<ModalState>({
-    open: false,
-    mode: { kind: 'create' },
-  })
+  const [modal, setModal] = useState<ModalState>({ open: false, mode: { kind: 'create' } })
   const { setContent: setTopbarContent } = useTopbarSlot()
 
   const { data: appointments } = useSuspenseQuery({
@@ -98,27 +94,17 @@ function AgendaPage() {
   // Injeta o cabeçalho compacto no slot do Topbar em mobile
   useEffect(() => {
     setTopbarContent(
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-          <Calendarcon className="h-4 w-4" />
-        </div>
-        <div className="flex flex-col justify-center leading-tight min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-              Agenda
-            </span>
-            {isToday && (
-              <span className="inline-flex items-center rounded-full bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 text-[9px] font-medium text-cyan-400">
-                Hoje
-              </span>
-            )}
-          </div>
-          <span className="truncate text-sm font-bold capitalize leading-tight text-slate-100">
-            {format(new Date(date + 'T00:00:00'), "EEEE, d 'de' MMMM", {
-              locale: ptBR,
-            })}
+      <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-100">
+        <Calendarcon className="h-4 w-4 text-cyan-400" />
+        <span>Agenda</span>
+        {isToday && (
+          <span className="ml-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+            Hoje
           </span>
-        </div>
+        )}
+        <span className="ml-1 text-xs font-medium text-slate-400">
+          {format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })}
+        </span>
       </div>
     )
     return () => setTopbarContent(null)
@@ -129,23 +115,18 @@ function AgendaPage() {
   }
 
   const handleSlotClick = (staffId: string, startsAt: string) => {
-    setModal({
-      open: true,
-      mode: { kind: 'create', defaults: { staffId, startsAt } },
-    })
+    setModal({ open: true, mode: { kind: 'create', defaults: { staffId, startsAt } } })
   }
 
+  // ─── CORRIGIDO: date-fns em vez de new Date(string) — Safari-safe ───
   const handlePrevDay = () => {
-    const prev = new Date(date)
-    prev.setDate(prev.getDate() - 1)
-    setDate(prev.toISOString().split('T')[0]!)
+    setDate(format(subDays(parseISO(date), 1), 'yyyy-MM-dd'))
   }
 
   const handleNextDay = () => {
-    const next = new Date(date)
-    next.setDate(next.getDate() + 1)
-    setDate(next.toISOString().split('T')[0]!)
+    setDate(format(addDays(parseISO(date), 1), 'yyyy-MM-dd'))
   }
+  // ─────────────────────────────────────────────────────────────────────
 
   const handleToday = () => setDate(today)
 
@@ -154,41 +135,45 @@ function AgendaPage() {
   }
 
   const renderControls = (isMobile: boolean) => (
-    <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-between' : 'hidden sm:flex'}`}>
-      <button
-        onClick={handleToday}
-        className="flex-shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-slate-100 active:scale-95"
-      >
-        Hoje
-      </button>
-      <div className="flex flex-1 sm:flex-none items-center justify-between overflow-hidden rounded-lg border border-slate-700 bg-slate-900 mx-1 sm:mx-0 min-w-0">
+    <div className="flex items-center gap-1.5">
+      {/* Navegação dias */}
+      <div className="flex items-center rounded-lg border border-slate-700/40 bg-slate-800/60">
         <button
           onClick={handlePrevDay}
-          className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
+          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
           aria-label="Dia anterior"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <div className="relative flex flex-1 sm:flex-none items-center justify-center border-x border-slate-700 px-1.5 sm:px-3 py-2.5 sm:py-2 min-w-0">
-          <Calendarcon className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 flex-shrink-0" />
-          <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">
-            {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-          </span>
-          <input
-            type="date"
-            value={date}
-            onChange={handleDateChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          />
-        </div>
+
+        <button
+          onClick={handleToday}
+          className="flex h-9 items-center justify-center px-2 text-[11px] font-bold uppercase tracking-wider text-cyan-400 transition-colors hover:text-cyan-300 active:scale-95"
+        >
+          Hoje
+        </button>
+
         <button
           onClick={handleNextDay}
-          className="flex-shrink-0 p-2.5 sm:p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 active:bg-slate-800"
+          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
           aria-label="Próximo dia"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Seletor de data nativo */}
+      <div className="relative">
+        <Calendarcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        <input
+          type="date"
+          value={date}
+          onChange={handleDateChange}
+          className="h-9 w-0 appearance-none overflow-hidden rounded-lg border border-slate-700/40 bg-slate-800/60 pl-8 pr-3 text-sm font-medium text-slate-200 opacity-0 transition-all focus:w-44 focus:opacity-100 sm:w-44 sm:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+        />
+      </div>
+
+      {/* Botão Novo agendamento */}
       <Button
         onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
         className="flex-shrink-0 gap-1.5 px-3 py-2.5 h-auto text-xs sm:text-sm sm:h-10 sm:px-4 active:scale-95"
@@ -199,51 +184,43 @@ function AgendaPage() {
     </div>
   )
 
+  const dateHeader = format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })
+
   return (
-    <div className="h-full w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-      <div className="mx-auto w-full max-w-[1600px] flex-1 flex flex-col p-0 sm:p-6 lg:px-8 overflow-hidden sm:gap-6 min-h-0">
-        {/* Header Fixo — escondido em mobile (vai pro slot do Topbar) */}
-        <div className="hidden sm:flex flex-shrink-0 items-center justify-between px-4 pt-4 pb-3 sm:p-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-              <Calendarcon className="h-6 w-6 sm:h-7 sm:w-7" />
-            </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider">Agenda</span>
-                {isToday && (
-                  <span className="inline-flex items-center rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 text-[10px] sm:text-xs font-medium text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
-                    Hoje
-                  </span>
-                )}
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 capitalize leading-none">
-                {format(new Date(date + 'T00:00:00'), "EEEE, d 'de' MMMM", { locale: ptBR })}
-              </h1>
-            </div>
-          </div>
-          {renderControls(false)}
+    <div className="flex h-full flex-col">
+      {/* Header Fixo — escondido em mobile (vai pro slot do Topbar) */}
+      <div className="hidden sm:flex items-center justify-between border-b border-slate-800/60 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-slate-100">Agenda</h1>
+          {isToday && (
+            <span className="rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-400">
+              Hoje
+            </span>
+          )}
+          <span className="text-sm font-medium text-slate-400">{dateHeader}</span>
         </div>
-
-        {/* Main Grid */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden sm:rounded-2xl">
-          <DayCalendar
-            date={date}
-            appointments={appointments}
-            staff={staff}
-            timeOff={timeOff}
-            isToday={isToday}
-            onAppointmentClick={handleAppointmentClick}
-            onSlotClick={handleSlotClick}
-          />
-        </div>
-
-        {/* Controles Mobile */}
-        <div className="flex-shrink-0 sm:hidden px-3 pb-4 pt-3 border-t border-slate-800/60 bg-slate-950">
-          {renderControls(true)}
-        </div>
+        {renderControls(false)}
       </div>
 
+      {/* Main Grid */}
+      <div className="flex-1 overflow-hidden">
+        <DayCalendar
+          date={date}
+          staff={staff}
+          appointments={appointments}
+          timeOff={timeOff}
+          isToday={isToday}
+          onAppointmentClick={handleAppointmentClick}
+          onSlotClick={handleSlotClick}
+        />
+      </div>
+
+      {/* Controles Mobile */}
+      <div className="flex sm:hidden border-t border-slate-800/60 px-4 py-3">
+        {renderControls(true)}
+      </div>
+
+      {/* Modal de criação/edição */}
       <AppointmentFormModal
         open={modal.open}
         onClose={() => setModal({ open: false, mode: { kind: 'create' } })}
@@ -251,7 +228,7 @@ function AgendaPage() {
         staff={staff}
         clients={clients}
         services={services}
-        timeOff={timeOff} 
+        timeOff={timeOff}
         businessHours={businessHours}
       />
     </div>

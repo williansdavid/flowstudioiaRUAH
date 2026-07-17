@@ -60,7 +60,7 @@ function mapRow(row: RawRow): AppointmentItem {
   };
 }
 
-export const getDayAppointments = createServerFn({ method: 'GET' })
+export const getDayAppointments = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<AppointmentItem[]> => {
     const supabase = createSupabaseServer();
