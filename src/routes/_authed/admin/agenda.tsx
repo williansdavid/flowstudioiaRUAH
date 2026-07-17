@@ -194,7 +194,7 @@ function AgendaPage() {
         </div>
       </div>
 
-      {/* ═══ BARRA DE ATALHOS DE DATA ═══ */}
+      {/* ═══ BARRA DE ATALHOS DE DATA ═══  */}
       <div className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 border-b border-slate-800/40 overflow-x-auto scrollbar-none">
         {shortcutDays.map((day) => {
           const isSelected = date === day.dateStr
