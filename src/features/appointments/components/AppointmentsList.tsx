@@ -1,17 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ConfirmDialog } from '@/features/utils/ui/ConfirmDialog';
-import {
-  CalendarClock,
-  Check,
-  CheckCheck,
-  X,
-  UserX,
-  RotateCcw,
-  Calendar,
-  Pencil,
-  ChevronDown,
-} from 'lucide-react';
+import { CalendarClock, Check, CheckCheck, X, UserX, RotateCcw, Calendar, Pencil, ChevronDown, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
 import type { AppointmentItem } from '../types';
@@ -153,6 +143,7 @@ const rowVariants = {
 interface Props {
   items: AppointmentItem[];
   onEdit?: (appointment: AppointmentItem) => void;
+  onNewAppointment?: () => void;
 }
 
 interface StaffGroup {
@@ -336,7 +327,7 @@ function StatusFilterSelect({
 }
 
 // ─── Componente principal ────────────────────────────────────────────
-export function AppointmentsList({ items, onEdit }: Props) {
+export function AppointmentsList({ items, onEdit, onNewAppointment }: Props) {
   const { data: session } = useSession();
   const userId = session?.userId;
 
@@ -390,6 +381,14 @@ export function AppointmentsList({ items, onEdit }: Props) {
           value={statusFilter}
           onChange={setStatusFilter}
         />
+    <button
+      onClick={onNewAppointment}
+      className="sm:hidden flex items-center gap-1.5 rounded-lg bg-cyan-500/20 px-3 py-2 text-xs font-bold text-cyan-300 transition-all hover:bg-cyan-500/30 active:scale-95 ml-auto"
+    >
+      <Plus className="h-4 w-4" />
+      Novo
+    </button>
+    
       </div>
 
       {/* Grid de agendamentos */}

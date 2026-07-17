@@ -32,9 +32,23 @@ export function DayCalendar({
   const [currentTimeTop, setCurrentTimeTop] = useState<number | null>(null);
   const syncing = useRef(false);
 
-  const hours = Array.from(
-    { length: CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR + 1 },
-    (_, i) => CALENDAR_CONFIG.START_HOUR + i
+  // ─── Slots de 30 em 30 minutos para a régua ───
+  const timeSlots = Array.from(
+    { length: (CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR) * 2 },
+    (_, i) => {
+      const totalMinutes = CALENDAR_CONFIG.START_HOUR * 60 + i * 30;
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      const label = m === 0
+        ? `${h.toString().padStart(2, '0')}:00`
+        : '';
+      return {
+        top: i * 30 * CALENDAR_CONFIG.PIXELS_PER_MINUTE,
+        label,
+        isHour: m === 0,
+        isHalf: m === 30,
+      };
+    }
   );
 
   const totalHeight =
@@ -210,17 +224,31 @@ export function DayCalendar({
             {/* ─── RÉGUA DE HORÁRIOS (sticky left) ─── */}
             <div className="sticky left-0 z-30 w-8 sm:w-14 flex-shrink-0 border-r border-slate-700/50 bg-slate-950/80 backdrop-blur-xl shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]">
               <div className="relative mt-2 mb-4" style={{ height: totalHeight }}>
-                {hours.map((hour) => (
+                {timeSlots.map((slot, idx) => (
                   <div
-                    key={hour}
-                    className="absolute w-full text-right pr-1 sm:pr-2 text-[10px] sm:text-[11px] font-bold -mt-2 select-none"
-                    style={{
-                      top: (hour - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE,
-                      color: '#10667C',
-                      textShadow: '0 0 8px rgba(16, 102, 124, 0.5)',
-                    }}
+                    key={idx}
+                    className="absolute w-full text-right pr-1 sm:pr-2 select-none"
+                    style={{ top: slot.top }}
                   >
-                    {hour.toString().padStart(2, '0')}:00
+                    {slot.isHour && (
+                      <span className="text-[10px] sm:text-[11px] font-bold -mt-2 block"
+                        style={{
+                          color: '#1aaed3',
+                          textShadow: '0 0 8px rgba(16, 102, 124, 0.5)',
+                        }}
+                      >
+                        {slot.label}
+                      </span>
+                    )}
+                    {slot.isHalf && (
+                      <span className="block text-[10px] sm:text-[11px] font-medium -mt-2"
+                        style={{
+                          color: '#093f4d',
+                        }}
+                      >
+                        :30
+                      </span>
+                    )}
                   </div>
                 ))}
                 {isToday && currentTimeTop !== null && (
@@ -242,13 +270,15 @@ export function DayCalendar({
                 <div style={{ height: totalHeight }}>
                   {/* Linhas divisórias */}
                   <div className="absolute inset-0 pointer-events-none z-0">
-                    {hours.map((hour) => (
+                    {timeSlots.map((slot, idx) => (
                       <div
-                        key={hour}
-                        className="absolute w-full border-t border-slate-700/60"
-                        style={{
-                          top: (hour - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE,
-                        }}
+                        key={idx}
+                        className={`absolute w-full border-t ${
+                          slot.isHour
+                            ? 'border-slate-700/90'
+                            : 'border-slate-700/60'
+                        }`}
+                        style={{ top: slot.top }}
                       />
                     ))}
                   </div>

@@ -81,6 +81,10 @@ export function SettlementDetailModal({ staff, open, onClose, period, allowSettl
     if (selectedIds.size === 0) return;
     settleMutation.mutate(Array.from(selectedIds));
   }
+  // ─── Soma das comissões selecionadas ───
+  const selectedTotal = detailQuery.data
+    ?.filter((tx) => selectedIds.has(tx.id))
+    .reduce((sum, tx) => sum + tx.commissionValue, 0) ?? 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -236,12 +240,17 @@ export function SettlementDetailModal({ staff, open, onClose, period, allowSettl
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-700/20 px-6 py-4">
           <p className="text-xs text-slate-500">
+            <div>
             {pendingRows.length} pendente{pendingRows.length !== 1 ? 's' : ''}
-            {' · '}
+            {' · '}            
             {settledRows.length} acertada{settledRows.length !== 1 ? 's' : ''}
+            </div>
+            <span className="text-xs text-slate-100" >
             {allowSettlement && selectedIds.size > 0
-              ? ` · ${selectedIds.size} selecionada${selectedIds.size !== 1 ? 's' : ''}`
+              ? `  ${selectedIds.size}    
+              selecionada${selectedIds.size !== 1 ? 's' : ''} `
               : ''}
+            </span>
           </p>
 
           {allowSettlement ? (
@@ -257,7 +266,7 @@ export function SettlementDetailModal({ staff, open, onClose, period, allowSettl
                   Acertando...
                 </span>
               ) : (
-                `Acertar selecionadas (${selectedIds.size})`
+                `Acertar  ${brl.format(selectedTotal)}`
               )}
             </button>
           ) : (

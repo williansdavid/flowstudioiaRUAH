@@ -1,11 +1,11 @@
 // src/routes/_authed/admin/agenda.tsx
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'  // ← add useMemo
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { format, subDays, addDays, parseISO } from 'date-fns'  // ← adicionado subDays, addDays, parseISO
+import { format, subDays, addDays, parseISO, isSameDay } from 'date-fns'  // ← add isSameDay
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus , CalendarSearch } from 'lucide-react'
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
 import { AppointmentFormModal } from '@/features/appointments/components/AppointmentFormModal'
 import { Button } from '@/features/utils/ui/Button'
@@ -58,6 +58,9 @@ type ModalState =
       | { kind: 'edit'; appointment: AppointmentItem }
   }
 
+// ─── Número de dias no atalho ───
+const SHORTCUT_DAYS = 7
+
 function AgendaPage() {
   const today = todayLocalDate()
   const [date, setDate] = useState(today)
@@ -91,11 +94,41 @@ function AgendaPage() {
 
   const isToday = date === today
 
+  // ─── Gera os dias do atalho: Hoje + próximos N dias ───
+  const shortcutDays = useMemo(() => {
+    const days: { label: string; dateStr: string; dateObj: Date }[] = []
+    for (let i = 0; i < SHORTCUT_DAYS; i++) {
+      const d = addDays(parseISO(today), i)
+      const dateStr = format(d, 'yyyy-MM-dd')
+      let label: string
+      if (i === 0) {
+        label = 'Hoje'
+      } else if (i === 1) {
+        label = 'Amanhã'
+      } else {
+        // Nome do dia abreviado + dia do mês
+        label = format(d, 'EEE d', { locale: ptBR })
+      }
+      days.push({ label, dateStr, dateObj: d })
+    }
+    return days
+  }, [today])
+
   // Injeta o cabeçalho compacto no slot do Topbar em mobile
   useEffect(() => {
     setTopbarContent(
       <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-100">
-        <Calendarcon className="h-4 w-4 text-cyan-400" />
+        {/* Ícone clicável — abre seletor de data */}
+        <div className="relative">
+          <Calendarcon className="h-4 w-4 text-cyan-400 cursor-pointer" />
+          <input
+            type="date"
+            value={date}
+            onChange={handleDateChange}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+          />
+        </div>
+
         <span>Agenda</span>
         {isToday && (
           <span className="ml-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400">
@@ -118,7 +151,6 @@ function AgendaPage() {
     setModal({ open: true, mode: { kind: 'create', defaults: { staffId, startsAt } } })
   }
 
-  // ─── CORRIGIDO: date-fns em vez de new Date(string) — Safari-safe ───
   const handlePrevDay = () => {
     setDate(format(subDays(parseISO(date), 1), 'yyyy-MM-dd'))
   }
@@ -126,7 +158,6 @@ function AgendaPage() {
   const handleNextDay = () => {
     setDate(format(addDays(parseISO(date), 1), 'yyyy-MM-dd'))
   }
-  // ─────────────────────────────────────────────────────────────────────
 
   const handleToday = () => setDate(today)
 
@@ -134,76 +165,64 @@ function AgendaPage() {
     if (e.target.value) setDate(e.target.value)
   }
 
-  const renderControls = (isMobile: boolean) => (
-    <div className="flex items-center gap-1.5">
-      {/* Navegação dias */}
-      <div className="flex items-center rounded-lg border border-slate-700/40 bg-slate-800/60">
-        <button
-          onClick={handlePrevDay}
-          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
-          aria-label="Dia anterior"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        <button
-          onClick={handleToday}
-          className="flex h-9 items-center justify-center px-2 text-[11px] font-bold uppercase tracking-wider text-cyan-400 transition-colors hover:text-cyan-300 active:scale-95"
-        >
-          Hoje
-        </button>
-
-        <button
-          onClick={handleNextDay}
-          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
-          aria-label="Próximo dia"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Seletor de data nativo */}
-      <div className="relative">
-        <Calendarcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-        <input
-          type="date"
-          value={date}
-          onChange={handleDateChange}
-          className="h-9 w-0 appearance-none overflow-hidden rounded-lg border border-slate-700/40 bg-slate-800/60 pl-8 pr-3 text-sm font-medium text-slate-200 opacity-0 transition-all focus:w-44 focus:opacity-100 sm:w-44 sm:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-        />
-      </div>
-
-      {/* Botão Novo agendamento */}
-      <Button
-        onClick={() => setModal({ open: true, mode: { kind: 'create' } })}
-        className="flex-shrink-0 gap-1.5 px-3 py-2.5 h-auto text-xs sm:text-sm sm:h-10 sm:px-4 active:scale-95"
-      >
-        <Plus className="h-4 w-4" />
-        Novo
-      </Button>
-    </div>
-  )
-
   const dateHeader = format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header Fixo — escondido em mobile (vai pro slot do Topbar) */}
-      <div className="hidden sm:flex items-center justify-between border-b border-slate-800/60 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-slate-100">Agenda</h1>
+      {/* ═══ HEADER ═══ */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-800/60 px-4 sm:px-6 py-0 sm:py-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-100 shrink-0"> Agenda</h1>
           {isToday && (
-            <span className="rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-400">
+            <span className="rounded-full bg-cyan-500/15 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 shrink-0">
               Hoje
             </span>
           )}
-          <span className="text-sm font-medium text-slate-400">{dateHeader}</span>
+        {/* Ícone clicável — abre seletor de data */}
+        <div className="relative">
+          <CalendarSearch className="h-8 w-8 text-cyan-400 cursor-pointer" />
+          <input
+            type="date"
+            value={date}
+            onChange={handleDateChange}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+          />
         </div>
-        {renderControls(false)}
+          <span className="hidden sm:block text-sm font-medium text-slate-400 truncate">
+            {dateHeader}
+          </span>
+        </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="flex-1 overflow-auto">
+      {/* ═══ BARRA DE ATALHOS DE DATA ═══ */}
+      <div className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 border-b border-slate-800/40 overflow-x-auto scrollbar-none">
+        {shortcutDays.map((day) => {
+          const isSelected = date === day.dateStr
+          const isWeekend = [0, 6].includes(day.dateObj.getDay())
+
+          return (
+            <button
+              key={day.dateStr}
+              onClick={() => setDate(day.dateStr)}
+              className={`
+                flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold
+                transition-all duration-150 active:scale-95
+                ${isSelected
+                  ? 'bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/40'
+                  : isWeekend
+                    ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }
+              `}
+            >
+              {day.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* DayCalendar */}
+      <div className="flex-1 overflow-hidden">
         <DayCalendar
           date={date}
           staff={staff}
@@ -213,11 +232,6 @@ function AgendaPage() {
           onAppointmentClick={handleAppointmentClick}
           onSlotClick={handleSlotClick}
         />
-      </div>
-
-      {/* Controles Mobile */}
-      <div className="flex sm:hidden border-t border-slate-800/60 px-4 py-3">
-        {renderControls(true)}
       </div>
 
       {/* Modal de criação/edição */}

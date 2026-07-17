@@ -45,13 +45,7 @@ export function AppointmentBlock({ appointment, top, height, onClick }: Props) {
         {appointment.serviceName}
       </p>
 
-      {/* ─── HORÁRIO (linha 3) ─── */}
-      <p className="truncate text-[10px] text-slate-400 leading-tight mt-0.5">
-        {new Date(appointment.startsAt).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </p>
+
     </div>
   );
 }

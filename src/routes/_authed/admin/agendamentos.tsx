@@ -110,7 +110,7 @@ function AgendamentosPage() {
   };
 
   const renderControls = (isMobile: boolean) => (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5">    
       <div className="flex items-center rounded-lg border border-slate-700/40 bg-slate-800/60">
         <button
           onClick={handlePrevDay}
@@ -159,8 +159,9 @@ function AgendamentosPage() {
     </div>
   );
 
-  return (
+  return (   
     <div className="flex h-full flex-col gap-5 p-6">
+      
       {/* Header desktop */}
       <div className="hidden sm:flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -177,6 +178,7 @@ function AgendamentosPage() {
               month: 'long',
             })}
           </span>
+          
         </div>
         {renderControls(false)}
       </div>
@@ -186,12 +188,14 @@ function AgendamentosPage() {
         <AppointmentsList
           items={appointments}
           onEdit={handleAppointmentClick}
+          onNewAppointment={() => navigate({ to: '/admin/agendar-novo' })}
         />
       </div>
 
       {/* Rodapé mobile */}
       <div className="flex sm:hidden border-t border-slate-800/60 pt-4">
         {renderControls(true)}
+        
       </div>
 
       {/* Modal só pra EDIÇÃO (quando clica no lápis) */}
