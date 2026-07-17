@@ -18,27 +18,75 @@ type ClientSignUpResult =
   | { status: 'exists_no_profile' }
   | { status: 'error'; message: string };
 
+/**
+ * Normaliza telefone para formato +55XXXXXXXXXXX.
+ * Remove tudo que não é dígito e adiciona o +55 se necessário.
+ *
+ * @example
+ *   normalizePhone('(14) 98163-1010')  // → '+5514981631010'
+ *   normalizePhone('14981631010')      // → '+5514981631010'
+ *   normalizePhone('+5514981631010')   // → '+5514981631010'
+ */
+function normalizePhone(input: string): string {
+  const digits = input.replace(/\D/g, '');
+  return digits.startsWith('55') ? `+${digits}` : `+55${digits}`;
+}
+
 export const clientSignUp = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => clientSignUpSchema.parse(data))
   .handler(async ({ data }): Promise<ClientSignUpResult> => {
     const admin = createSupabaseAdmin();
 
-    // ── Verificar se o email já existe em clients ──
-    const { data: existingClient, error: clientError } = await admin
-      .from('clients')
-      .select('id, profile_id')
-      .eq('email', data.email)
-      .maybeSingle();
+    // ── Normalizar telefone ANTES de qualquer consulta ──
+    const normalizedPhone = normalizePhone(data.phone);
 
-    if (clientError) {
-      console.error('[clientSignUp] Erro ao buscar cliente:', clientError);
+    // ── Buscar cliente por email E por telefone (normalizado) ──
+    const [{ data: clientByEmail, error: errEmail }, { data: clientByPhone, error: errPhone }] =
+      await Promise.all([
+        admin
+          .from('clients')
+          .select('id, profile_id, phone, email')
+          .eq('email', data.email)
+          .maybeSingle(),
+        admin
+          .from('clients')
+          .select('id, profile_id, phone, email')
+          .eq('phone', normalizedPhone)
+          .maybeSingle(),
+      ]);
+
+    if (errEmail || errPhone) {
+      console.error('[clientSignUp] Erro ao buscar cliente:', errEmail ?? errPhone);
       return { status: 'error', message: 'Erro interno. Tente novamente.' };
     }
 
-    if (existingClient?.profile_id) return { status: 'exists_with_profile' };
+    // ── Validação cruzada email × telefone ──
+    // Caso 1: email existe mas telefone não confere
+    if (clientByEmail && clientByEmail.phone !== normalizedPhone) {
+      return {
+        status: 'error',
+        message:
+          'Este e-mail já está cadastrado com outro telefone. Use o telefone original ou entre em contato conosco.',
+      };
+    }
 
-    // ── [NOVO] Cliente existe em clients mas não tem auth/profile ──
-    // Cria auth + profile e linka o registro existente
+    // Caso 2: telefone existe mas email não confere (ERA O BUG)
+    if (clientByPhone && clientByPhone.email !== data.email) {
+      return {
+        status: 'error',
+        message:
+          'Este telefone já está cadastrado com outro e-mail. Use o e-mail original ou entre em contato conosco.',
+      };
+    }
+
+    // ── Cliente determinado (pode vir do email ou do telefone) ──
+    const existingClient = clientByEmail ?? clientByPhone;
+
+    if (existingClient?.profile_id) {
+      return { status: 'exists_with_profile' };
+    }
+
+    // ── Cliente existe em clients mas não tem auth/profile ──
     if (existingClient && !existingClient.profile_id) {
       const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
         data.email,
@@ -46,7 +94,7 @@ export const clientSignUp = createServerFn({ method: 'POST' })
           data: {
             role: 'client',
             full_name: data.name,
-            phone: data.phone,
+            phone: normalizedPhone,
           },
           redirectTo: `${env.VITE_APP_URL}/cliente`,
         },
@@ -63,7 +111,6 @@ export const clientSignUp = createServerFn({ method: 'POST' })
 
       const userId = invited.user.id;
 
-      // ── Criar profile ──
       const { error: profileErr } = await admin.from('profiles').upsert(
         {
           id: userId,
@@ -81,7 +128,6 @@ export const clientSignUp = createServerFn({ method: 'POST' })
         return { status: 'error', message: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      // ── Linkar o clients existente com o novo profile ──
       const { error: updateError } = await admin
         .from('clients')
         .update({ profile_id: userId })
@@ -104,7 +150,7 @@ export const clientSignUp = createServerFn({ method: 'POST' })
         data: {
           role: 'client',
           full_name: data.name,
-          phone: data.phone,
+          phone: normalizedPhone,
         },
         redirectTo: `${env.VITE_APP_URL}/cliente`,
       },
@@ -121,13 +167,12 @@ export const clientSignUp = createServerFn({ method: 'POST' })
 
     const userId = invited.user.id;
 
-    // ── Upsert profile ──
     const { error: profileErr } = await admin.from('profiles').upsert(
       {
         id: userId,
         email: data.email,
         role: 'client',
-        full_name: data.name,        
+        full_name: data.name,
         is_active: true,
       },
       { onConflict: 'id' },
@@ -139,7 +184,6 @@ export const clientSignUp = createServerFn({ method: 'POST' })
       return { status: 'error', message: 'Erro ao criar conta. Tente novamente.' };
     }
 
-    // ── Clients: trigger já pode ter vinculado por email ──
     const { data: linkedClient } = await admin
       .from('clients')
       .select('id')
@@ -150,7 +194,7 @@ export const clientSignUp = createServerFn({ method: 'POST' })
       const { error: insertError } = await admin.from('clients').insert({
         name: data.name,
         email: data.email,
-        phone: data.phone,
+        phone: normalizedPhone,
         profile_id: userId,
         status: 'active',
       });

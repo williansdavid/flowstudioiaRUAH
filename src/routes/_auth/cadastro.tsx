@@ -1,7 +1,7 @@
 // src/routes/_auth/cadastro.tsx
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { ArrowLeft, Loader2, Mail, User, Phone } from 'lucide-react';
+import { ArrowLeft, Loader2, Mail, User, Phone, AlertCircle } from 'lucide-react';
 import { clientSignUp } from '@/server/auth/clientSignUp';
 import { systemThemeClass } from '@/lib/core/system';
 import { cn } from '@/lib/cn';
@@ -150,7 +150,6 @@ function CadastroPage() {
             </h2>
             <p className="text-sm text-[var(--color-text-muted)]">
               Enviamos um e-mail de confirmação para{' '}
-               -  Verifique a caixa de spam ou lixo eletrônico.
               <strong className="text-[var(--color-text)]">{submittedEmail}</strong>.
               Clique no link para definir sua senha e acessar sua conta.
             </p>
@@ -197,6 +196,28 @@ function CadastroPage() {
             >
               Voltar ao login
             </Link>
+          </div>
+        )}
+
+        {/* ── FIX: Novo bloco de erro ── */}
+        {step === 'error' && (
+          <div className="space-y-4 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+              <AlertCircle className="h-6 w-6 text-red-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">
+              Não foi possível criar sua conta
+            </h2>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {errorMessage}
+            </p>
+            <button
+              type="button"
+              onClick={() => { setStep('form'); setErrorMessage(''); }}
+              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[var(--color-accent)] hover:underline"
+            >
+              Tentar novamente
+            </button>
           </div>
         )}
 

@@ -21,12 +21,13 @@ export function AppointmentBlock({ appointment, top, height, onClick }: Props) {
   const staffAccent = appointment.staffColor ?? staffColor(appointment.staffId);
   const status = STATUS_STYLE[appointment.status] ?? STATUS_STYLE.pending;
 
-  const padClass = height < 60 ? 'p-1.5' : height < 100 ? 'p-2' : 'p-3';
+  // Com PIXELS_PER_MINUTE=1.5, blocos de 30min têm 45px de altura
+  const padClass = height < 60 ? 'p-1' : height < 100 ? 'p-1.5' : 'p-2';
 
   return (
     <div
       onClick={onClick}
-      className={`absolute left-1.5 right-1.5 rounded-md border bg-black/20 ${padClass} cursor-pointer transition-all duration-200 hover:z-20 hover:scale-[1.02] hover:brightness-125 overflow-hidden backdrop-blur-md`}
+      className={`absolute left-1 right-1 rounded-md border bg-black/20 ${padClass} cursor-pointer transition-all duration-200 hover:z-20 hover:scale-[1.02] hover:brightness-125 overflow-hidden backdrop-blur-md`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -34,16 +35,18 @@ export function AppointmentBlock({ appointment, top, height, onClick }: Props) {
         borderTop: `2px solid ${staffAccent}`,
       }}
     >
-      <div className="flex items-baseline justify-between gap-1">
-        <p className="truncate text-xs font-semibold leading-tight text-white min-w-0">
-          {appointment.clientName}
-        </p>
-        <span className="shrink-0 truncate text-[10px] font-bold leading-tight text-primary">
-          {appointment.serviceName}
-        </span>
-      </div>
+      {/* ─── NOME DO CLIENTE (linha 1) ─── */}
+      <p className="truncate text-xs font-semibold leading-tight text-white">
+        {appointment.clientName}
+      </p>
 
-      <p className={`truncate text-[10px] font-medium leading-tight mt-1 ${status.text}`}>
+      {/* ─── NOME DO SERVIÇO (linha 2) ─── */}
+      <p className={`truncate text-[10px] font-medium leading-tight mt-0.5 ${status.text}`}>
+        {appointment.serviceName}
+      </p>
+
+      {/* ─── HORÁRIO (linha 3) ─── */}
+      <p className="truncate text-[10px] text-slate-400 leading-tight mt-0.5">
         {new Date(appointment.startsAt).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',

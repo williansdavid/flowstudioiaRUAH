@@ -203,7 +203,7 @@ function AgendaPage() {
       </div>
 
       {/* Main Grid */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto">
         <DayCalendar
           date={date}
           staff={staff}

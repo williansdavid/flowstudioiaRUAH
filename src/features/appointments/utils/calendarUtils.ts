@@ -1,9 +1,9 @@
 // src/features/appointments/utils/calendarUtils.ts
 
 export const CALENDAR_CONFIG = {
-  START_HOUR: 6, // 06:00
-  END_HOUR: 22,  // 22:00
-  PIXELS_PER_MINUTE: 1.5, // 1 hora = 90px
+  START_HOUR: 6,
+  END_HOUR: 22,
+  PIXELS_PER_MINUTE: 1.5, // ← 1 hora = 60px (antes 90px)
 };
 
 export function getMinutesFromMidnight(dateString: string): number {
@@ -21,5 +21,5 @@ export function calculateHeight(startsAt: string, endsAt: string): number {
   const start = getMinutesFromMidnight(startsAt);
   const end = getMinutesFromMidnight(endsAt);
   const duration = end - start;
-  return Math.max(duration * CALENDAR_CONFIG.PIXELS_PER_MINUTE, 24); // Altura mínima de 24px
+  return Math.max(duration * CALENDAR_CONFIG.PIXELS_PER_MINUTE, 24);
 }

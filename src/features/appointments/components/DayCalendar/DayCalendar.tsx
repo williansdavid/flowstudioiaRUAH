@@ -1,5 +1,5 @@
 // src/features/appointments/components/DayCalendar/DayCalendar.tsx
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import type { AppointmentItem, BookableStaffItem } from '../../types';
 import type { TimeOffBlockItem } from '../../server/getDayTimeOff';
 import { StaffColumn } from './StaffColumn';
@@ -25,15 +25,18 @@ export function DayCalendar({
   onAppointmentClick,
   onSlotClick,
 }: Props) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const currentTimeRef = useRef<HTMLDivElement>(null);
   const initialScrollDone = useRef(false);
   const [currentTimeTop, setCurrentTimeTop] = useState<number | null>(null);
+  const syncing = useRef(false);
 
   const hours = Array.from(
     { length: CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR + 1 },
     (_, i) => CALENDAR_CONFIG.START_HOUR + i
   );
+
   const totalHeight =
     (CALENDAR_CONFIG.END_HOUR - CALENDAR_CONFIG.START_HOUR) *
     60 *
@@ -45,6 +48,7 @@ export function DayCalendar({
 
   useEffect(() => {
     if (!isToday) return;
+
     const updateIndicator = () => {
       const now = new Date();
       const minutes = now.getHours() * 60 + now.getMinutes();
@@ -59,19 +63,16 @@ export function DayCalendar({
         setCurrentTimeTop(null);
       }
     };
+
     updateIndicator();
     const interval = setInterval(updateIndicator, 60000);
     return () => clearInterval(interval);
   }, [isToday]);
 
   useEffect(() => {
-    // 🛑 CORREÇÃO: não executar auto-scroll em mobile (< 640px)
-    // Isso evitava que o scrollIntoView forçasse o Chrome a recolher
-    // a barra de endereço, fazendo o Topbar sumir atrás dela.
     if (window.innerWidth < 640) return;
-
     if (isToday && currentTimeTop !== null && !initialScrollDone.current) {
-      const container = scrollContainerRef.current;
+      const container = contentRef.current;
       const anchor = currentTimeRef.current;
       if (!container || !anchor) return;
 
@@ -92,6 +93,22 @@ export function DayCalendar({
     }
   }, [isToday, currentTimeTop]);
 
+  // Sincroniza scroll horizontal: conteúdo → header
+  const onContentScroll = useCallback(() => {
+    if (syncing.current || !headerRef.current || !contentRef.current) return;
+    syncing.current = true;
+    headerRef.current.scrollLeft = contentRef.current.scrollLeft;
+    requestAnimationFrame(() => { syncing.current = false; });
+  }, []);
+
+  // Sincroniza scroll horizontal: header → conteúdo
+  const onHeaderScroll = useCallback(() => {
+    if (syncing.current || !headerRef.current || !contentRef.current) return;
+    syncing.current = true;
+    contentRef.current.scrollLeft = headerRef.current.scrollLeft;
+    requestAnimationFrame(() => { syncing.current = false; });
+  }, []);
+
   const byStaff = new Map<string, AppointmentItem[]>();
   for (const appt of appointments) {
     if (!byStaff.has(appt.staffId)) {
@@ -104,53 +121,101 @@ export function DayCalendar({
     <>
       <style>{`
         @media (max-width: 639px) {
-          .agenda-scroll::-webkit-scrollbar {
-            display: none;
-          }
-          .agenda-scroll {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
+          .agenda-scroll::-webkit-scrollbar { display: none; }
+          .agenda-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+          .agenda-header-scroll::-webkit-scrollbar { display: none; }
+          .agenda-header-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         }
         @media (min-width: 640px) {
-          .agenda-scroll::-webkit-scrollbar {
-            height: 8px;
-          }
-          .agenda-scroll::-webkit-scrollbar-track {
-            background: transparent;
-          }
+          .agenda-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+          .agenda-scroll::-webkit-scrollbar-track { background: transparent; }
           .agenda-scroll::-webkit-scrollbar-thumb {
-            background: #f97316;
-            border-radius: 4px;
+            background: #f97316; border-radius: 4px;
           }
-          .agenda-scroll::-webkit-scrollbar-thumb:hover {
-            background: #ea580c;
-          }
-          .agenda-scroll {
-            scrollbar-width: thin;
-            scrollbar-color: #f97316 transparent;
-          }
+          .agenda-scroll::-webkit-scrollbar-thumb:hover { background: #ea580c; }
+          .agenda-scroll { scrollbar-width: thin; scrollbar-color: #f97316 transparent; }
         }
       `}</style>
-      <div className="flex flex-col flex-1 bg-slate-950 sm:rounded-2xl border-y sm:border border-slate-800/60 sm:shadow-2xl overflow-hidden">
+
+      {/* 
+        🔥 max-h-dvh + overflow-hidden = o scroll fica DENTRO do componente,
+        NÃO no avô/grandparent. O flex-1 pega o espaço disponível mas não
+        ultrapassa a viewport.
+      */}
+      <div className="flex flex-col flex-1 max-h-dvh overflow-hidden bg-slate-950 sm:rounded-2xl border-y sm:border border-slate-800/60 sm:shadow-2xl">
+        
+        {/* ═══ HEADER FIXO (fora do scroll vertical) ═══ */}
         <div
-          className="flex-1 overflow-auto relative bg-slate-950 snap-x snap-mandatory scroll-pl-8 sm:scroll-pl-16 agenda-scroll"
-          ref={scrollContainerRef}
+          ref={headerRef}
+          onScroll={onHeaderScroll}
+          className="overflow-x-auto overflow-y-hidden flex-shrink-0 agenda-header-scroll"
+          style={{ scrollbarWidth: 'none' }}
         >
-          <div className="flex min-w-max">
-            {/* RÉGUA DE HORÁRIOS */}
-            <div className="sticky left-0 z-40 w-8 sm:w-16 flex-shrink-0 border-r border-slate-700/50 bg-slate-950/80 backdrop-blur-xl shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]">
-              <div className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-xl border-b border-slate-700/50 h-[60px]" />
-              <div className="relative mt-4 mb-8" style={{ height: totalHeight }}>
+          <div className="flex h-[50px]">
+            {/* Espaço reservado da régua (mesma largura) */}
+            <div className="sticky left-0 z-40 w-8 sm:w-14 flex-shrink-0 bg-slate-950" />
+
+            {staff.map((s) => {
+              const avatarSrc = s.avatarUrl || (s as any).avatar_url;
+              const color = s.color ?? staffColor(s.id);
+
+              return (
+                <div
+                  key={s.id}
+                  className="min-w-[120px] flex-1 max-w-[320px] flex items-center justify-center gap-2 p-2.5 bg-slate-950/95 backdrop-blur-xl border-b border-r border-slate-700/50"
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt={s.name}
+                      className="w-7 h-7 rounded-full object-cover border border-slate-700 shrink-0"
+                      style={{ boxShadow: `0 0 0 2px ${color}` }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        e.currentTarget.parentElement?.classList.add('fallback-active');
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="w-7 h-7 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)`,
+                        boxShadow: `0 0 0 2px ${color}`,
+                      }}
+                    >
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-semibold text-slate-200 tracking-wide truncate text-sm">
+                    {s.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ═══ CONTEÚDO SCROLLÁVEL (vertical + horizontal) ═══ */}
+        {/*
+          🔥 min-h-0 é CRÍTICO no flexbox:
+          sem ele, o flex child NÃO encolhe abaixo do conteúdo,
+          e o overflow-auto nunca dispara — o scroll vai pro avô.
+        */}
+        <div
+          ref={contentRef}
+          onScroll={onContentScroll}
+          className="flex-1 overflow-auto min-h-0 agenda-scroll"
+        >
+          <div className="flex items-start">
+            {/* ─── RÉGUA DE HORÁRIOS (sticky left) ─── */}
+            <div className="sticky left-0 z-30 w-8 sm:w-14 flex-shrink-0 border-r border-slate-700/50 bg-slate-950/80 backdrop-blur-xl shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]">
+              <div className="relative mt-2 mb-4" style={{ height: totalHeight }}>
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute w-full text-right pr-1 sm:pr-3 text-[10px] sm:text-[11px] font-bold -mt-2 select-none"
+                    className="absolute w-full text-right pr-1 sm:pr-2 text-[10px] sm:text-[11px] font-bold -mt-2 select-none"
                     style={{
-                      top:
-                        (hour - CALENDAR_CONFIG.START_HOUR) *
-                        60 *
-                        CALENDAR_CONFIG.PIXELS_PER_MINUTE,
+                      top: (hour - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE,
                       color: '#10667C',
                       textShadow: '0 0 8px rgba(16, 102, 124, 0.5)',
                     }}
@@ -168,86 +233,48 @@ export function DayCalendar({
               </div>
             </div>
 
-            {/* CARDS DOS PROFISSIONAIS */}
-            {staff.map((s) => {
-              const avatarSrc = s.avatarUrl || (s as any).avatar_url;
-              const color = s.color ?? staffColor(s.id);
-              return (
-                <div
-                  key={s.id}
-                  className="w-[calc(100vw-4rem)] sm:w-[380px] flex-shrink-0 border-r border-slate-700/50 relative snap-start flex flex-col group"
-                >
-                  <div className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-700/50 p-4 h-[60px] flex items-center justify-center gap-3 transition-colors group-hover:bg-slate-900/50">
-                    {avatarSrc ? (
-                      <img
-                        src={avatarSrc}
-                        alt={s.name}
-                        className="w-8 h-8 rounded-full object-cover border border-slate-700"
-                        style={{ boxShadow: `0 0 0 2px ${color}` }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          e.currentTarget.parentElement?.classList.add(
-                            'fallback-active'
-                          );
-                        }}
-                      />
-                    ) : (
+            {/* ─── COLUNAS DOS PROFISSIONAIS ─── */}
+            {staff.map((s) => (
+              <div
+                key={s.id}
+                className="min-w-[120px] flex-1 max-w-[320px] border-r border-slate-700/50 relative"
+              >
+                <div style={{ height: totalHeight }}>
+                  {/* Linhas divisórias */}
+                  <div className="absolute inset-0 pointer-events-none z-0">
+                    {hours.map((hour) => (
                       <div
-                        className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300"
+                        key={hour}
+                        className="absolute w-full border-t border-slate-700/60"
                         style={{
-                          backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)`,
-                          boxShadow: `0 0 0 2px ${color}`,
+                          top: (hour - CALENDAR_CONFIG.START_HOUR) * 60 * CALENDAR_CONFIG.PIXELS_PER_MINUTE,
                         }}
-                      >
-                        {s.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="font-semibold text-slate-200 tracking-wide truncate">
-                      {s.name}
-                    </span>
+                      />
+                    ))}
                   </div>
-                  <div
-                    className="relative mt-4 mb-8"
-                    style={{ height: totalHeight }}
-                  >
-                    <div className="absolute inset-0 pointer-events-none z-0">
-                      {hours.map((hour) => (
-                        <div
-                          key={hour}
-                          className="absolute w-full border-t border-slate-700/60"
-                          style={{
-                            top:
-                              (hour - CALENDAR_CONFIG.START_HOUR) *
-                              60 *
-                              CALENDAR_CONFIG.PIXELS_PER_MINUTE,
-                          }}
-                        />
-                      ))}
-                    </div>
-                    {isToday && currentTimeTop !== null && (
-                      <div
-                        className="absolute left-0 right-0 border-t-2 border-cyan-500/60 z-20 pointer-events-none"
-                        style={{ top: currentTimeTop }}
-                      />
-                    )}
-                    <div className="absolute inset-0 z-10">
-                      <StaffColumn
-                        staff={s}
-                        date={date}
-                        appointments={byStaff.get(s.id) ?? []}
-                        timeOff={timeOff}
-                        onAppointmentClick={onAppointmentClick}
-                        onSlotClick={onSlotClick}
-                      />
-                    </div>
+
+                  {/* Indicador de horário atual */}
+                  {isToday && currentTimeTop !== null && (
+                    <div
+                      className="absolute left-0 right-0 border-t-2 border-cyan-500/60 z-20 pointer-events-none"
+                      style={{ top: currentTimeTop }}
+                    />
+                  )}
+
+                  {/* Blocos de agendamento */}
+                  <div className="relative z-10 h-full">
+                    <StaffColumn
+                      staff={s}
+                      date={date}
+                      appointments={byStaff.get(s.id) ?? []}
+                      timeOff={timeOff}
+                      onAppointmentClick={onAppointmentClick}
+                      onSlotClick={onSlotClick}
+                    />
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
