@@ -144,7 +144,9 @@ export function ClientsPageContent() {
       }
 
       // Separa contatos válidos (com nome)
-      const validContacts = contacts.filter((c) => c.name)
+      const validContacts = contacts.filter(
+         (c): c is { name: string; phone: string | null; email: string | null } => c.name !== null
+      )
       const incompleteCount = contacts.length - validContacts.length
 
       // Divide em lotes
