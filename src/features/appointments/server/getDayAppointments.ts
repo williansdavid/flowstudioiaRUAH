@@ -54,7 +54,7 @@ function mapRow(row: RawRow): AppointmentItem {
     staffId: row.staff?.id ?? 'unknown',
     staffName: row.staff?.profiles?.full_name ?? 'Profissional',
     staffAvatarUrl: row.staff?.profiles?.avatar_url ?? null,
-    staffColor: row.staff?.color ?? null,   // ← NOVO
+    staffColor: row.staff?.color ?? null,
     price: Number(row.price),
     notes: row.notes,
   };
@@ -63,25 +63,54 @@ function mapRow(row: RawRow): AppointmentItem {
 export const getDayAppointments = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<AppointmentItem[]> => {
-    const supabase = createSupabaseServer();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('[appointments] Sessão inválida.');
+    try {
+      const supabase = createSupabaseServer();
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('[appointments] Sessão inválida.');
+      }
+
+      const { start, end } = dayRangeISO(data.date);
+
+      // ─── VALIDAÇÃO: se alguma das datas for "Invalid Date" ───
+      if (start === 'Invalid Date' || end === 'Invalid Date') {
+        throw new RangeError(
+          `[appointments] dayRangeISO produziu data inválida para date="${data.date}". ` +
+          `start=${start} end=${end}`
+        );
+      }
+
+      const { data: rows, error } = await supabase
+        .from('appointments')
+        .select(APPT_SELECT)
+        .gte('starts_at', start)
+        .lte('starts_at', end)
+        .order('starts_at', { ascending: true });
+
+      if (error) throw error;
+
+      return (rows as unknown as RawRow[]).map(mapRow);
+    } catch (err) {
+      // ─── LOG SERVER-SIDE (Netlify) ───
+      console.error('[getDayAppointments]', {
+        inputDate: data.date,
+        rangeStart: (() => {
+          try { return dayRangeISO(data.date).start } catch { return 'erro_ao_calcular' }
+        })(),
+        rangeEnd: (() => {
+          try { return dayRangeISO(data.date).end } catch { return 'erro_ao_calcular' }
+        })(),
+        errorName: err instanceof Error ? err.name : typeof err,
+        errorMessage: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack?.split('\n').slice(0, 6).join('\n') : undefined,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Relança o erro original — chega ao cliente com a mensagem real
+      throw err;
     }
-
-    const { start, end } = dayRangeISO(data.date);
-
-    const { data: rows, error } = await supabase
-      .from('appointments')
-      .select(APPT_SELECT)
-      .gte('starts_at', start)
-      .lte('starts_at', end)
-      .order('starts_at', { ascending: true });
-
-    if (error) throw error;
-
-    return (rows as unknown as RawRow[]).map(mapRow);
   });

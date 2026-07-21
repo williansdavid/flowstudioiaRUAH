@@ -1,8 +1,7 @@
 // src/routes/_authed/admin/agenda.tsx
-
 import { useState, useEffect, useMemo } from 'react'  // ← add useMemo
 import { createFileRoute } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery ,useQuery} from '@tanstack/react-query'
 import { format, subDays, addDays, parseISO, isSameDay } from 'date-fns'  // ← add isSameDay
 import { ptBR } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus , CalendarSearch } from 'lucide-react'
@@ -61,26 +60,105 @@ type ModalState =
 // ─── Número de dias no atalho ───
 const SHORTCUT_DAYS = 7
 
+/** Card de diagnóstico para exibir inline (sem depender de ErrorBoundary) */
+function DiagnosticCard({
+  error,
+  date,
+  queryName,
+}: {
+   error: Error | null 
+  date: string
+  queryName: string
+}) {
+  if (!error) return null 
+  const errCause =
+    error.cause instanceof Error
+      ? `${error.cause.name}: ${error.cause.message}`
+      : error.cause
+        ? String(error.cause)
+        : '—'
+
+  return (
+    <div className="mx-3 my-4 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-5 sm:mx-6">
+      <div className="flex items-center gap-2 text-base font-bold text-amber-400">
+        <span>🔍 Diagnóstico — {queryName}</span>
+      </div>
+
+      <div className="mt-4 space-y-1.5 font-mono text-sm leading-relaxed text-slate-300">
+        <div className="grid grid-cols-[120px_1fr] gap-x-2 gap-y-1.5">
+          <span className="text-slate-500">Erro:</span>
+          <span className="font-semibold text-red-400">{error.name}</span>
+
+          <span className="text-slate-500">Mensagem:</span>
+          <span className="break-words">{error.message}</span>
+
+          <span className="text-slate-500">Causa:</span>
+          <span className="break-words text-slate-400">{errCause}</span>
+
+          <span className="text-slate-500">Data:</span>
+          <span className="text-cyan-300">{date}</span>
+
+          <span className="text-slate-500">Payload:</span>
+          <span className="text-cyan-300">{JSON.stringify({ date })}</span>
+        </div>
+
+        {error.stack && (
+          <details className="mt-3">
+            <summary className="cursor-pointer text-xs text-slate-600 hover:text-slate-400">
+              Stack trace
+            </summary>
+            <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-slate-950/60 p-3 text-xs text-slate-500">
+              {error.stack
+                .split('\n')
+                .slice(0, 8)
+                .map((l) => l.trim())
+                .join('\n')}
+              {error.stack.split('\n').length > 8 && '\n...'}
+            </pre>
+          </details>
+        )}
+      </div>
+
+      <p className="mt-4 text-xs text-slate-600">
+        Diagnóstico temporário — erro ao carregar dados para a data {date}.
+        Compartilhe esta tela com o desenvolvedor.
+      </p>
+    </div>
+  )
+}
+
 function AgendaPage() {
   const today = todayLocalDate()
   const [date, setDate] = useState(today)
   const [modal, setModal] = useState<ModalState>({ open: false, mode: { kind: 'create' } })
   const { setContent: setTopbarContent } = useTopbarSlot()
 
-  const { data: appointments } = useSuspenseQuery({
-    queryKey: ['appointments', 'day', date],
-    queryFn: () => getDayAppointments({ data: { date } }),
-  })
+const {
+  data: appointments=[],
+  error: appointmentsError,
+  isError: isAppointmentsError,
+} = useQuery({
+  queryKey: ['appointments', 'day', date],
+  queryFn: () => getDayAppointments({ data: { date } }),
+  throwOnError: false,
+  staleTime: 30_000,
+})
 
   const { data: staff } = useSuspenseQuery({
     queryKey: ['staff', 'bookable'],
     queryFn: listBookableStaff,
   })
 
-  const { data: timeOff = [] } = useSuspenseQuery({
-    queryKey: ['dayTimeOff', date],
-    queryFn: () => getDayTimeOff({ data: { date } }),
-  })
+const {
+  data: timeOff = [],
+  error: timeOffError,
+  isError: isTimeOffError,
+} = useQuery({
+  queryKey: ['dayTimeOff', date],
+  queryFn: () => getDayTimeOff({ data: { date } }),
+  throwOnError: false,
+  staleTime: 30_000,
+})
 
   const { data: clients } = useSuspenseQuery({
     queryKey: ['clients', 'select'],
@@ -222,17 +300,38 @@ function AgendaPage() {
       </div>
 
       {/* DayCalendar */}
-      <div className="flex-1 overflow-hidden">
-        <DayCalendar
-          date={date}
-          staff={staff}
-          appointments={appointments}
-          timeOff={timeOff}
-          isToday={isToday}
-          onAppointmentClick={handleAppointmentClick}
-          onSlotClick={handleSlotClick}
-        />
-      </div>
+{/* Se alguma query de data falhou, mostra diagnóstico */}
+{isAppointmentsError || isTimeOffError ? (
+  <div className="flex-1 overflow-auto">
+    {isAppointmentsError && appointmentsError && (
+      <DiagnosticCard
+        error={appointmentsError}
+        date={date}
+        queryName="getDayAppointments"
+      />
+    )}
+    {isTimeOffError && timeOffError && (
+      <DiagnosticCard
+        error={timeOffError}
+        date={date}
+        queryName="getDayTimeOff"
+      />
+    )}
+  </div>
+) : (
+  /* DayCalendar funciona normalmente */
+  <div className="flex-1 overflow-hidden">
+    <DayCalendar
+      date={date}
+      staff={staff}
+      appointments={appointments}
+      timeOff={timeOff}
+      isToday={isToday}
+      onAppointmentClick={handleAppointmentClick}
+      onSlotClick={handleSlotClick}
+    />
+  </div>
+)}
 
       {/* Modal de criação/edição */}
       <AppointmentFormModal
