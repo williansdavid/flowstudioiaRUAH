@@ -94,6 +94,7 @@ function hasTimeOffConflict(t: TimeOffBlockItem[], sId: string, sA: string, eA: 
 
 function splitISO(iso: string): { date: string; time: string } {
   const d = safeParseISO(iso)
+  // 🛡️ Se for inválido, retorna vazio — NUNCA passa pra formatação
   if (isNaN(d.getTime())) return { date: '', time: '' }
   const fmt = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'America/Sao_Paulo',
@@ -108,10 +109,11 @@ function splitISO(iso: string): { date: string; time: string } {
   return { date: date!, time: time! }
 }
 
-function joinISO(date: string, time: string) {
+function joinISO(date: string, time: string): string {
+  // 🛡️ Se date ou time estiver vazio, retorna string vazia em vez de crashar
+  if (!date || !time) return ''
   return new Date(`${date}T${time}:00-03:00`).toISOString()
 }
-
 function nextRoundHour() {
   const now = new Date()
   const { date } = splitISO(now.toISOString())

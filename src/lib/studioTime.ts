@@ -8,16 +8,9 @@ const TZ_OFFSET = '-03:00';
 export function splitISO(iso: string): { date: string; time: string } {
   try {
     const d = parseISO(iso)
+    // 🛡️ Se for inválido, retorna vazio
     if (isNaN(d.getTime())) return { date: '', time: '' }
-    const fmt = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: TZ,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
+    const fmt = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
     const [date, time] = fmt.format(d).split(' ')
     return { date: date!, time: time! }
   } catch {
@@ -25,8 +18,9 @@ export function splitISO(iso: string): { date: string; time: string } {
   }
 }
 
-/** { date, time } no fuso do studio → ISO UTC (offset -03:00). */
 export function joinISO(date: string, time: string): string {
+  // 🛡️ Se date ou time vazio, retorna string vazia
+  if (!date || !time) return ''
   return new Date(`${date}T${time}:00${TZ_OFFSET}`).toISOString()
 }
 
