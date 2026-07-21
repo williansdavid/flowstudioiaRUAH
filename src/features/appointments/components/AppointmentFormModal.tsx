@@ -92,8 +92,9 @@ function hasTimeOffConflict(t: TimeOffBlockItem[], sId: string, sA: string, eA: 
   return null
 }
 
-function splitISO(iso: string) {
+function splitISO(iso: string): { date: string; time: string } {
   const d = safeParseISO(iso)
+  if (isNaN(d.getTime())) return { date: '', time: '' }
   const fmt = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
