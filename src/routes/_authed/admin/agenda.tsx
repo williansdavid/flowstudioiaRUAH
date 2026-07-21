@@ -25,17 +25,23 @@ export const Route = createFileRoute('/_authed/admin/agenda')({
   loader: async ({ context: { queryClient } }) => {
     const date = todayLocalDate()
     await Promise.all([
-      queryClient.ensureQueryData({
+      // ─── Queries de data: tentam pré-carregar, mas NÃO quebram se falharem ───
+      queryClient.prefetchQuery({
         queryKey: ['appointments', 'day', date],
         queryFn: () => getDayAppointments({ data: { date } }),
+      }).catch(() => {
+        console.warn('[agenda] prefetch getDayAppointments falhou — componente exibirá erro.')
       }),
+      queryClient.prefetchQuery({
+        queryKey: ['dayTimeOff', date],
+        queryFn: () => getDayTimeOff({ data: { date } }),
+      }).catch(() => {
+        console.warn('[agenda] prefetch getDayTimeOff falhou — componente exibirá erro.')
+      }),
+      // ─── Queries estáveis: continuam como ensure (críticas e SEMPRE funcionam) ───
       queryClient.ensureQueryData({
         queryKey: ['staff', 'bookable'],
         queryFn: listBookableStaff,
-      }),
-      queryClient.ensureQueryData({
-        queryKey: ['dayTimeOff', date],
-        queryFn: () => getDayTimeOff({ data: { date } }),
       }),
       queryClient.ensureQueryData({
         queryKey: ['clients', 'select'],
