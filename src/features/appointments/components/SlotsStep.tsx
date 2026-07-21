@@ -4,6 +4,7 @@ import { useAvailableSlots } from '../hooks';
 import type { DaySlots, SlotItem } from '../server/getAvailableSlots';
 import { todayLocalDate } from '../utils/todayLocalDate';
 import { Button } from '@/features/utils/ui/Button';
+import { parseISO } from 'date-fns';
 
 const RANGE_DAYS = 14;
 
@@ -28,13 +29,21 @@ function formatDayLabel(date: string): { weekday: string; dayMonth: string } {
   return { weekday: wd, dayMonth };
 }
 
+// ═══ Safe formatTime — NUNCA lança RangeError ═══
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Sao_Paulo',
-  });
+  try {
+    const d = parseISO(iso);
+    if (isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
+  } catch {
+    return '--:--';
+  }
 }
+// ═══ Fim safe formatTime ═══
 
 export function SlotsStep({
   staffId,
@@ -65,7 +74,6 @@ export function SlotsStep({
     serviceId,
     startDate,
     days: RANGE_DAYS,
-    // businessHours REMOVIDO — o server fn não usa mais
   });
 
   // Pré-requisito do wizard: Janela 1 incompleta.
