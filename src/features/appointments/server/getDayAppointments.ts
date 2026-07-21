@@ -1,4 +1,3 @@
-// src/features/appointments/server/getDayAppointments.ts
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { createSupabaseServer } from '@/lib/supabase/server';
@@ -63,6 +62,7 @@ function mapRow(row: RawRow): AppointmentItem {
 export const getDayAppointments = createServerFn({ method: 'POST' })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<AppointmentItem[]> => {
+
     try {
       const supabase = createSupabaseServer();
 
@@ -76,7 +76,6 @@ export const getDayAppointments = createServerFn({ method: 'POST' })
 
       const { start, end } = dayRangeISO(data.date);
 
-      // ─── VALIDAÇÃO: se alguma das datas for "Invalid Date" ───
       if (start === 'Invalid Date' || end === 'Invalid Date') {
         throw new RangeError(
           `[appointments] dayRangeISO produziu data inválida para date="${data.date}". ` +
@@ -95,7 +94,9 @@ export const getDayAppointments = createServerFn({ method: 'POST' })
 
       return (rows as unknown as RawRow[]).map(mapRow);
     } catch (err) {
-      // ─── LOG SERVER-SIDE (Netlify) ───
+      // Normaliza o erro — cast seguro pois instanceof já valida em runtime
+      const normalized: Error = err instanceof Error ? (err as Error) : new Error(String(err));
+
       console.error('[getDayAppointments]', {
         inputDate: data.date,
         rangeStart: (() => {
@@ -104,13 +105,12 @@ export const getDayAppointments = createServerFn({ method: 'POST' })
         rangeEnd: (() => {
           try { return dayRangeISO(data.date).end } catch { return 'erro_ao_calcular' }
         })(),
-        errorName: err instanceof Error ? err.name : typeof err,
-        errorMessage: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack?.split('\n').slice(0, 6).join('\n') : undefined,
+        errorName: normalized.name,
+        errorMessage: normalized.message,
+        stack: normalized.stack?.split('\n').slice(0, 6).join('\n'),
         timestamp: new Date().toISOString(),
       });
 
-      // Relança o erro original — chega ao cliente com a mensagem real
       throw err;
     }
   });

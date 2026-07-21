@@ -1,11 +1,9 @@
-// src/routes/_authed/admin/agendamentos.tsx
-
-import { useState } from 'react';
+import { Component, useState } from 'react';
 import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router';
-import type { ErrorComponentProps } from '@tanstack/react-router';
-import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
-import { format, subDays, addDays, parseISO } from 'date-fns';         // ← adicionado subDays, addDays, parseISO
+import { format, subDays, addDays, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/features/utils/ui/Button';
 import {
   getDayAppointments,
@@ -17,9 +15,90 @@ import {
   AppointmentsList,
   AppointmentFormModal,
 } from '@/features/appointments';
-import { ErrorState } from '@/features/utils/feedback';
 import { businessHours } from '@/sites/ruah/config/businessHours';
 import type { AppointmentItem } from '@/features/appointments';
+
+// ═══ ERROR BOUNDARY DE CLASSE — captura QUALQUER erro de renderização ═══
+class ErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[ErrorBoundary Agendamentos]', {
+      name: error.name,
+      message: error.message,
+      cause: error.cause,
+      componentStack: info.componentStack?.split('\n').slice(0, 8).join('\n'),
+    })
+  }
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      const err = this.state.error
+      const errCause =
+        err.cause instanceof Error
+          ? `${err.cause.name}: ${err.cause.message}`
+          : err.cause
+            ? String(err.cause)
+            : '—'
+
+      return (
+        <div className="flex h-full items-center justify-center p-6">
+          <div className="w-full max-w-lg rounded-xl border-2 border-red-500/40 bg-red-500/10 p-6">
+            <div className="flex items-center gap-2 text-lg font-bold text-red-400">
+              <span>🔍 Erro capturado — Agendamentos parou</span>
+            </div>
+
+            <div className="mt-4 space-y-1.5 font-mono text-sm leading-relaxed text-slate-300">
+              <div className="grid grid-cols-[120px_1fr] gap-x-2 gap-y-1.5">
+                <span className="text-slate-500">Erro:</span>
+                <span className="font-semibold text-red-400">{err.name}</span>
+
+                <span className="text-slate-500">Mensagem:</span>
+                <span className="break-words">{err.message}</span>
+
+                <span className="text-slate-500">Causa:</span>
+                <span className="break-words text-slate-400">{errCause}</span>
+              </div>
+
+              {err.stack && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs text-slate-600 hover:text-slate-400">
+                    Stack trace
+                  </summary>
+                  <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-slate-950/60 p-4 text-xs text-slate-500">
+                    {err.stack
+                      .split('\n')
+                      .slice(0, 16)
+                      .map((l) => l.trim())
+                      .join('\n')}
+                    {err.stack.split('\n').length > 16 && '\n...'}
+                  </pre>
+                </details>
+              )}
+            </div>
+
+            <p className="mt-4 text-xs text-slate-600">
+              Diagnóstico temporário. Compartilhe esta tela com o desenvolvedor.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+// ═══ FIM ERROR BOUNDARY ═══
 
 type ModalState = {
   open: boolean;
@@ -52,25 +131,102 @@ const staffQuery = {
 
 export const Route = createFileRoute('/_authed/admin/agendamentos')({
   staticData: { title: 'Agendamentos' },
-  loader: async ({ context }) => {
+  loader: async ({ context: { queryClient } }) => {
     const date = todayLocalDate();
     await Promise.all([
-      context.queryClient.ensureQueryData(dayQuery(date)),
-      context.queryClient.ensureQueryData({
+      // Queries de data: prefetch NÃO quebra se falhar
+      queryClient.prefetchQuery(dayQuery(date)).catch(() => {
+        console.warn('[agendamentos] prefetch getDayAppointments falhou')
+      }),
+      queryClient.prefetchQuery({
+        queryKey: ['dayTimeOff', date],
+        queryFn: () => getDayTimeOff({ data: { date } }),
+      }).catch(() => {
+        console.warn('[agendamentos] prefetch getDayTimeOff falhou')
+      }),
+      // Queries estáveis: ensure críticas
+      queryClient.ensureQueryData({
         queryKey: ['appointments', 'clients'],
         queryFn: () => listClientsForSelect({ data: { q: '' } }),
       }),
-      context.queryClient.ensureQueryData(servicesQuery),
-      context.queryClient.ensureQueryData(staffQuery),
-      context.queryClient.ensureQueryData({
-        queryKey: ['dayTimeOff', date],
-        queryFn: () => getDayTimeOff({ data: { date } }),
-      }),
+      queryClient.ensureQueryData(servicesQuery),
+      queryClient.ensureQueryData(staffQuery),
     ]);
   },
-  component: AgendamentosPage,
-  errorComponent: AgendamentosError,
-});
+  component: () => (
+    <ErrorBoundary>
+      <AgendamentosPage />
+    </ErrorBoundary>
+  ),
+})
+
+// Card de diagnóstico inline
+function DiagnosticCard({
+  error,
+  date,
+  queryName,
+}: {
+  error: Error | null
+  date: string
+  queryName: string
+}) {
+  if (!error) return null
+
+  const errCause =
+    error.cause instanceof Error
+      ? `${error.cause.name}: ${error.cause.message}`
+      : error.cause
+        ? String(error.cause)
+        : '—'
+
+  return (
+    <div className="mx-3 my-4 rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-5 sm:mx-6">
+      <div className="flex items-center gap-2 text-base font-bold text-amber-400">
+        <span>🔍 Diagnóstico — {queryName}</span>
+      </div>
+
+      <div className="mt-4 space-y-1.5 font-mono text-sm leading-relaxed text-slate-300">
+        <div className="grid grid-cols-[120px_1fr] gap-x-2 gap-y-1.5">
+          <span className="text-slate-500">Erro:</span>
+          <span className="font-semibold text-red-400">{error.name}</span>
+
+          <span className="text-slate-500">Mensagem:</span>
+          <span className="break-words">{error.message}</span>
+
+          <span className="text-slate-500">Causa:</span>
+          <span className="break-words text-slate-400">{errCause}</span>
+
+          <span className="text-slate-500">Data:</span>
+          <span className="text-cyan-300">{date}</span>
+
+          <span className="text-slate-500">Payload:</span>
+          <span className="text-cyan-300">{JSON.stringify({ date })}</span>
+        </div>
+
+        {error.stack && (
+          <details className="mt-3">
+            <summary className="cursor-pointer text-xs text-slate-600 hover:text-slate-400">
+              Stack trace
+            </summary>
+            <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-slate-950/60 p-3 text-xs text-slate-500">
+              {error.stack
+                .split('\n')
+                .slice(0, 8)
+                .map((l) => l.trim())
+                .join('\n')}
+              {error.stack.split('\n').length > 8 && '\n...'}
+            </pre>
+          </details>
+        )}
+      </div>
+
+      <p className="mt-4 text-xs text-slate-600">
+        Diagnóstico temporário — erro ao carregar dados para a data {date}.
+        Compartilhe esta tela com o desenvolvedor.
+      </p>
+    </div>
+  )
+}
 
 function AgendamentosPage() {
   const navigate = useNavigate();
@@ -78,18 +234,65 @@ function AgendamentosPage() {
   const [date, setDate] = useState(today);
   const [modal, setModal] = useState<ModalState>({ open: false, mode: { kind: 'create' } });
 
-  const { data: appointments } = useSuspenseQuery(dayQuery(date));
-  const { data: clients } = useSuspenseQuery(clientsQuery);
-  const { data: services } = useSuspenseQuery(servicesQuery);
-  const { data: staff } = useSuspenseQuery(staffQuery);
-  const { data: timeOff = [] } = useSuspenseQuery({
+  // ─── QUERY 1: Appointments (data) ───
+  const {
+    data: appointments = [],
+    error: appointmentsError,
+    isError: isAppointmentsError,
+  } = useQuery({
+    ...dayQuery(date),
+    throwOnError: false,
+    staleTime: 30_000,
+  })
+
+  // ─── QUERY 2: Clients (estável) ───
+  const {
+    data: clients = [],
+    error: clientsError,
+    isError: isClientsError,
+  } = useQuery({
+    ...clientsQuery,
+    throwOnError: false,
+    staleTime: 30_000,
+  })
+
+  // ─── QUERY 3: Services (estável) ───
+  const {
+    data: services = [],
+    error: servicesError,
+    isError: isServicesError,
+  } = useQuery({
+    ...servicesQuery,
+    throwOnError: false,
+    staleTime: 30_000,
+  })
+
+  // ─── QUERY 4: Staff (estável) ───
+  const {
+    data: staff = [],
+    error: staffError,
+    isError: isStaffError,
+  } = useQuery({
+    ...staffQuery,
+    throwOnError: false,
+    staleTime: 30_000,
+  })
+
+  // ─── QUERY 5: TimeOff (data) ───
+  const {
+    data: timeOff = [],
+    error: timeOffError,
+    isError: isTimeOffError,
+  } = useQuery({
     queryKey: ['dayTimeOff', date],
     queryFn: () => getDayTimeOff({ data: { date } }),
-  });
+    throwOnError: false,
+    staleTime: 30_000,
+  })
 
   const isToday = date === today;
 
-  // ─── CORRIGIDO: date-fns em vez de new Date(string) — Safari-safe ───
+  // ─── Navegação de data (Safari-safe com date-fns) ───
   const handlePrevDay = () => {
     setDate(format(subDays(parseISO(date), 1), 'yyyy-MM-dd'))
   }
@@ -97,7 +300,6 @@ function AgendamentosPage() {
   const handleNextDay = () => {
     setDate(format(addDays(parseISO(date), 1), 'yyyy-MM-dd'))
   }
-  // ─────────────────────────────────────────────────────────────────────
 
   const handleToday = () => setDate(today);
 
@@ -110,7 +312,7 @@ function AgendamentosPage() {
   };
 
   const renderControls = (isMobile: boolean) => (
-    <div className="flex items-center gap-1.5">    
+    <div className="flex items-center gap-1.5">
       <div className="flex items-center rounded-lg border border-slate-700/40 bg-slate-800/60">
         <button
           onClick={handlePrevDay}
@@ -146,7 +348,6 @@ function AgendamentosPage() {
         />
       </div>
 
-      {/* ÚNICO botão Novo — navega pro wizard */}
       <Button
         onClick={() => navigate({ to: '/admin/agendar-novo' })}
         variant="primary"
@@ -159,9 +360,38 @@ function AgendamentosPage() {
     </div>
   );
 
-  return (   
+  // ─── Se alguma query falhou, mostra diagnóstico ───
+  if (isAppointmentsError || isClientsError || isServicesError || isStaffError || isTimeOffError) {
+    return (
+      <div className="flex h-full flex-col p-6">
+        <h1 className="text-xl font-bold text-slate-100 mb-4">Agendamentos</h1>
+        <div className="flex-1 overflow-auto">
+          {isAppointmentsError && appointmentsError && (
+            <DiagnosticCard error={appointmentsError} date={date} queryName="getDayAppointments" />
+          )}
+          {isTimeOffError && timeOffError && (
+            <DiagnosticCard error={timeOffError} date={date} queryName="getDayTimeOff" />
+          )}
+          {isStaffError && staffError && (
+            <DiagnosticCard error={staffError} date={date} queryName="listBookableStaff" />
+          )}
+          {isClientsError && clientsError && (
+            <DiagnosticCard error={clientsError} date={date} queryName="listClientsForSelect" />
+          )}
+          {isServicesError && servicesError && (
+            <DiagnosticCard error={servicesError} date={date} queryName="listActiveServices" />
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ═══ Renderização normal ═══
+  const dateHeader = format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })
+
+  return (
     <div className="flex h-full flex-col gap-5 p-6">
-      
+
       {/* Header desktop */}
       <div className="hidden sm:flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -172,13 +402,8 @@ function AgendamentosPage() {
             </span>
           )}
           <span className="text-sm font-medium text-slate-400">
-            {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', {
-              weekday: 'long',
-              day: '2-digit',
-              month: 'long',
-            })}
+            {dateHeader}
           </span>
-          
         </div>
         {renderControls(false)}
       </div>
@@ -195,10 +420,8 @@ function AgendamentosPage() {
       {/* Rodapé mobile */}
       <div className="flex sm:hidden border-t border-slate-800/60 pt-4">
         {renderControls(true)}
-        
       </div>
 
-      {/* Modal só pra EDIÇÃO (quando clica no lápis) */}
       <AppointmentFormModal
         open={modal.open}
         onClose={() => setModal({ open: false, mode: { kind: 'create' } })}
@@ -210,20 +433,5 @@ function AgendamentosPage() {
         businessHours={businessHours}
       />
     </div>
-  );
-}
-
-function AgendamentosError({ error, reset }: ErrorComponentProps) {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  return (
-    <ErrorState
-      message="Não foi possível carregar os agendamentos."
-      onRetry={async () => {
-        await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-        reset();
-        await router.invalidate();
-      }}
-    />
   );
 }
