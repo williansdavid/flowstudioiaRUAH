@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { format, subDays, addDays, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus, CalendarSearch } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as Calendarcon, Plus, CalendarSearchIcon  } from 'lucide-react'
 import { DayCalendar } from '@/features/appointments/components/DayCalendar/DayCalendar'
 import { AppointmentFormModal } from '@/features/appointments/components/AppointmentFormModal'
 import { Button } from '@/features/utils/ui/Button'
@@ -233,25 +233,20 @@ function AgendaPage() {
 
   useEffect(() => {
     setTopbarContent(
-      <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-100">
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+        <span className="text-base font-bold text-slate-100">Agenda</span>
+        <span className="ml-1 text-xs font-medium text-slate-400">
+          {format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })}
+        </span>
         <div className="relative">
-          <Calendarcon className="h-4 w-4 text-cyan-400 cursor-pointer" />
+          <CalendarSearchIcon className="gap-1.5 h-8 w-8 text-cyan-400 cursor-pointer" />
           <input
             type="date"
             value={date}
             onChange={handleDateChange}
             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
           />
-        </div>
-        <span>Agenda</span>
-        {isToday && (
-          <span className="ml-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400">
-            Hoje
-          </span>
-        )}
-        <span className="ml-1 text-xs font-medium text-slate-400">
-          {format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })}
-        </span>
+        </div>        
       </div>
     )
     return () => setTopbarContent(null)
@@ -283,32 +278,8 @@ function AgendaPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* HEADER */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-800/60 px-4 sm:px-6 py-0 sm:py-0">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-slate-100 shrink-0"> Agenda</h1>
-          {isToday && (
-            <span className="rounded-full bg-cyan-500/15 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 shrink-0">
-              Hoje
-            </span>
-          )}
-          <div className="relative">
-            <CalendarSearch className="h-8 w-8 text-cyan-400 cursor-pointer" />
-            <input
-              type="date"
-              value={date}
-              onChange={handleDateChange}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-          </div>
-          <span className="hidden sm:block text-sm font-medium text-slate-400 truncate">
-            {dateHeader}
-          </span>
-        </div>
-      </div>
-
       {/* BARRA DE ATALHOS DE DATA */}
-      <div className="flex items-center gap-1.5 px-4 sm:px-6 py-2.5 border-b border-slate-800/40 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-1.5 px-2 sm:px-2 py-0 border-b border-slate-800/40 overflow-x-auto scrollbar-none">
         {shortcutDays.map((day) => {
           const isSelected = date === day.dateStr
           const isWeekend = [0, 6].includes(day.dateObj.getDay())
@@ -318,7 +289,7 @@ function AgendaPage() {
               key={day.dateStr}
               onClick={() => setDate(day.dateStr)}
               className={`
-                flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold
+                flex-shrink-1 px-2 py-1.5 rounded-lg text-xs font-semibold
                 transition-all duration-150 active:scale-95
                 ${isSelected
                   ? 'bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/40'

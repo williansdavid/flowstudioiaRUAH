@@ -121,12 +121,12 @@ export function StepConfirm({ selection, onBack, onConfirm, isSaving }: Props) {
               onClick={onConfirm}
               disabled={isSaving}
               isLoading={isSaving}
-              variant="primary"
+              variant="success"
               size="sm"
               className="gap-1.5"
             >
-              <Check className="h-4 w-4" />
-              Confirmar agendamento
+              <Check className="h-6 w-6" />
+              Confirmar 
             </Button>
           )}
         </div>

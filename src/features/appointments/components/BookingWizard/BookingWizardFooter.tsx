@@ -24,12 +24,16 @@ export function BookingWizardFooter({
             onClick={onNext}
             disabled={!canGoNext || isSaving}
             isLoading={isSaving}
-            variant="primary"
-            size="sm"
-            className="gap-1.5"
+
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm font-bold transition-all duration-200 active:scale-95',
+              canGoNext
+                ? 'bg-cyan-500 text-white hover:bg-cyan-400 shadow-lg shadow-cyan-500/20'
+                : 'bg-slate-800 text-slate-600 cursor-not-allowed',
+            )}
           >
             <Check className="h-4 w-4" />
-            Confirmar agendamento
+            Confirmar 
           </Button>
         ) : (
           <button

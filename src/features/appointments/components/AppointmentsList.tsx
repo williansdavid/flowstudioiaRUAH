@@ -178,7 +178,7 @@ function EmptyState({ hasAnyItems }: { hasAnyItems: boolean }) {
 
 function StaffGrid({ groups, onEdit }: { groups: StaffGroup[]; onEdit?: (appointment: AppointmentItem) => void }) {
   return (
-    <motion.div className="flex flex-col gap-4" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div className="flex flex-col gap-2 pb-10" variants={containerVariants} initial="hidden" animate="visible">
       {groups.map((group) => (
         <StaffCard key={group.staffId} group={group} onEdit={onEdit} />
       ))}
@@ -293,13 +293,11 @@ export function AppointmentsList({ items, onEdit, onNewAppointment }: Props) {
   const groupsAll = groupByStaff(filtered)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 pt-5">
       {/* Barra de filtros */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <StaffFilterSelect staffList={staffList} value={staffFilter} onChange={setStaffFilter} />
-          <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
-        </div>
+      <div className="flex  gap-2 flex-wrap">
+        <StaffFilterSelect staffList={staffList} value={staffFilter} onChange={setStaffFilter} />
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
         {onNewAppointment && (
           <button
             onClick={onNewAppointment}
@@ -310,7 +308,6 @@ export function AppointmentsList({ items, onEdit, onNewAppointment }: Props) {
           </button>
         )}
       </div>
-
       {/* Grid de agendamentos */}
       {filtered.length === 0 ? (
         <EmptyState hasAnyItems={items.length > 0} />
@@ -365,74 +362,78 @@ function AppointmentRow({ appointment: a, onEdit }: { appointment: AppointmentIt
 
   return (
     <>
-      <motion.div
-        variants={rowVariants}
-        className={`group flex items-center gap-3 rounded-lg border border-slate-700/20 bg-slate-800/60 px-3 py-2.5 transition-all hover:border-slate-600/40 ${isUpdatingThisRow ? 'opacity-50 pointer-events-none' : ''}`}
+<motion.div
+  variants={rowVariants}
+  className={`group flex flex-col gap-2 rounded-lg border border-slate-700/20 bg-slate-800/60 px-3 py-2 transition-all hover:border-slate-600/40 ${isUpdatingThisRow ? 'opacity-50 pointer-events-none' : ''}`}
+>
+  {/* ─── Linha 1: horário + nome/serviço + editar ─── */}
+  <div className="flex items-center gap-3">
+    {/* Horário */}
+    <div className="min-w-[56px] text-center shrink-0">
+      <span className="text-sm font-bold text-cyan-300">{safeFormatTime(a.startsAt)}</span>
+    </div>
+
+    {/* Nome + Serviço com StatusBadge */}
+    <div className="min-w-0 flex-1">
+      <p className="truncate text-sm font-semibold text-slate-200">{a.clientName}</p>
+      <div className="flex items-center gap-2">
+        <p className="truncate text-xs text-slate-400">{a.serviceName}</p>
+        <StatusBadge status={a.status} />
+      </div>
+    </div>
+
+    {/* Editar */}
+    {onEdit && (
+      <button
+        onClick={() => onEdit(a)}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700/40 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-slate-200 active:scale-95 shrink-0"
+        aria-label="Editar agendamento"
       >
-        {/* Horário */}
-        <div className="min-w-[56px] text-center">
-          <span className="text-sm font-bold text-cyan-300">{safeFormatTime(a.startsAt)}</span>
-        </div>
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+    )}
 
-        {/* Info */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-200">{a.clientName}</p>
-          <p className="truncate text-xs text-slate-400">{a.serviceName}</p>
-        </div>
 
-        {/* Status */}
-        <div className="hidden sm:block">
-          <StatusBadge status={a.status} />
-        </div>
+  </div>
 
-        {/* Ações */}
-        {onEdit && (
+  {/* ─── Linha 2: botões de ação ─── */}
+  {actions.length > 0 && (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {/* WhatsApp */}
+      {waHref && <WhatsAppButton href={waHref} />}      
+      {actions.map((action) => {
+        const Icon = action.icon
+        return (
           <button
-            onClick={() => onEdit(a)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700/40 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-slate-200 active:scale-95"
-            aria-label="Editar agendamento"
+            key={action.status}
+            disabled={isPending}
+            onClick={() => {
+              if (action.status === 'completed') {
+                navigate({ to: '/admin/pdv', search: { appointmentId: a.id } })
+              } else if (action.status === 'cancelled') {
+                setCancelTarget(a)
+              } else {
+                mutate(
+                  { id: a.id, status: action.status },
+                  { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
+                )
+              }
+            }}
+            className={cn(
+              'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5',
+              'text-[11px] font-bold uppercase tracking-wider',
+              'transition-all duration-200 active:scale-95',
+              BUTTON_STYLE[action.variant],
+            )}
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Icon className="h-3 w-3" />
+            {action.label}
           </button>
-        )}
-
-        {waHref && <WhatsAppButton href={waHref} />}
-
-        {actions.length > 0 && (
-          <div className="flex items-center gap-1">
-            {actions.map((action) => {
-              const Icon = action.icon
-              return (
-                <button
-                  key={action.status}
-                  disabled={isPending}
-                  onClick={() => {
-                    if (action.status === 'completed') {
-                      navigate({ to: '/admin/pdv', search: { appointmentId: a.id } })
-                    } else if (action.status === 'cancelled') {
-                      setCancelTarget(a)
-                    } else {
-                      mutate(
-                        { id: a.id, status: action.status },
-                        { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }) },
-                      )
-                    }
-                  }}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5',
-                    'text-[11px] font-bold uppercase tracking-wider',
-                    'transition-all duration-200 active:scale-95',
-                    BUTTON_STYLE[action.variant],
-                  )}
-                >
-                  <Icon className="h-3 w-3" />
-                  {action.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </motion.div>
+        )
+      })}
+    </div>
+  )}
+</motion.div>
 
       <ConfirmDialog
         open={!!cancelTarget}

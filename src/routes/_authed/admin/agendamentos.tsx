@@ -1,7 +1,7 @@
 import { Component, useState } from 'react';
 import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, CalendarSearchIcon } from 'lucide-react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/features/utils/ui/Button';
@@ -239,44 +239,28 @@ function AgendamentosPage() {
     data: appointments = [],
     error: appointmentsError,
     isError: isAppointmentsError,
-  } = useQuery({
-    ...dayQuery(date),
-    throwOnError: false,
-    staleTime: 30_000,
-  })
+  } = useQuery({ ...dayQuery(date), throwOnError: false, staleTime: 30_000 })
 
   // ─── QUERY 2: Clients (estável) ───
   const {
     data: clients = [],
     error: clientsError,
     isError: isClientsError,
-  } = useQuery({
-    ...clientsQuery,
-    throwOnError: false,
-    staleTime: 30_000,
-  })
+  } = useQuery({ ...clientsQuery, throwOnError: false, staleTime: 30_000 })
 
   // ─── QUERY 3: Services (estável) ───
   const {
     data: services = [],
     error: servicesError,
     isError: isServicesError,
-  } = useQuery({
-    ...servicesQuery,
-    throwOnError: false,
-    staleTime: 30_000,
-  })
+  } = useQuery({ ...servicesQuery, throwOnError: false, staleTime: 30_000 })
 
   // ─── QUERY 4: Staff (estável) ───
   const {
     data: staff = [],
     error: staffError,
     isError: isStaffError,
-  } = useQuery({
-    ...staffQuery,
-    throwOnError: false,
-    staleTime: 30_000,
-  })
+  } = useQuery({ ...staffQuery, throwOnError: false, staleTime: 30_000 })
 
   // ─── QUERY 5: TimeOff (data) ───
   const {
@@ -292,16 +276,16 @@ function AgendamentosPage() {
 
   const isToday = date === today;
 
-  // ─── Navegação de data (Safari-safe com date-fns) ───
-  const handlePrevDay = () => {
-    setDate(format(subDays(parseISO(date), 1), 'yyyy-MM-dd'))
-  }
+  // ─── Navegação: Hoje + 4 dias corridos ───
+  const weekDayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  const handleNextDay = () => {
-    setDate(format(addDays(parseISO(date), 1), 'yyyy-MM-dd'))
-  }
-
-  const handleToday = () => setDate(today);
+  const upcomingDays = Array.from({ length: 5 }, (_, i) => {
+    const d = addDays(parseISO(today), i);
+    return {
+      label: i === 0 ? 'Hoje' : weekDayNames[d.getDay()],
+      date: format(d, 'yyyy-MM-dd'),
+    };
+  });
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value) setDate(e.target.value);
@@ -311,46 +295,35 @@ function AgendamentosPage() {
     setModal({ open: true, mode: { kind: 'edit', appointment } });
   };
 
-  const renderControls = (isMobile: boolean) => (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center rounded-lg border border-slate-700/40 bg-slate-800/60">
+  // ─── Bloco de navegação único ───
+  const dateNav = (
+    <div className="flex  gap-1 flex border-b border-white/10 backdrop-blur-xl bg-slate-900/70 fixed">
+      {upcomingDays.map(({ label, date: targetDate }) => (
         <button
-          onClick={handlePrevDay}
-          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
-          aria-label="Dia anterior"
+          key={targetDate}
+          onClick={() => setDate(targetDate)}
+          className={`flex h-9 items-center justify-center rounded-lg border text-xs font-medium transition-colors active:scale-90 ${
+            targetDate === date
+              ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
+              : 'border-slate-700/40 bg-slate-800/60 text-slate-400 hover:text-slate-200'
+          } ${label === 'Hoje' ? 'px-3 font-bold uppercase tracking-wider' : 'w-9'}`}
         >
-          <ChevronLeft className="h-4 w-4" />
+          {label}
         </button>
-
-        <button
-          onClick={handleToday}
-          className="flex h-9 items-center justify-center px-2 text-[11px] font-bold uppercase tracking-wider text-cyan-400 transition-colors hover:text-cyan-300 active:scale-95"
-        >
-          Hoje
-        </button>
-
-        <button
-          onClick={handleNextDay}
-          className="flex h-9 w-9 items-center justify-center text-slate-400 transition-colors hover:text-slate-200 active:scale-95"
-          aria-label="Próximo dia"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
+      ))}
       <div className="relative">
-        <CalendarIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        <CalendarSearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
         <input
           type="date"
           value={date}
           onChange={handleDateChange}
-          className="h-9 w-0 appearance-none overflow-hidden rounded-lg border border-slate-700/40 bg-slate-800/60 pl-8 pr-3 text-sm font-medium text-slate-200 opacity-0 transition-all focus:w-44 focus:opacity-100 sm:w-44 sm:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+          className="h-9 w- appearance-none rounded-lg border border-slate-700/40 bg-slate-800/60 pl-6 pr-1 text-sm font-medium text-slate-200 transition-colors [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         />
       </div>
     </div>
   );
 
-  // ─── Se alguma query falhou, mostra diagnóstico ───
+  // ─── Error state ───
   if (isAppointmentsError || isClientsError || isServicesError || isStaffError || isTimeOffError) {
     return (
       <div className="flex h-full flex-col p-6">
@@ -380,22 +353,10 @@ function AgendamentosPage() {
   const dateHeader = format(parseISO(date), "EEEE, d 'de' MMMM", { locale: ptBR })
 
   return (
-    <div className="flex h-full flex-col gap-5 p-6">
-
-      {/* Header desktop */}
-      <div className="hidden sm:flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-slate-100">Agendamentos</h1>
-          {isToday && (
-            <span className="rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-cyan-400">
-              Hoje
-            </span>
-          )}
-          <span className="text-sm font-medium text-slate-400">
-            {dateHeader}
-          </span>
-        </div>
-        {renderControls(false)}
+    <div className="flex h-full flex-col gap-5 p-0">
+      {/* Header com navegação */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        {dateNav}
       </div>
 
       {/* Lista */}
@@ -405,11 +366,6 @@ function AgendamentosPage() {
           onEdit={handleAppointmentClick}
           onNewAppointment={() => navigate({ to: '/admin/agendar-novo' })}
         />
-      </div>
-
-      {/* Rodapé mobile */}
-      <div className="flex sm:hidden border-t border-slate-800/60 pt-4">
-        {renderControls(true)}
       </div>
 
       <AppointmentFormModal

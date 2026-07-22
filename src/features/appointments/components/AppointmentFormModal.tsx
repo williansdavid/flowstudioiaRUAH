@@ -110,7 +110,6 @@ function splitISO(iso: string): { date: string; time: string } {
 }
 function joinISO(date: string, time: string): string {
   if (!date || !time) return ''
-  // 🛡️ Valida a Date ANTES de chamar .toISOString() — RangeError nunca mais
   const d = new Date(`${date}T${time}:00-03:00`)
   if (isNaN(d.getTime())) return ''
   return d.toISOString()

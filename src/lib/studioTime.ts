@@ -17,13 +17,12 @@ export function splitISO(iso: string): { date: string; time: string } {
     return { date: '', time: '' }
   }
 }
-
 export function joinISO(date: string, time: string): string {
-  // 🛡️ Se date ou time vazio, retorna string vazia
   if (!date || !time) return ''
-  return new Date(`${date}T${time}:00${TZ_OFFSET}`).toISOString()
+  const d = new Date(`${date}T${time}:00${TZ_OFFSET}`)
+  if (isNaN(d.getTime())) return ''
+  return d.toISOString()
 }
-
 /** Próxima hora cheia (fuso studio). */
 export function nextRoundHour(): { date: string; time: string } {
   const now = new Date()
