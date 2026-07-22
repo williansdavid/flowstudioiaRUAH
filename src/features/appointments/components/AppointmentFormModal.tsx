@@ -108,11 +108,12 @@ function splitISO(iso: string): { date: string; time: string } {
   const [date, time] = fmt.format(d).split(' ')
   return { date: date!, time: time! }
 }
-
 function joinISO(date: string, time: string): string {
-  // 🛡️ Se date ou time estiver vazio, retorna string vazia em vez de crashar
   if (!date || !time) return ''
-  return new Date(`${date}T${time}:00-03:00`).toISOString()
+  // 🛡️ Valida a Date ANTES de chamar .toISOString() — RangeError nunca mais
+  const d = new Date(`${date}T${time}:00-03:00`)
+  if (isNaN(d.getTime())) return ''
+  return d.toISOString()
 }
 function nextRoundHour() {
   const now = new Date()

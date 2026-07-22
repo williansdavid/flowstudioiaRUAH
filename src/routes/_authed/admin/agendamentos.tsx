@@ -347,16 +347,6 @@ function AgendamentosPage() {
           className="h-9 w-0 appearance-none overflow-hidden rounded-lg border border-slate-700/40 bg-slate-800/60 pl-8 pr-3 text-sm font-medium text-slate-200 opacity-0 transition-all focus:w-44 focus:opacity-100 sm:w-44 sm:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         />
       </div>
-
-      <Button
-        onClick={() => navigate({ to: '/admin/agendar-novo' })}
-        variant="primary"
-        size="sm"
-        className="gap-1.5"
-      >
-        <Plus className="h-4 w-4" />
-        Novo
-      </Button>
     </div>
   );
 
