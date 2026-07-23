@@ -71,7 +71,7 @@ export function LoginForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5" noValidate>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3" noValidate>
         {/* E-mail */}
         <motion.div
           custom={0}

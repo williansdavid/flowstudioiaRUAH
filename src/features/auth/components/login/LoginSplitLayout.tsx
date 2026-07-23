@@ -42,28 +42,13 @@ export function LoginSplitLayout() {
 
       <LoginBrandPanel />
 
-      <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-6 lg:px-12">
+      <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-0 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="flex w-full max-w-sm flex-col rounded-[var(--radius-card)] border border-white/15 bg-white/[0.07] px-7 py-8 shadow-2xl backdrop-blur-xl"
-        >
-          <Link
-            to="/"
-            className="group mb-6 inline-flex items-center gap-1.5 self-start rounded-[var(--radius-button)] border px-3.5 py-2 text-sm font-medium text-[var(--color-accent)] transition-colors duration-200 hover:bg-[var(--color-accent)] hover:text-[var(--color-background)]"
-            style={{
-              fontFamily: 'var(--font-body)',
-              borderColor: 'var(--color-accent)',
-            }}
-          >
-            <ChevronLeft
-              className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5"
-              aria-hidden
-            />
-            Voltar ao site
-          </Link>
-
+          className="flex w-full max-w-sm flex-col rounded-[var(--radius-card)] border border-white/15 bg-white/[0.07] px-7 py-4 shadow-2xl backdrop-blur-xl"
+            >
           <div className="mb-8">
             <h2
               className="text-2xl font-bold text-[var(--color-text-heading)]"
@@ -71,14 +56,7 @@ export function LoginSplitLayout() {
             >
               Bem-vindo de volta
             </h2>
-            <p
-              className="mt-2 text-sm text-[var(--color-text-muted)]"
-              style={{ fontFamily: 'var(--font-body)' }}
-            >
-              Acesse sua conta
-            </p>
           </div>
-
           <LoginForm />
 
           {/* ─── Links para clientes ─────────────────────── */}
@@ -107,6 +85,20 @@ export function LoginSplitLayout() {
               </div>
             </div>
           </div>
+          <Link
+            to="/"
+            className="group mb-0 inline-flex items-center gap-1 self-center rounded-[var(--radius-button)] border px-3.5 py-2 text-sm font-medium text-[var(--color-accent)] transition-colors duration-200 hover:bg-[var(--color-accent)] hover:text-[var(--color-background)]"
+            style={{
+              fontFamily: 'var(--font-body)',
+              borderColor: 'var(--color-accent)',
+            }}
+          >
+            <ChevronLeft
+              className="items-center h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5"
+              aria-hidden
+            />
+            Voltar ao site
+          </Link>
         </motion.div>
       </div>
     </main>
