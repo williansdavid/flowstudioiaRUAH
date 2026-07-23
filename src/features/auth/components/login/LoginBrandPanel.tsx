@@ -16,7 +16,7 @@ import { branding, identity } from '@/config/active-studio';
 
 export function LoginBrandPanel() {
   return (
-    <div className="relative z-10 flex w-full flex-col items-center justify-center px-8 py-10 lg:px-14 lg:py-0">
+    <div className="relative z-10 flex w-full flex-col items-center justify-center px-8 py-6 lg:px-14 lg:py-0">
       {/* Enfeite decorativo — canto inferior direito (so desktop) */}
       <div aria-hidden className="absolute bottom-8 right-8 hidden lg:block">
         <div

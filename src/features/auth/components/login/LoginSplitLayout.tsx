@@ -42,7 +42,7 @@ export function LoginSplitLayout() {
 
       <LoginBrandPanel />
 
-      <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-12 lg:px-12">
+      <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-6 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
