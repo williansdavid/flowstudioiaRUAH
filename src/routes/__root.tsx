@@ -1,5 +1,4 @@
-﻿// src/routes/__root.tsx
-
+// src/routes/__root.tsx
 /**
  * __root.tsx — Root Route do TanStack React Start
  * ----------------------------------------------------------------
@@ -16,7 +15,7 @@
  *
  * Cada zona de rota é dona do seu tema:
  *   - /           -> rota index.tsx injeta brandingCss do site + themeClass
-  *   - /login etc  -> _auth.tsx aplica systemThemeClass
+ *   - /login etc  -> _auth.tsx aplica systemThemeClass
  *   - /admin      -> _authed.tsx aplica systemThemeClass
  *
  * Boundaries globais usam .theme-system com vars do sistema.
@@ -30,7 +29,6 @@ import {
   Scripts,
 } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
-
 import { GlobalLoadingIndicator } from '@/features/utils/feedback'
 import { systemThemeCssHref, systemBrandingCss, systemThemeClass } from '@/lib/core/system'
 import '@/styles/app.css'
@@ -48,11 +46,15 @@ declare module '@tanstack/react-router' {
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
+      { name: 'theme-color', content: '#f97316' },
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { title: 'FlowStudio' },
     ],
-    links: [{ rel: 'stylesheet', href: systemThemeCssHref }],
+    links: [
+      { rel: 'stylesheet', href: systemThemeCssHref },
+      { rel: 'apple-touch-icon', href: '/pwa-192x192.png' },
+    ],
   }),
   component: RootComponent,
   errorComponent: RootErrorBoundary,
