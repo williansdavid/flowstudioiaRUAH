@@ -22,9 +22,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "FlowStudio AI",
-        short_name: "FlowStudio",
-        description: "Plataforma white-label para studios de beleza",
+        name: "Ruah Barber Lounge",
+        short_name: "Ruah",
+        description: "Tradição, estilo e cuidado em cada detalhe",
         theme_color: "#f97316",
         background_color: "#0a0a0a",
         display: "standalone",
