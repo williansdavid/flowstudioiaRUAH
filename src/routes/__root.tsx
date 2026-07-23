@@ -51,9 +51,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { title: 'FlowStudio' },
     ],
-    links: [
+        links: [
       { rel: 'stylesheet', href: systemThemeCssHref },
       { rel: 'apple-touch-icon', href: '/pwa-192x192.png' },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
     ],
   }),
   component: RootComponent,
@@ -189,3 +190,4 @@ function RootNotFound() {
     </html>
   )
 }
+
