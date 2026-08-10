@@ -35,10 +35,9 @@ function highlightText(text: string, query: string): (string | { bold: string })
   const escaped = query.replace('/[.*+?^${}()|[\]\]/g', '\$&');
   const regex = new RegExp(`(${escaped})`, 'gi');
   const parts = text.split(regex);
-  return parts.map((part) =>
-    regex.test(part) ? { bold: part } : part,
-  );
+  return parts.map((part) => (regex.test(part) ? { bold: part } : part));
 }
+
 function renderHighlighted(parts: (string | { bold: string })[]) {
   return parts.map((part, i) =>
     typeof part === 'string' ? (
@@ -65,11 +64,12 @@ export function ClientCombobox({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  // ── Cliente selecionado em estado próprio, independente da lista filtrada ──
+  const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const { query, setQuery, data: clients = [], isLoading } = useClientSearch();
-
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -80,19 +80,27 @@ export function ClientCombobox({
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const selected = useMemo(
-    () => clients.find((c) => c.id === value) ?? null,
-    [clients, value],
-  );
+  // Sincroniza o estado quando o `value` muda de fora (reset do form, edição)
+  useEffect(() => {
+    if (!value) {
+      setSelectedClient(null);
+      return;
+    }
+    if (selectedClient?.id === value) return;
+    const found = clients.find((c) => c.id === value) ?? null;
+    if (found) setSelectedClient(found);
+  }, [value, clients, selectedClient]);
 
-  const selectedLabel = selected
-    ? `${selected.name}${selected.phone ? ` — ${formatPhone(selected.phone)}` : ''}`
+  const selectedLabel = selectedClient
+    ? `${selectedClient.name}${selectedClient.phone ? ` — ${formatPhone(selectedClient.phone)}` : ''}`
     : '';
 
   const isPhoneSearch = /^\d+$/.test(query);
   const displayValue = isPhoneSearch ? maskPhoneBRInput(query) : query;
 
-  useEffect(() => { setHighlight(0); }, [query, open]);
+  useEffect(() => {
+    setHighlight(0);
+  }, [query, open]);
 
   useEffect(() => {
     if (!open || isMobile) return;
@@ -119,12 +127,14 @@ export function ClientCombobox({
   }
 
   function pick(client: ClientOption) {
+    setSelectedClient(client);
     onChange(client.id, client.name, client.phone ?? null);
     setOpen(false);
     setQuery('');
   }
 
   function clearSelection() {
+    setSelectedClient(null);
     onChange('', '', null);
     setQuery('');
     openDropdown();
@@ -165,7 +175,6 @@ export function ClientCombobox({
   if (open && isMobile) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-slate-900">
-        {/* Header com input + cancelar */}
         <div className="flex items-center gap-2 border-b border-slate-700/40 px-4 py-3">
           <input
             ref={inputRef}
@@ -189,8 +198,6 @@ export function ClientCombobox({
             Cancelar
           </button>
         </div>
-
-        {/* Lista de resultados — ocupa o resto da tela */}
         <ul ref={listRef} className="flex-1 overflow-y-auto py-1">
           {isLoading ? (
             <li className="flex items-center justify-center gap-2 px-3 py-4 text-sm text-slate-500">
@@ -217,23 +224,16 @@ export function ClientCombobox({
                     }`}
                   >
                     <User className="h-4 w-4 shrink-0 text-slate-500" />
-                    <span className="flex-1 text-slate-200">
-                      {renderHighlighted(nameParts)}
-                    </span>
+                    <span className="flex-1 text-slate-200">{renderHighlighted(nameParts)}</span>
                     {phoneParts && (
-                      <span className="text-sm text-slate-400">
-                        {renderHighlighted(phoneParts)}
-                      </span>
+                      <span className="text-sm text-slate-400">{renderHighlighted(phoneParts)}</span>
                     )}
-                    {isSel && (
-                      <Check className="h-4 w-4 text-cyan-400 shrink-0" />
-                    )}
+                    {isSel && <Check className="h-4 w-4 text-cyan-400 shrink-0" />}
                   </button>
                 </li>
               );
             })
           )}
-
           {query.trim().length > 0 && (
             <li className="border-t border-slate-700/40">
               <button
@@ -262,16 +262,19 @@ export function ClientCombobox({
           onClick={openDropdown}
           className={`${fieldInput} flex items-center justify-between text-left`}
         >
-          <span className={selected ? 'text-slate-200' : 'text-slate-400'}>
+          <span className={selectedClient ? 'text-slate-200' : 'text-slate-400'}>
             {selectedLabel || 'Selecione…'}
           </span>
           <span className="flex items-center gap-1 shrink-0">
-            {selected && (
+            {selectedClient && (
               <span
                 role="button"
                 tabIndex={-1}
                 aria-label="Limpar"
-                onClick={(e) => { e.stopPropagation(); clearSelection(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearSelection();
+                }}
                 className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-slate-300"
               >
                 <X className="h-3.5 w-3.5" />
@@ -327,23 +330,16 @@ export function ClientCombobox({
                       }`}
                     >
                       <User className="h-4 w-4 shrink-0 text-slate-500" />
-                      <span className="flex-1 text-slate-200">
-                        {renderHighlighted(nameParts)}
-                      </span>
+                      <span className="flex-1 text-slate-200">{renderHighlighted(nameParts)}</span>
                       {phoneParts && (
-                        <span className="text-sm text-slate-400">
-                          {renderHighlighted(phoneParts)}
-                        </span>
+                        <span className="text-sm text-slate-400">{renderHighlighted(phoneParts)}</span>
                       )}
-                      {isSel && (
-                        <Check className="h-4 w-4 text-cyan-400 shrink-0" />
-                      )}
+                      {isSel && <Check className="h-4 w-4 text-cyan-400 shrink-0" />}
                     </button>
                   </li>
                 );
               })
             )}
-
             {query.trim().length > 0 && (
               <li className="border-t border-slate-700/40">
                 <button

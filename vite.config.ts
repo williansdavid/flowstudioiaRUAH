@@ -8,7 +8,7 @@ import tsConfigPaths from "vite-tsconfig-paths";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  cacheDir: path.join(os.tmpdir(), 'flowstudio-vite-cache'),
+  //cacheDir: path.join(os.tmpdir(), 'flowstudio-vite-cache'),
   server: { port: 3000 },
   resolve: {
     dedupe: ["react", "react-dom"],
