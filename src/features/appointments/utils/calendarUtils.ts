@@ -2,7 +2,7 @@
 
 export const CALENDAR_CONFIG = {
   START_HOUR: 6,
-  END_HOUR: 22,
+  END_HOUR: 24,
   PIXELS_PER_MINUTE: 1.5, // ← 1 hora = 60px (antes 90px)
 };
 

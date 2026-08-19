@@ -6,6 +6,12 @@ import type { WeekdayKey } from '@/lib/scheduling/workingHours.schema';
 
 const inputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use YYYY-MM-DD)'),
+  /**
+   * Se false, NÃO gera os bloqueios recorrentes de almoço (breaks do working_hours).
+   * Usado pela tela de agenda (staff) para permitir agendar no horário de almoço.
+   * Default true → fluxo do cliente e demais telas continuam bloqueando o almoço.
+   */
+  includeBreaks: z.boolean().optional().default(true),
 });
 
 export type GetDayTimeOffInput = z.infer<typeof inputSchema>;
@@ -96,7 +102,9 @@ export const getDayTimeOff = createServerFn({ method: 'GET' })
           reason: 'Folga fixa',
         });
         continue;
-      }      
+      }
+      // ✅ NOVO: se includeBreaks=false, ignora os breaks (almoço) na agenda
+      if (!data.includeBreaks) continue;
       if (!daySchedule?.breaks?.length) continue;
 
       for (const [i, brk] of daySchedule.breaks.entries()) {

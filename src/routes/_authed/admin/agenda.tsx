@@ -109,11 +109,9 @@ export const Route = createFileRoute('/_authed/admin/agenda')({
     const date = todayLocalDate()
     await Promise.all([
       queryClient.prefetchQuery({
-        queryKey: ['appointments', 'day', date],
-        queryFn: () => getDayAppointments({ data: { date } }),
-      }).catch(() => {
-        console.warn('[agenda] prefetch getDayAppointments falhou')
-      }),
+        queryKey: ['dayTimeOff', date, { includeBreaks: false }],
+        queryFn: () => getDayTimeOff({ data: { date, includeBreaks: false } }),
+      }).catch(() => { console.warn('[agenda] prefetch getDayTimeOff falhou') }),
       queryClient.prefetchQuery({
         queryKey: ['dayTimeOff', date],
         queryFn: () => getDayTimeOff({ data: { date } }),
@@ -391,6 +389,7 @@ function AgendaPage() {
         services={services}
         timeOff={timeOff}
         businessHours={businessHours}
+        includeBreaks={false}
       />
     </div>
   )

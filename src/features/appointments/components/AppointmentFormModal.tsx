@@ -67,6 +67,7 @@ interface Props {
   staff: BookableStaffItem[]
   timeOff: TimeOffBlockItem[]
   businessHours: BusinessHours
+   includeBreaks?: boolean
   onClose: () => void
 }
 
@@ -171,7 +172,8 @@ const infoCard = 'flex items-center gap-2.5 rounded-xl border border-slate-700/2
 const quickBtn = 'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95'
 
 export function AppointmentFormModal({
-  open, mode, clients, services, staff, timeOff = [], businessHours, onClose,
+  open, mode, clients, services, staff, timeOff = [],
+  businessHours, includeBreaks = true, onClose,   // ✅ NOVO includeBreaks
 }: Props) {
   const isEdit = mode.kind === 'edit'
   const appointment = isEdit ? mode.appointment : null
@@ -187,8 +189,8 @@ export function AppointmentFormModal({
   const statusMutation = useUpdateAppointmentStatus()
 
   const { data: modalTimeOff = [] } = useQuery({
-    queryKey: ['dayTimeOff', form.date],
-    queryFn: () => getDayTimeOff({ data: { date: form.date } }),
+    queryKey: ['dayTimeOff', form.date, { includeBreaks }],   // ✅ queryKey inclui o flag
+    queryFn: () => getDayTimeOff({ data: { date: form.date, includeBreaks } }),  // ✅ passa o flag
     enabled: !!form.date && open,
   })
 
