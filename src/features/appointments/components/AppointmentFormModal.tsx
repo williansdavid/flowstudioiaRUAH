@@ -1,3 +1,4 @@
+// src/features/appointments/components/AppointmentFormModal.tsx
 import { useEffect, useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Loader2, UserPlus, AlertTriangle, Clock, Scissors, User, DollarSign, Check, CheckCheck } from 'lucide-react';
@@ -5,98 +6,89 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { parseISO } from 'date-fns';
 import { QuickClientModal } from './QuickClientModal';
 import { ClientCombobox } from './ClientCombobox';
+import { ServicePicker, type ServiceLine } from './ServicePicker';
 import { Button } from '@/features/utils/ui/Button';
 import { ConfirmDialog } from '@/features/utils/ui/ConfirmDialog';
 import { WhatsAppButton } from '@/features/utils/whats/WhatsAppButton';
 import type { AppointmentItem, BookableStaffItem, ClientOption, ServiceOption } from '../types';
 import type { TimeOffBlockItem } from '../server/getDayTimeOff';
 import { getDayTimeOff } from '../server/getDayTimeOff';
-import { useCreateAppointment, useUpdateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from '../hooks';
+import { useCreateAppointmentMulti, useUpdateAppointmentMulti } from '../hooks';
+import { useCancelAppointment, useUpdateAppointmentStatus } from '../hooks';
 import type { BusinessHours } from '@/sites/ruah/types';
 import { cn } from '@/lib/cn';
 import { toWhatsAppHref } from '@/features/utils/whats/whatsapp';
 import { useNavigate } from '@tanstack/react-router';
 import { WHATS_MSG } from '@/features/utils/whats/whatsmsg';
-import { identity } from '@/config/active-studio'
-
+import { identity } from '@/config/active-studio';
 // ═══ Safe date parsers — NUNCA lançam RangeError ═══
 function safeParseISO(iso: string | null | undefined): Date {
-  if (!iso) return new Date(NaN)
+  if (!iso) return new Date(NaN);
   try {
-    const d = parseISO(iso)
-    return isNaN(d.getTime()) ? new Date(NaN) : d
+    const d = parseISO(iso);
+    return isNaN(d.getTime()) ? new Date(NaN) : d;
   } catch {
-    return new Date(NaN)
+    return new Date(NaN);
   }
 }
-
 function safeFormatTime(iso: string | null | undefined): string {
-  if (!iso) return '--:--'
-  const d = safeParseISO(iso)
-  if (isNaN(d.getTime())) return '--:--'
-  return timeFmt.format(d)
+  if (!iso) return '--:--';
+  const d = safeParseISO(iso);
+  if (isNaN(d.getTime())) return '--:--';
+  return timeFmt.format(d);
 }
-
 const timeFmt = new Intl.DateTimeFormat('pt-BR', {
   hour: '2-digit',
   minute: '2-digit',
   timeZone: 'America/Sao_Paulo',
-})
+});
 // ═══ Fim safe parsers ═══
-
 // ── Status config ────────────────────────────────────────────────
-type Status = AppointmentItem['status']
-
+type Status = AppointmentItem['status'];
 const STATUS_CONFIG: Record<Status, { label: string; dot: string }> = {
   pending:    { label: 'Pendente',       dot: 'bg-amber-400'  },
   confirmed:  { label: 'Confirmado',     dot: 'bg-emerald-400' },
   completed:  { label: 'Concluído',      dot: 'bg-blue-400'   },
   cancelled:  { label: 'Cancelado',      dot: 'bg-red-400'    },
   no_show:    { label: 'Não compareceu', dot: 'bg-red-400'    },
-}
-
+};
 type Mode =
   | { kind: 'create'; defaults?: { staffId?: string; startsAt?: string } }
-  | { kind: 'edit'; appointment: AppointmentItem }
-
+  | { kind: 'edit'; appointment: AppointmentItem };
 interface Props {
-  open: boolean
-  mode: Mode
-  clients: ClientOption[]
-  services: ServiceOption[]
-  staff: BookableStaffItem[]
-  timeOff: TimeOffBlockItem[]
-  businessHours: BusinessHours
-   includeBreaks?: boolean
-  onClose: () => void
+  open: boolean;
+  mode: Mode;
+  clients: ClientOption[];
+  services: ServiceOption[];
+  staff: BookableStaffItem[];
+  timeOff: TimeOffBlockItem[];
+  businessHours: BusinessHours;
+  includeBreaks?: boolean;
+  onClose: () => void;
 }
-
 // ── Helpers ──────────────────────────────────────────────────────
 function normalizeDate(dateStr: string): string {
-  const d = safeParseISO(dateStr)
-  if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR')
-  return dateStr
+  const d = safeParseISO(dateStr);
+  if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR');
+  return dateStr;
 }
-
 function hasTimeOffConflict(t: TimeOffBlockItem[], sId: string, sA: string, eA: string) {
-  if (!sId || !sA || !eA) return null
-  const s = safeParseISO(sA).getTime()
-  const e = safeParseISO(eA).getTime()
-  if (isNaN(s) || isNaN(e)) return null
+  if (!sId || !sA || !eA) return null;
+  const s = safeParseISO(sA).getTime();
+  const e = safeParseISO(eA).getTime();
+  if (isNaN(s) || isNaN(e)) return null;
   for (const b of t) {
-    if (b.staffId !== sId) continue
-    const bS = safeParseISO(b.startsAt).getTime()
-    const bE = safeParseISO(b.endsAt).getTime()
-    if (isNaN(bS) || isNaN(bE)) continue
-    if (s < bE && e > bS) return b
+    if (b.staffId !== sId) continue;
+    const bS = safeParseISO(b.startsAt).getTime();
+    const bE = safeParseISO(b.endsAt).getTime();
+    if (isNaN(bS) || isNaN(bE)) continue;
+    if (s < bE && e > bS) return b;
   }
-  return null
+  return null;
 }
-
 function splitISO(iso: string): { date: string; time: string } {
-  const d = safeParseISO(iso)
-  // 🛡️ Se for inválido, retorna vazio — NUNCA passa pra formatação
-  if (isNaN(d.getTime())) return { date: '', time: '' }
+  const d = safeParseISO(iso);
+  if (isNaN(d.getTime())) return { date: '', time: '' };
   const fmt = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
@@ -105,183 +97,198 @@ function splitISO(iso: string): { date: string; time: string } {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  })
-  const [date, time] = fmt.format(d).split(' ')
-  return { date: date!, time: time! }
+  });
+  const [date, time] = fmt.format(d).split(' ');
+  return { date: date!, time: time! };
 }
 function joinISO(date: string, time: string): string {
-  if (!date || !time) return ''
-  const d = new Date(`${date}T${time}:00-03:00`)
-  if (isNaN(d.getTime())) return ''
-  return d.toISOString()
+  if (!date || !time) return '';
+  const d = new Date(`${date}T${time}:00-03:00`);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString();
 }
 function nextRoundHour() {
-  const now = new Date()
-  const { date } = splitISO(now.toISOString())
-  const hh = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }).format(now))
-  return { date, time: `${String(Math.min(hh + 1, 23)).padStart(2, '0')}:00` }
+  const now = new Date();
+  const { date } = splitISO(now.toISOString());
+  const hh = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }).format(now));
+  return { date, time: `${String(Math.min(hh + 1, 23)).padStart(2, '0')}:00` };
 }
-
 function addMinutes(time: string, min: number) {
-  const [h, m] = time.split(':').map(Number)
-  const total = Math.min(h! * 60 + m! + min, 23 * 60 + 59)
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+  const [h, m] = time.split(':').map(Number);
+  const total = Math.min(h! * 60 + m! + min, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
-
 interface FormState {
-  clientId: string
-  serviceId: string
-  staffId: string
-  date: string
-  startTime: string
-  endTime: string
-  notes: string
+  clientId: string;
+  items: ServiceLine[];
+  staffId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  notes: string;
 }
-
-function buildInitialState(mode: Mode): FormState {
+// Soma duração/preço dos itens selecionados
+function itemsTotals(items: ServiceLine[], services: ServiceOption[]) {
+  let duration = 0;
+  let price = 0;
+  for (const it of items) {
+    const svc = services.find((s) => s.id === it.serviceId);
+    if (!svc) continue;
+    duration += svc.durationMinutes * it.quantity;
+    price += svc.price * it.quantity;
+  }
+  return { duration, price };
+}
+function buildInitialState(mode: Mode, services: ServiceOption[]): FormState {
   if (mode.kind === 'edit') {
-    const a = mode.appointment
-    const s = splitISO(a.startsAt)
-    const e = splitISO(a.endsAt)
+    const a = mode.appointment;
+    const s = splitISO(a.startsAt);
+    const e = splitISO(a.endsAt);
+    // Itens: usa os snapshots reais (multi) ou fallback legado (1 serviço)
+    const items: ServiceLine[] = a.services && a.services.length > 0
+      ? a.services.map((sv) => ({ serviceId: sv.serviceId, quantity: sv.quantity }))
+      : a.serviceId
+        ? [{ serviceId: a.serviceId, quantity: 1 }]
+        : [];
     return {
       clientId: a.clientId,
-      serviceId: a.serviceId,
+      items,
       staffId: a.staffId,
       date: s.date,
       startTime: s.time,
       endTime: e.time,
       notes: a.notes ?? '',
-    }
+    };
   }
-  const base = mode.defaults?.startsAt ? splitISO(mode.defaults.startsAt) : nextRoundHour()
+  const base = mode.defaults?.startsAt ? splitISO(mode.defaults.startsAt) : nextRoundHour();
   return {
     clientId: '',
-    serviceId: '',
+    items: [],
     staffId: mode.defaults?.staffId ?? '',
     date: base.date,
     startTime: base.time,
     endTime: addMinutes(base.time, 30),
     notes: '',
-  }
+  };
 }
-
 // ── Classes refinadas premium ─────────────────────────────────────
-const fieldLabel = 'text-[11px] font-semibold uppercase tracking-widest text-slate-400'
-const fieldInput = 'w-full rounded-lg border border-slate-700/30 bg-slate-800/60 px-3 py-2.5 text-sm text-slate-300 outline-none transition-all duration-200 placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-800'
-const infoCard = 'flex items-center gap-2.5 rounded-xl border border-slate-700/20 bg-slate-800/40 p-3'
-const quickBtn = 'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95'
-
+const fieldLabel = 'text-[11px] font-semibold uppercase tracking-widest text-slate-400';
+const fieldInput = 'w-full rounded-lg border border-slate-700/30 bg-slate-800/60 px-3 py-2.5 text-sm text-slate-300 outline-none transition-all duration-200 placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 focus:bg-slate-800';
+const infoCard = 'flex items-center gap-2.5 rounded-xl border border-slate-700/20 bg-slate-800/40 p-3';
+const quickBtn = 'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 active:scale-95';
 export function AppointmentFormModal({
   open, mode, clients, services, staff, timeOff = [],
-  businessHours, includeBreaks = true, onClose,   // ✅ NOVO includeBreaks
+  businessHours, includeBreaks = true, onClose,
 }: Props) {
-  const isEdit = mode.kind === 'edit'
-  const appointment = isEdit ? mode.appointment : null
-  const [form, setForm] = useState(() => buildInitialState(mode))
-  const [quickClientOpen, setQuickClientOpen] = useState(false)
-  const [quickClientName, setQuickClientName] = useState('')
-  const [cancelTarget, setCancelTarget] = useState(false)
-
-  const queryClient = useQueryClient()
-  const createMutation = useCreateAppointment()
-  const updateMutation = useUpdateAppointment()
-  const cancelMutation = useCancelAppointment()
-  const statusMutation = useUpdateAppointmentStatus()
-
+  const isEdit = mode.kind === 'edit';
+  const appointment = isEdit ? mode.appointment : null;
+  const [form, setForm] = useState(() => buildInitialState(mode, services));
+  const [quickClientOpen, setQuickClientOpen] = useState(false);
+  const [quickClientName, setQuickClientName] = useState('');
+  const [cancelTarget, setCancelTarget] = useState(false);
+  const queryClient = useQueryClient();
+  const createMutation = useCreateAppointmentMulti();
+  const updateMutation = useUpdateAppointmentMulti();
+  const cancelMutation = useCancelAppointment();
+  const statusMutation = useUpdateAppointmentStatus();
   const { data: modalTimeOff = [] } = useQuery({
-    queryKey: ['dayTimeOff', form.date, { includeBreaks }],   // ✅ queryKey inclui o flag
-    queryFn: () => getDayTimeOff({ data: { date: form.date, includeBreaks } }),  // ✅ passa o flag
+    queryKey: ['dayTimeOff', form.date, { includeBreaks }],
+    queryFn: () => getDayTimeOff({ data: { date: form.date, includeBreaks } }),
     enabled: !!form.date && open,
-  })
-
+  });
   useEffect(() => {
-    if (open) setForm(buildInitialState(mode))
-  }, [open, mode])
-
+    if (open) setForm(buildInitialState(mode, services));
+  }, [open, mode, services]);
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
-    setForm(p => ({ ...p, [k]: v }))
+    setForm((p) => ({ ...p, [k]: v }));
   }
-
-  const selectedService = useMemo(
-    () => services.find(s => s.id === form.serviceId) ?? null,
-    [services, form.serviceId],
-  )
-
+  // Totais derivados dos itens
+  const totals = useMemo(() => itemsTotals(form.items, services), [form.items, services]);
+  // endTime auto-derivado da soma das durações quando muda itens/início
   useEffect(() => {
-    if (!selectedService) return
-    set('endTime', addMinutes(form.startTime, selectedService.durationMinutes))
-  }, [form.serviceId, form.startTime])
-
-  // Validações
-  const missingFields: string[] = []
-  let retroError = false
-  if (!form.clientId) missingFields.push('Cliente')
-  if (!form.serviceId) missingFields.push('Serviço')
-  if (!form.staffId) missingFields.push('Profissional')
-  if (form.date && form.startTime) {
-    const dt = safeParseISO(joinISO(form.date, form.startTime))
-    let r = dt < new Date()
-    if (isEdit && r && appointment) {
-      const aptTime = safeParseISO(appointment.startsAt).getTime()
-      if (dt.getTime() === aptTime) r = false
+    if (totals.duration > 0) {
+      set('endTime', addMinutes(form.startTime, totals.duration));
     }
-    if (r) retroError = true
+  }, [form.items, form.startTime]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Validações
+  const missingFields: string[] = [];
+  let retroError = false;
+  if (!form.clientId) missingFields.push('Cliente');
+  if (form.items.length === 0 || form.items.some((it) => !it.serviceId)) missingFields.push('Serviço');
+  if (!form.staffId) missingFields.push('Profissional');
+  if (form.date && form.startTime) {
+    const dt = safeParseISO(joinISO(form.date, form.startTime));
+    let r = dt < new Date();
+    if (isEdit && r && appointment) {
+      const aptTime = safeParseISO(appointment.startsAt).getTime();
+      if (dt.getTime() === aptTime) r = false;
+    }
+    if (r) retroError = true;
   }
-
   const conflict = useMemo(() => {
-    if (!form.staffId || !form.date || !form.startTime || !form.endTime) return null
+    if (!form.staffId || !form.date || !form.startTime || !form.endTime) return null;
     return hasTimeOffConflict(
       modalTimeOff,
       form.staffId,
       joinISO(form.date, form.startTime),
       joinISO(form.date, form.endTime),
-    )
-  }, [modalTimeOff, form.staffId, form.date, form.startTime, form.endTime])
-
-  const canSubmit = missingFields.length === 0 && !retroError && !conflict && !!form.endTime
+    );
+  }, [modalTimeOff, form.staffId, form.date, form.startTime, form.endTime]);
+  const canSubmit = missingFields.length === 0 && !retroError && !conflict && !!form.endTime;
   const isSaving =
-    createMutation.isPending || updateMutation.isPending || cancelMutation.isPending || statusMutation.isPending
-
+    createMutation.isPending || updateMutation.isPending || cancelMutation.isPending || statusMutation.isPending;
   const handleSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['appointments'] })
-    queryClient.invalidateQueries({ queryKey: ['dayTimeOff'] })
-    onClose()
-  }
-
+    queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    queryClient.invalidateQueries({ queryKey: ['dayTimeOff'] });
+    onClose();
+  };
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!canSubmit) return
-    const sA = joinISO(form.date, form.startTime)
-    const eA = joinISO(form.date, form.endTime)
+    e.preventDefault();
+    if (!canSubmit) return;
+    const sA = joinISO(form.date, form.startTime);
+    const servicesPayload = form.items
+      .filter((it) => it.serviceId)
+      .map((it) => ({ serviceId: it.serviceId, quantity: it.quantity }));
     if (isEdit && appointment) {
       updateMutation.mutate(
-        { id: appointment.id, staffId: form.staffId, serviceId: form.serviceId, startsAt: sA, endsAt: eA, notes: form.notes || null },
+        {
+          appointmentId: appointment.id,
+          clientId: form.clientId,
+          staffId: form.staffId,
+          startsAt: sA,
+          services: servicesPayload,
+          notes: form.notes || null,
+        },
         { onSuccess: handleSuccess },
-      )
+      );
     } else {
       createMutation.mutate(
-        { clientId: form.clientId, serviceId: form.serviceId, staffId: form.staffId, startsAt: sA, endsAt: eA, notes: form.notes || null },
+        {
+          clientId: form.clientId,
+          staffId: form.staffId,
+          startsAt: sA,
+          services: servicesPayload,
+          notes: form.notes || null,
+          status: 'pending',
+        },
         { onSuccess: handleSuccess },
-      )
+      );
     }
   }
-
   function handleQuickStatus(status: 'confirmed' | 'completed' | 'cancelled') {
-    if (!appointment) return
-    statusMutation.mutate({ id: appointment.id, status }, { onSuccess: handleSuccess })
+    if (!appointment) return;
+    statusMutation.mutate({ id: appointment.id, status }, { onSuccess: handleSuccess });
   }
-
   const conflictLabel = conflict
     ? (() => {
-        const r = conflict.reason ?? 'Folga'
-        const s = safeParseISO(conflict.startsAt)
-        const e = safeParseISO(conflict.endsAt)
-        const sStr = isNaN(s.getTime()) ? '--:--' : s.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-        const eStr = isNaN(e.getTime()) ? '--:--' : e.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-        return `${r} (${sStr} — ${eStr})`
+        const r = conflict.reason ?? 'Folga';
+        const s = safeParseISO(conflict.startsAt);
+        const e = safeParseISO(conflict.endsAt);
+        const sStr = isNaN(s.getTime()) ? '--:--' : s.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+        const eStr = isNaN(e.getTime()) ? '--:--' : e.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+        return `${r} (${sStr} — ${eStr})`;
       })()
-    : null
-
+    : null;
   const waHref = appointment?.clientPhone
     ? toWhatsAppHref(
         appointment.clientPhone,
@@ -294,11 +301,9 @@ export function AppointmentFormModal({
           studioName: identity.name || 'FlowStudio',
         }),
       )
-    : null
-
-  const errorsVisible = missingFields.length > 0 || retroError
-  const navigate = useNavigate()
-
+    : null;
+  const errorsVisible = missingFields.length > 0 || retroError;
+  const navigate = useNavigate();
   return (
     <>
       <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
@@ -314,7 +319,6 @@ export function AppointmentFormModal({
                 <X className="h-4 w-4" />
               </Dialog.Close>
             </div>
-
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {/* Card de informações (só no modo edição) */}
@@ -330,7 +334,6 @@ export function AppointmentFormModal({
                       {STATUS_CONFIG[appointment.status]?.label}
                     </div>
                   </div>
-
                   <div className="mb-4 grid grid-cols-2 gap-2">
                     <div className={infoCard}>
                       <Clock className="h-4 w-4 text-cyan-400" />
@@ -360,12 +363,11 @@ export function AppointmentFormModal({
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Duração</p>
                         <p className="text-sm font-bold text-slate-200">
-                          {selectedService ? `${selectedService.durationMinutes}min` : '—'}
+                          {totals.duration > 0 ? `${totals.duration}min` : '—'}
                         </p>
                       </div>
                     </div>
                   </div>
-
                   {/* Quick actions */}
                   {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                     <div className="mb-4 flex gap-2">
@@ -392,9 +394,7 @@ export function AppointmentFormModal({
                       {appointment.status === 'confirmed' && (
                         <>
                           <button
-                            onClick={() => {
-                              navigate({ to: '/admin/pdv', search: { appointmentId: appointment.id } })
-                            }}
+                            onClick={() => navigate({ to: '/admin/pdv', search: { appointmentId: appointment.id } })}
                             disabled={isSaving}
                             className={cn(quickBtn, 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10')}
                           >
@@ -415,7 +415,6 @@ export function AppointmentFormModal({
                   )}
                 </>
               )}
-
               {/* Form */}
               <form id="appointment-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
                 {/* Cliente */}
@@ -432,10 +431,7 @@ export function AppointmentFormModal({
                     {!isEdit && (
                       <button
                         type="button"
-                        onClick={() => {
-                          setQuickClientName('')
-                          setQuickClientOpen(true)
-                        }}
+                        onClick={() => { setQuickClientName(''); setQuickClientOpen(true); }}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400 transition-colors hover:bg-orange-500/20"
                       >
                         <UserPlus className="h-4 w-4" />
@@ -443,25 +439,17 @@ export function AppointmentFormModal({
                     )}
                   </div>
                 </div>
-
-                {/* Serviço */}
+                {/* Serviços (grid de cards no molde do PDV) */}
                 <div>
-                  <label className={fieldLabel}>Serviço</label>
-                  <select
-                    value={form.serviceId}
-                    onChange={(e) => set('serviceId', e.target.value)}
-                    className={`${fieldInput} mt-1.5`}
-                  >
-                    <option value="">Selecione…</option>
-                    {services.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.durationMinutes}min)
-                        {s.price ? ` — ${s.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <label className={fieldLabel}>Serviços</label>
+                  <div className="mt-1.5">
+                    <ServicePicker
+                      services={services}
+                      items={form.items}
+                      onChange={(items) => set('items', items)}
+                    />
+                  </div>
                 </div>
-
                 {/* Profissional */}
                 <div>
                   <label className={fieldLabel}>Profissional</label>
@@ -476,7 +464,6 @@ export function AppointmentFormModal({
                     ))}
                   </select>
                 </div>
-
                 {/* Data */}
                 <div>
                   <label className={fieldLabel}>Data</label>
@@ -487,7 +474,6 @@ export function AppointmentFormModal({
                     className={`${fieldInput} mt-1.5`}
                   />
                 </div>
-
                 {/* Horários */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -509,7 +495,6 @@ export function AppointmentFormModal({
                     />
                   </div>
                 </div>
-
                 {/* Observações */}
                 <div>
                   <label className={fieldLabel}>Observações (opcional)</label>
@@ -520,7 +505,6 @@ export function AppointmentFormModal({
                     className={`${fieldInput} mt-1.5 min-h-[80px] resize-none`}
                   />
                 </div>
-
                 {conflict && (
                   <div className="rounded-lg border border-orange-500/25 bg-orange-500/8 px-3 py-2.5 text-xs text-orange-400">
                     <div className="flex items-start gap-2">
@@ -531,7 +515,6 @@ export function AppointmentFormModal({
                 )}
               </form>
             </div>
-
             {/* Footer fixo */}
             <div className="shrink-0 border-t border-slate-700/20 bg-slate-900/80 backdrop-blur-xl px-5 py-4">
               <div className="flex items-center justify-between gap-3">
@@ -558,14 +541,10 @@ export function AppointmentFormModal({
                 </div>
               </div>
             </div>
-
             <ConfirmDialog
               open={cancelTarget}
               onClose={() => setCancelTarget(false)}
-              onConfirm={() => {
-                handleQuickStatus('cancelled')
-                setCancelTarget(false)
-              }}
+              onConfirm={() => { handleQuickStatus('cancelled'); setCancelTarget(false); }}
               title="Cancelar agendamento?"
               description={appointment ? `Tem certeza que deseja cancelar o agendamento de ${appointment.clientName}?` : ''}
               confirmLabel="Sim, cancelar"
@@ -575,7 +554,6 @@ export function AppointmentFormModal({
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-
       <QuickClientModal
         open={quickClientOpen}
         initialName={quickClientName}
@@ -583,5 +561,5 @@ export function AppointmentFormModal({
         onCreated={(c) => set('clientId', c.id)}
       />
     </>
-  )
+  );
 }

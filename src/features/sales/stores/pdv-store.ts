@@ -6,6 +6,14 @@ import type { CartItem, SplitPayment } from '../types';
 // ── Tipos ────────────────────────────────────────────────────────
 export type PdvStatus = 'empty' | 'editing' | 'payment' | 'processing' | 'completed';
 
+/** Item de serviço vindo do agendamento (multi-serviço) */
+export interface AppointmentSaleServiceItem {
+  serviceId: string;
+  serviceName: string;
+  price: number;
+  quantity: number;
+}
+
 export interface PdvState {
   status: PdvStatus;
   items: CartItem[];
@@ -19,9 +27,10 @@ interface PdvActions {
   loadFromAppointment: (data: {
     appointmentId: string;
     clientName: string;
-    serviceId: string;
+    serviceId: string | null; // null em multi-serviço
     serviceName: string;
     servicePrice: number;
+    services?: AppointmentSaleServiceItem[]; // lista real (multi)
   }) => void;
   addItem: (item: CartItem) => void;
   updateQuantity: (id: string, delta: number) => void;
@@ -47,26 +56,45 @@ const initialState: PdvState = {
 export const usePdvStore = create<PdvState & PdvActions>((set, get) => ({
   ...initialState,
 
-  loadFromAppointment: (data) =>
+  loadFromAppointment: (data) => {
+    // Multi-serviço: 1 item de carrinho por serviço (corte + barba = 2 itens)
+    const services = data.services ?? [];
+    const hasMulti = services.length > 0;
+
+    const items: CartItem[] = hasMulti
+      ? services.map((svc) => ({
+          id: `service-${svc.serviceId}`,
+          itemType: 'service' as const,
+          itemId: svc.serviceId,
+          itemName: svc.serviceName,
+          quantity: svc.quantity ?? 1,
+          unitPrice: svc.price,
+          totalPrice: (svc.price ?? 0) * (svc.quantity ?? 1),
+          isLocked: true,
+        }))
+      : // Fallback legado: 1 serviço único
+        [
+          {
+            id: `service-${data.serviceName}`,
+            itemType: 'service' as const,
+            itemId: data.serviceId ?? '',
+            itemName: data.serviceName,
+            quantity: 1,
+            unitPrice: data.servicePrice,
+            totalPrice: data.servicePrice,
+            isLocked: true,
+          },
+        ];
+
     set({
       status: 'editing',
       appointmentId: data.appointmentId,
       clientName: data.clientName,
-      items: [
-        {
-          id: `service-${data.serviceName}`,
-          itemType: 'service',
-          itemId: data.serviceId,
-          itemName: data.serviceName,
-          quantity: 1,
-          unitPrice: data.servicePrice,
-          totalPrice: data.servicePrice,
-          isLocked: true,
-        },
-      ],
+      items,
       payments: [],
       isDirty: true,
-    }),
+    });
+  },
 
   addItem: (item) =>
     set((state) => {
@@ -140,7 +168,6 @@ export const usePdvStore = create<PdvState & PdvActions>((set, get) => ({
 const DB_NAME = 'flowstudio-pdv';
 const DB_VERSION = 1;
 const STORE_NAME = 'cart';
-
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
 function getDb(): Promise<IDBPDatabase> {

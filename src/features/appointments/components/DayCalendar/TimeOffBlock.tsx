@@ -23,7 +23,7 @@ export function TimeOffBlock({
 
   return (
     <div
-      className="absolute left-1 right-1 rounded-md overflow-hidden pointer-events-none select-none z-5"
+      className="absolute left-1 right-1 rounded-md overflow-hidden  z-5 pointer-events-none select-none z-5"
       style={{
         top: `${top}px`,
         height: `${height}px`,

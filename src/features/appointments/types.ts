@@ -14,8 +14,9 @@ export interface AppointmentItem {
   clientId: string;
   clientName: string;
   clientPhone: string | null;
-  serviceId: string;
+  serviceId: string | null;
   serviceName: string;
+  services: AppointmentServiceItem[];
   staffId: string;
   staffName: string;
   staffAvatarUrl: string | null;
@@ -45,4 +46,12 @@ export interface BookableStaffItem {
   avatarUrl?: string | null;
   /** Cor personalizada do staff (do banco) */
   color: string | null;
+}
+
+export interface AppointmentServiceItem {
+  serviceId: string;
+  serviceName: string;
+  durationMinutes: number;
+  price: number;
+  quantity: number;
 }

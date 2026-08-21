@@ -80,6 +80,7 @@ export function PdvPage() {
       serviceId: appointmentData.serviceId,
       serviceName: appointmentData.serviceName,
       servicePrice: appointmentData.servicePrice,
+      services: appointmentData.services, // ← NOVO: lista multi (corte + barba)
     });
   }, [appointmentData, loadFromAppointment]);
 

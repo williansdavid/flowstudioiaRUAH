@@ -171,3 +171,65 @@ export function useAvailableSlots({
 }
 
 export { useCreateClientAppointment } from './hooks/useCreateClientAppointment';
+
+// ============================================================
+// HOOKS MULTI-SERVIÇO — criação e edição via RPC
+// (create_appointment_multi_service / update_appointment_multi_service)
+// ============================================================
+import type { AppointmentStatus } from './types';
+import { createAppointmentMulti, updateAppointmentMulti } from './server/createAppointmentMulti';
+
+export interface MultiServiceItemInput {
+  serviceId: string;
+  quantity: number;
+}
+
+export interface CreateAppointmentMultiInput {
+  clientId: string;
+  staffId: string;
+  startsAt: string;
+  services: MultiServiceItemInput[];
+  notes?: string | null;
+  status?: AppointmentStatus;
+  paymentMethodId?: string | null;
+}
+
+export interface UpdateAppointmentMultiInput {
+  appointmentId: string;
+  clientId: string;
+  staffId: string;
+  startsAt: string;
+  services: MultiServiceItemInput[];
+  notes?: string | null;
+  status?: AppointmentStatus;
+}
+
+// Criação multi — chama a RPC create_appointment_multi_service
+export function useCreateAppointmentMulti() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateAppointmentMultiInput) => {
+      const res = await createAppointmentMulti({ data: input });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['dayTimeOff'] });
+    },
+  });
+}
+
+// Edição multi — chama a RPC update_appointment_multi_service
+export function useUpdateAppointmentMulti() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateAppointmentMultiInput) => {
+      const res = await updateAppointmentMulti({ data: input });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['dayTimeOff'] });
+    },
+  });
+}

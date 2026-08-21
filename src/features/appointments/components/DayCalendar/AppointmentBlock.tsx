@@ -1,51 +1,72 @@
 // src/features/appointments/components/DayCalendar/AppointmentBlock.tsx
+import { Scissors } from 'lucide-react';
 import type { AppointmentItem } from '../../types';
-import { staffColor } from './staffColor';
 
-interface Props {
+interface AppointmentBlockProps {
   appointment: AppointmentItem;
-  top: number;
-  height: number;
+  /** Posição absoluta (px) no calendário — passado pelo StaffColumn */
+  top?: number;
+  /** Altura (px) do bloco no calendário — passado pelo StaffColumn */
+  height?: number;
+  /** Recebe o evento (para stopPropagation no StaffColumn) */
   onClick?: (e: React.MouseEvent) => void;
 }
 
-const STATUS_STYLE: Record<AppointmentItem['status'], { border: string; text: string }> = {
-  confirmed: { border: '#10b981', text: 'text-emerald-400' },
-  pending: { border: '#f59e0b', text: 'text-amber-400' },
-  cancelled: { border: '#f43f5e', text: 'text-rose-400' },
-  completed: { border: '#3b82f6', text: 'text-blue-400' },
-  no_show: { border: '#f43f5e', text: 'text-rose-400' },
+const STATUS_STYLES: Record<string, string> = {
+  confirmed: 'border-l-emerald-500',
+  pending: 'border-l-amber-400',
+  cancelled: 'border-l-rose-400 opacity-70',
+  completed: 'border-l-sky-500',
 };
 
-export function AppointmentBlock({ appointment, top, height, onClick }: Props) {
-  const staffAccent = appointment.staffColor ?? staffColor(appointment.staffId);
-  const status = STATUS_STYLE[appointment.status] ?? STATUS_STYLE.pending;
+export function AppointmentBlock({
+  appointment,
+  top,
+  height,
+  onClick,
+}: AppointmentBlockProps) {
+  const { services, serviceName, clientName, status } = appointment;
 
-  // Com PIXELS_PER_MINUTE=1.5, blocos de 30min têm 45px de altura
-  const padClass = height < 60 ? 'p-1' : height < 100 ? 'p-1.5' : 'p-2';
+  // Lista de serviços exibida quando há multi (2+) ou snapshot único.
+  // Fallback: serviceName legado (agendamento antigo de 1 serviço).
+  const showServiceList = services.length > 0;
+  const displayServices = showServiceList
+    ? services
+    : [{ serviceName } as { serviceName: string }];
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className={`absolute left-1 right-1 rounded-md border bg-black/20 ${padClass} cursor-pointer transition-all duration-200 hover:z-20 hover:scale-[1.02] hover:brightness-125 overflow-hidden backdrop-blur-md`}
-      style={{
-        top: `${top}px`,
-        height: `${height}px`,
-        borderLeft: `3px solid ${status.border}`,
-        borderTop: `2px solid ${staffAccent}`,
-      }}
+      style={{ top, height }}
+      className={[
+        'group w-full rounded-lg border-l-4 bg-black/60 px-2.5 py-2 text-left',
+        'shadow-sm transition-colors hover:shadow-md',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500',
+        // Posicionamento absoluto quando top/height são fornecidos (StaffColumn)
+        typeof top === 'number' && typeof height === 'number'
+          ? 'absolute overflow-hidden z-20'
+          : 'relative',
+        STATUS_STYLES[status] ?? 'border-l-slate-400',
+      ].join(' ')}
     >
-      {/* ─── NOME DO CLIENTE (linha 1) ─── */}
-      <p className="truncate text-xs font-semibold leading-tight text-white">
-        {appointment.clientName}
+      {/* Linha 1: nome do cliente */}
+      <p className="truncate text-[13px] font-semibold leading-tight text-slate-100">
+        {clientName}
       </p>
 
-      {/* ─── NOME DO SERVIÇO (linha 2) ─── */}
-      <p className={`truncate text-[10px] font-medium leading-tight mt-0.5 ${status.text}`}>
-        {appointment.serviceName}
-      </p>
-
-
-    </div>
+      {/* Linha 2: serviços */}
+      <div className="mt-1 flex flex-wrap gap-1">
+        {displayServices.map((svc, idx) => (
+          <span
+            key={idx}
+            className="inline-flex items-center gap-1 rounded bg-white/10 px-1 py-px text-[10px] font-medium text-slate-300"
+          >
+            <Scissors className="h-2.5 w-2.5 text-slate-400" aria-hidden />
+            {svc.serviceName}
+          </span>
+        ))}
+      </div>
+    </button>
   );
 }
