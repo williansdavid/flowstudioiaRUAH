@@ -1,9 +1,6 @@
 // src/features/clients/server/getBirthdayClients.ts
-'use server'
-import { createServerFn } from '@tanstack/react-start'
-import { createSupabaseServer } from '@/lib/supabase/server'
 import { parseBusinessError } from '@/lib/errors/parseBusinessError'
-
+import { getSupabaseForContext } from '@/lib/supabase/context'
 export interface BirthdayClient {
   id: string
   name: string | null
@@ -15,29 +12,27 @@ export interface BirthdayClient {
   last_visit: string | null
   birth_date: string | null
 }
-
 export interface GetBirthdayClientsResponse {
   clients: BirthdayClient[]
 }
-
-export const getBirthdayClients = createServerFn({ method: 'GET' }).handler(async () => {
+/**
+ * Fase 2 — leitura direta ao Supabase (sa-east-1), sem serverFn.
+ * Mesma assinatura (sem args) e retorno do original — callers não mudam.
+ */
+export async function getBirthdayClients(): Promise<GetBirthdayClientsResponse> {
   try {
-    const supabase = createSupabaseServer()
+    const supabase = await getSupabaseForContext()
     const month = new Date().getMonth() + 1 // 1-12
-
     const { data: ids, error: rpcError } = await supabase
       .rpc('get_clients_by_birth_month', { p_month: month })
     if (rpcError) throw rpcError
-
     if (!ids || ids.length === 0) return { clients: [] }
-
     const { data, error } = await supabase
       .from('clients')
       .select('id, full_name, phone, avatar_url, total_spent, total_visits, frequency_days, last_visit, birth_date')
       .in('id', ids.map((r: { id: string }) => r.id))
       .order('full_name')
     if (error) throw error
-
     return {
       clients: (data ?? []).map((c) => ({
         id: c.id,
@@ -54,4 +49,4 @@ export const getBirthdayClients = createServerFn({ method: 'GET' }).handler(asyn
   } catch (error) {
     throw parseBusinessError(error)
   }
-})
+}

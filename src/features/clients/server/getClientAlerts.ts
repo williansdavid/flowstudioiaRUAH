@@ -1,22 +1,20 @@
 // src/features/clients/server/getClientAlerts.ts
-'use server'
-import { createServerFn } from '@tanstack/react-start'
-import { createSupabaseServer } from '@/lib/supabase/server'
 import { parseBusinessError } from '@/lib/errors/parseBusinessError'
-
-export const getClientAlerts = createServerFn({ method: 'GET' }).handler(async () => {
+import { getSupabaseForContext } from '@/lib/supabase/context'
+/**
+ * Fase 2 — leitura direta ao Supabase (sa-east-1), sem serverFn.
+ * Mesma assinatura (sem args) e retorno do original — callers não mudam.
+ */
+export async function getClientAlerts() {
   try {
-    const supabase = createSupabaseServer()
+    const supabase = await getSupabaseForContext()
     const now = new Date()
     const month = String(now.getMonth() + 1).padStart(2, '0')
     const day = String(now.getDate()).padStart(2, '0')
-
     const fortyFiveDaysAgo = new Date(now)
     fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45)
-
     const sevenDaysAgo = new Date(now)
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
     const [birthdayToday, inactive45d, vip, newThisWeek, noReturn] = await Promise.all([
       supabase.from('clients').select('id, full_name, phone')
         .filter('birth_date', 'like', `%-${month}-${day}`)
@@ -36,11 +34,9 @@ export const getClientAlerts = createServerFn({ method: 'GET' }).handler(async (
         .eq('total_visits', 1)
         .throwOnError(),
     ])
-
     function mapClient(c: { id: string; full_name: string | null; phone: string | null }) {
       return { id: c.id, name: c.full_name ?? null, phone: c.phone ?? null }
     }
-
     return {
       birthdayToday: { clients: (birthdayToday.data ?? []).map(mapClient), count: birthdayToday.data?.length ?? 0 },
       inactive45d: { clients: (inactive45d.data ?? []).map(mapClient), count: inactive45d.data?.length ?? 0 },
@@ -51,4 +47,4 @@ export const getClientAlerts = createServerFn({ method: 'GET' }).handler(async (
   } catch (error) {
     throw parseBusinessError(error)
   }
-})
+}

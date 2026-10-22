@@ -1,9 +1,6 @@
 // src/features/clients/server/getNoReturnClients.ts
-'use server'
-import { createServerFn } from '@tanstack/react-start'
-import { createSupabaseServer } from '@/lib/supabase/server'
 import { parseBusinessError } from '@/lib/errors/parseBusinessError'
-
+import { getSupabaseForContext } from '@/lib/supabase/context'
 export interface NoReturnClient {
   id: string
   name: string | null
@@ -16,15 +13,16 @@ export interface NoReturnClient {
   appointment_price: number | null
   appointment_date: string | null
 }
-
 export interface GetNoReturnClientsResponse {
   clients: NoReturnClient[]
 }
-
-export const getNoReturnClients = createServerFn({ method: 'GET' }).handler(async () => {
+/**
+ * Fase 2 — leitura direta ao Supabase (sa-east-1), sem serverFn.
+ * Mesma assinatura (sem args) e retorno do original — callers não mudam.
+ */
+export async function getNoReturnClients(): Promise<GetNoReturnClientsResponse> {
   try {
-    const supabase = createSupabaseServer()
-
+    const supabase = await getSupabaseForContext()
     const { data, error } = await supabase
       .from('clients')
       .select(`
@@ -43,9 +41,7 @@ export const getNoReturnClients = createServerFn({ method: 'GET' }).handler(asyn
       `)
       .eq('total_visits', 1)
       .order('last_visit', { ascending: false, nullsFirst: false })
-
     if (error) throw error
-
     return {
       clients: (data ?? []).map((c) => {
         const appt = c.appointments?.[0]
@@ -66,4 +62,4 @@ export const getNoReturnClients = createServerFn({ method: 'GET' }).handler(asyn
   } catch (error) {
     throw parseBusinessError(error)
   }
-})
+}
