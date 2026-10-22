@@ -269,7 +269,7 @@ export function AppointmentFormModal({
           startsAt: sA,
           services: servicesPayload,
           notes: form.notes || null,
-          status: 'pending',
+          status: 'confirmed',
         },
         { onSuccess: handleSuccess },
       );
