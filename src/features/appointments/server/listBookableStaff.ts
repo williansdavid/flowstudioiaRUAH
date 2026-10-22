@@ -1,6 +1,5 @@
 // src/features/appointments/server/listBookableStaff.ts
-import { createServerFn } from '@tanstack/react-start';
-import { createSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseForContext } from '@/lib/supabase/context';
 import type { BookableStaffItem } from '../types';
 
 interface RawRow {
@@ -13,31 +12,33 @@ interface RawRow {
   } | null;
 }
 
-export const listBookableStaff = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<BookableStaffItem[]> => {
-    const supabase = createSupabaseServer();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('[appointments] Sessão inválida.');
-    }
+/**
+ * Fase 1 — leitura direta ao Supabase (sa-east-1), sem serverFn.
+ * Mesma assinatura (sem args) e retorno do original — callers não mudam.
+ */
+export async function listBookableStaff(): Promise<BookableStaffItem[]> {
+  const supabase = await getSupabaseForContext();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error('[appointments] Sessão inválida.');
+  }
 
-    const { data, error } = await supabase
-      .from('staff')
-      .select('id, display_order, color, profiles(full_name, avatar_url)')
-      .eq('is_bookable', true)
-      .order('display_order', { ascending: true });
+  const { data, error } = await supabase
+    .from('staff')
+    .select('id, display_order, color, profiles(full_name, avatar_url)')
+    .eq('is_bookable', true)
+    .order('display_order', { ascending: true });
 
-    if (error) throw error;
+  if (error) throw error;
 
-    return (data as unknown as RawRow[]).map((r) => ({
-      id: r.id,
-      name: r.profiles?.full_name ?? 'Profissional',
-      displayOrder: r.display_order,
-      avatarUrl: r.profiles?.avatar_url ?? null,
-      color: r.color ?? null,
-    }));
-  },
-);
+  return (data as unknown as RawRow[]).map((r) => ({
+    id: r.id,
+    name: r.profiles?.full_name ?? 'Profissional',
+    displayOrder: r.display_order,
+    avatarUrl: r.profiles?.avatar_url ?? null,
+    color: r.color ?? null,
+  }));
+}

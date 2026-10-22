@@ -1,13 +1,11 @@
 // src/features/appointments/server/getDayAppointments.ts
-import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { createSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseForContext } from '@/lib/supabase/context';
 import type { AppointmentItem, AppointmentStatus, AppointmentServiceItem } from '../types';
 
 const inputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use YYYY-MM-DD)'),
 });
-
 export type GetDayAppointmentsInput = z.infer<typeof inputSchema>;
 
 function dayRangeISO(date: string): { start: string; end: string } {
@@ -62,11 +60,9 @@ function mapRow(row: RawRow): AppointmentItem {
     price: Number(s.price),
     quantity: Number(s.quantity),
   }));
-
   // serviceId único: NULL em multi (fonte da verdade = appointment_services);
   // fallback para agendamentos antigos de 1 serviço via service_id.
   const serviceId = services.length > 0 ? null : (row.service_id ?? null);
-
   // serviceName: fallback legado (1 serviço) ou "Múltiplos serviços" quando 2+.
   let serviceName: string;
   if (services.length > 1) {
@@ -76,7 +72,6 @@ function mapRow(row: RawRow): AppointmentItem {
   } else {
     serviceName = row.services?.name ?? 'Serviço';
   }
-
   return {
     id: row.id,
     startsAt: row.starts_at,
@@ -97,49 +92,56 @@ function mapRow(row: RawRow): AppointmentItem {
   };
 }
 
-export const getDayAppointments = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown) => inputSchema.parse(data))
-  .handler(async ({ data }): Promise<AppointmentItem[]> => {
-    try {
-      const supabase = createSupabaseServer();
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error('[appointments] Sessão inválida.');
-      }
-      const { start, end } = dayRangeISO(data.date);
-      if (start === 'Invalid Date' || end === 'Invalid Date') {
-        throw new RangeError(
-          `[appointments] dayRangeISO produziu data inválida para date="${data.date}". ` +
-            `start=${start} end=${end}`
-        );
-      }
-      const { data: rows, error } = await supabase
-        .from('appointments')
-        .select(APPT_SELECT)
-        .gte('starts_at', start)
-        .lte('starts_at', end)
-        .neq('status', 'cancelled')
-        .order('starts_at', { ascending: true });
-      if (error) throw error;
-      return (rows as unknown as RawRow[]).map(mapRow);
-    } catch (err) {
-      const normalized: Error = err instanceof Error ? (err as Error) : new Error(String(err));
-      console.error('[getDayAppointments]', {
-        inputDate: data.date,
-        rangeStart: (() => {
-          try { return dayRangeISO(data.date).start } catch { return 'erro_ao_calcular' }
-        })(),
-        rangeEnd: (() => {
-          try { return dayRangeISO(data.date).end } catch { return 'erro_ao_calcular' }
-        })(),
-        errorName: normalized.name,
-        errorMessage: normalized.message,
-        stack: normalized.stack?.split('\n').slice(0, 6).join('\n'),
-        timestamp: new Date().toISOString(),
-      });
-      throw err;
+/**
+ * Fase 1 — leitura direta ao Supabase (sa-east-1), sem serverFn.
+ * Mesma assinatura e retorno do serverFn original — callers não mudam.
+ * SSR: executa no servidor com cookies da sessão. Browser: executa no
+ * client com a sessão do usuário — RLS aplica em ambos os contextos.
+ */
+export async function getDayAppointments(
+  input: { data: GetDayAppointmentsInput },
+): Promise<AppointmentItem[]> {
+  const data = inputSchema.parse(input?.data);
+  try {
+    const supabase = await getSupabaseForContext();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('[appointments] Sessão inválida.');
     }
-  });
+    const { start, end } = dayRangeISO(data.date);
+    if (start === 'Invalid Date' || end === 'Invalid Date') {
+      throw new RangeError(
+        `[appointments] dayRangeISO produziu data inválida para date="${data.date}". ` +
+          `start=${start} end=${end}`
+      );
+    }
+    const { data: rows, error } = await supabase
+      .from('appointments')
+      .select(APPT_SELECT)
+      .gte('starts_at', start)
+      .lte('starts_at', end)
+      .neq('status', 'cancelled')
+      .order('starts_at', { ascending: true });
+    if (error) throw error;
+    return (rows as unknown as RawRow[]).map(mapRow);
+  } catch (err) {
+    const normalized: Error = err instanceof Error ? (err as Error) : new Error(String(err));
+    console.error('[getDayAppointments]', {
+      inputDate: data.date,
+      rangeStart: (() => {
+        try { return dayRangeISO(data.date).start } catch { return 'erro_ao_calcular' }
+      })(),
+      rangeEnd: (() => {
+        try { return dayRangeISO(data.date).end } catch { return 'erro_ao_calcular' }
+      })(),
+      errorName: normalized.name,
+      errorMessage: normalized.message,
+      stack: normalized.stack?.split('\n').slice(0, 6).join('\n'),
+      timestamp: new Date().toISOString(),
+    });
+    throw err;
+  }
+}
