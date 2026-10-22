@@ -1,0 +1,40 @@
+**********************
+PowerShell transcript start
+Start time: 20261022100428
+Username: I7DELL\willi
+RunAs User: I7DELL\willi
+Configuration Name: 
+Machine: I7DELL (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 49328
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is .\restore_log.txt
+PS C:\FlowStudio AI\supabase> psql --dbname="$NEW_DB_URL" -f ruah_full.sql
+by a superuser
+ALTER EVENT TRIGGER
+psql:ruah_full.sql:17136: ERROR:  Non-superuser owned event trigger must execute a non-superuser owned function
+DETALHE:  The current user "postgres" is not a superuser and the function "extensions.grant_pg_net_access" is owned by a
+ superuser
+ALTER EVENT TRIGGER
+psql:ruah_full.sql:17146: ERROR:  Non-superuser owned event trigger must execute a non-superuser owned function
+DETALHE:  The current user "postgres" is not a superuser and the function "extensions.pgrst_ddl_watch" is owned by a sup
+eruser
+ALTER EVENT TRIGGER
+psql:ruah_full.sql:17156: ERROR:  Non-superuser owned event trigger must execute a non-superuser owned function
+DETALHE:  The current user "postgres" is not a superuser and the function "extensions.pgrst_drop_watch" is owned by a su
+peruser
+ALTER EVENT TRIGGER
+PS C:\FlowStudio AI\supabase> Stop-Transcript
+**********************
+PowerShell transcript end
+End time: 20261022100535
+**********************
