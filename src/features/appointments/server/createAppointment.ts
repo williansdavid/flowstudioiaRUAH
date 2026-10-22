@@ -52,7 +52,7 @@ export const createAppointment = createServerFn({ method: 'POST' })
         ends_at: data.endsAt,
         price: Number(service.price),
         notes: data.notes ?? null,
-        status: 'pending',
+        status: 'confirmed',
         created_by: user.id,
       })
       .select('id')

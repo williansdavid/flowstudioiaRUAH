@@ -42,7 +42,7 @@ export const createAppointmentMulti = createServerFn({ method: 'POST' })
         p_starts_at: data.startsAt,
         p_services: data.services,
         p_notes: data.notes ?? null,
-        p_status: data.status ?? 'pending',
+        p_status: data.status ?? 'confirmed',
         p_payment_method_id: data.paymentMethodId ?? null,
       });
 
